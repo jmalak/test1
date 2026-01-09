@@ -59,9 +59,6 @@ void gml_address( const gmltag * entry )
     nest_cb->left_indent = nest_cb->prev->left_indent + conv_hor_unit( &layout_work.address.left_adjust, g_curr_font );
     nest_cb->right_indent = nest_cb->prev->right_indent - conv_hor_unit( &layout_work.address.right_adjust, g_curr_font );
 
-    nest_cb->lm = t_page.cur_left;
-    nest_cb->rm = t_page.max_width;
-
     g_text_spacing = layout_work.titlep.spacing;
 
     /************************************************************/
@@ -199,8 +196,7 @@ void gml_aline( const gmltag * entry )
     t_page.cur_left += nest_cb->left_indent;
     t_page.cur_width = t_page.cur_left;
     if( t_page.max_width < -1 * nest_cb->right_indent ) {
-        t_page.max_width = 0;               // negative right margin not allowed
-        xx_line_err( err_page_width_too_small, val_start );
+        xx_line_err_c( err_page_width_too_small, val_start );
     } else {
         t_page.max_width += nest_cb->right_indent;
     }

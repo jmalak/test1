@@ -81,6 +81,19 @@ void    (*_AccessTDList)(void)   = &__NullAccTDListRtn;
 void    (*_ReleaseTDList)(void)  = &__NullAccTDListRtn;
 
 #if defined(_M_IX86)
+/*
+ *  On 32-bit OS/2, GDT selector 0x150B points to the TIB (Thread
+ * Information Block). The FS register is by default loaded with this
+ * selector.
+ *  TIB offset 4 contains the address of the bottom of the thread's stack,
+ * while offset 8 contains the address of the stack top. That is how
+ * GetThreadStack() obtains the stack limit.
+ *  At offset 12 (0xC) of the TIB is a pointer to a system specific TIB2
+ * block. The first dword in TIB2 contains the thread ID (process local,
+ * counting from 1). GetTIDp() returns a pointer to the thread ID (which
+ * is also the pointer to the start of TIB2).
+ *  See also the TIB and TIB2 structs in bsedos.h.
+ */
 extern  unsigned short  GetCS(void);
 #pragma aux GetCS modify exact [ax] value [ax] = "mov ax,cs";
 extern  unsigned short  GetFS(void);

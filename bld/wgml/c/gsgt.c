@@ -374,8 +374,7 @@ void    scr_gt( void )
 
     if( cc == omit ) {
         // no operands
-        tag_name_missing_err();
-        return;
+        xx_err_c( err_missing_name, "" );
     }
 
     p = tok_start;

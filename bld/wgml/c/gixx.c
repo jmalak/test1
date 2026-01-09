@@ -77,12 +77,17 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
     size_t          seetextlen      = 0;    // val_len for see = <string> value
     size_t          txtlen;                 // val_len for entry value
 
+    if( input_cbs->fmflags & II_tag_mac ) {   // ensure next line is valid 
+        input_cbs->s.m->ix_seen = true;     // records use of tag, even if indexing is off
+    }
+
     if( !GlobalFlags.index ) {          // index option not active
         ProcFlags.index_tag_cw_seen = true;
         scan_start = scan_stop + 1;     // ignore tag
         return;
     }
 
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     start_doc_sect();                   // if not already done
 
     lvlc = '0' + hx_lvl;
@@ -117,8 +122,8 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             pb = p;
             if( ProcFlags.reprocess_line ) {
                 break;
@@ -126,8 +131,24 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
 
             if( !strnicmp( "id", p, 2 ) ) {
                 p += 2;
-                p = get_refid_value( p, id );
-                if( val_start == NULL ) {
+                p = get_id_value( p, id );
+                if( AttrFlags.id ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.id = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
                 if( hx_lvl > 0 ) {      // :Ix :IHx
@@ -141,8 +162,24 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
                 }
             } else if( !strnicmp( "refid", p, 5 ) ) {
                 p += 5;
-                p = get_refid_value( p, refid );
-                if( val_start == NULL ) {
+                p = get_id_value( p, refid );
+                if( AttrFlags.refid ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.refid = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
                 if( (hx_lvl == 0) || ((hx_lvl > 1) && (hxstring[2] == lvlc)) ) {
@@ -150,40 +187,55 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
                     refwk = find_refid( ix_ref_dict, refid );
                     if( refwk == NULL ) {   // refid not in dict
                         if( GlobalFlags.lastpass ) {// this is an error
-                            xx_val_line_err( err_id_undefined, refid, val_start );
+                            xx_line_err_cc( err_id_undefined, refid, g_att_val.val_start );
                         }
                     }
                 } else {                // not allowed for :I1 and :IHx
-                    xx_val_line_err( err_ref_not_allowed, hxstring, val_start );
+                    xx_line_err_cc( err_ref_not_allowed, hxstring, g_att_val.val_start );
                 }
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else if( !strnicmp( "pg", p, 2 ) ) {
                 p += 2;
-                p = get_att_value( p );
-
+                p = get_value( p );
+                if( AttrFlags.pg ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.pg = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
                 scan_start = p;
-                if( val_start == NULL ) {
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
                 if( (hx_lvl == 0) || (hxstring[2] == lvlc) ) {
                     pgseen = true;
                     if( quote_char == '\0' ) {  // value not quoted
-                        if( !strnicmp( "start", val_start, 5 ) ) {
+                        if( !strnicmp( "start", g_att_val.val_start, 5 ) ) {
                             pgvalue = pgstart;
-                        } else if( !strnicmp( "end", val_start, 3 ) ) {
+                        } else if( !strnicmp( "end", g_att_val.val_start, 3 ) ) {
                             pgvalue = pgend;
-                        } else if( !strnicmp( "major", val_start, 5 ) ) {
+                        } else if( !strnicmp( "major", g_att_val.val_start, 5 ) ) {
                             pgvalue = pgmajor;
                         }
                     }
                     if( pgvalue == pgnone ) {                // arbitrary string value
                         pgvalue = pgstring;
-                        pgtext = mem_alloc( val_len + 1 );
-                        strncpy( pgtext, val_start, val_len );// use text instead of pageno
-                        *(pgtext + val_len) = '\0';
-                        pgtextlen = val_len;
+                        pgtext = mem_alloc( g_att_val.val_len + 1 );
+                        strncpy( pgtext, g_att_val.val_start, g_att_val.val_len );// use text instead of pageno
+                        *(pgtext + g_att_val.val_len) = '\0';
+                        pgtextlen = g_att_val.val_len;
                     }
                 } else {                        // end-of-tag for IHx
                     p = pa;                     // restore spaces before text
@@ -194,18 +246,33 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
                 }
             } else if( !strnicmp( "print", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-
+                p = get_value( p );
+                if( AttrFlags.print ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.print = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
                 scan_start = p;
-                if( val_start == NULL ) {
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
                 if( hxstring[3] == lvlc ) {     // IHx only
                     printseen = true;
-                    printtxt = mem_alloc( val_len + 1 );
-                    printtxtlen = val_len;
-                    strncpy( printtxt, val_start, val_len );
-                    *(printtxt + val_len) = '\0';
+                    printtxt = mem_alloc( g_att_val.val_len + 1 );
+                    printtxtlen = g_att_val.val_len;
+                    strncpy( printtxt, g_att_val.val_start, g_att_val.val_len );
+                    *(printtxt + g_att_val.val_len) = '\0';
                 } else {                        // end-of-tag for Ix, IREF
                     p = pa;                     // restore spaces before text
                     break;
@@ -215,8 +282,24 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
                 }
             } else if( !strnicmp( "seeid", p, 5 ) ) {
                 p += 5;
-                p = get_refid_value( p, seeid );
-                if( val_start == NULL ) {
+                p = get_id_value( p, seeid );
+                if( AttrFlags.seeid ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.seeid = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
                 if( (hx_lvl == 0) || (hxstring[3] == lvlc) ) {  // IREF IHx
@@ -224,7 +307,7 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
                     seeidwk = find_refid( ix_ref_dict, seeid );
                     if( seeidwk == NULL ) {             // not in dict, this is an error
                         if( GlobalFlags.lastpass ) {    // during lastpass
-                            xx_val_line_err( err_id_undefined, seeid, val_start );
+                            xx_line_err_cc( err_id_undefined, seeid, g_att_val.val_start );
                         }
                     }
                 } else {                        // end-of-tag for Ix
@@ -236,18 +319,33 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
                 }
             } else if( !strnicmp( "see", p, 3 ) ) {
                 p += 3;
-                p = get_att_value( p );
-
+                p = get_value( p );
+                if( AttrFlags.see ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.see = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
                 scan_start = p;
-                if( val_start == NULL ) {
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
                 if( hx_lvl == 0 || (hxstring[3] == lvlc) ) {// :IREF :IHx
                     seeseen = true;
-                    seetext = mem_alloc( val_len + 1 );
-                    strncpy( seetext, val_start, val_len );
-                    *(seetext + val_len) = '\0';
-                    seetextlen = val_len;
+                    seetext = mem_alloc( g_att_val.val_len + 1 );
+                    strncpy( seetext, g_att_val.val_start, g_att_val.val_len );
+                    *(seetext + g_att_val.val_len) = '\0';
+                    seetextlen = g_att_val.val_len;
                 } else {                        // end-of-tag for Ix
                     p = pa;                     // restore spaces before text
                     break;
@@ -257,9 +355,25 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
                 }
             } else if( !strnicmp( "ix", p, 2 ) ) {
                 p += 2;
-                p = get_att_value( p );
-                gn.argstart = val_start;
-                gn.argstop = val_start + val_len;
+                p = get_value( p );
+                if( AttrFlags.ix ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.ix = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                gn.argstart = g_att_val.val_start;
+                gn.argstop = g_att_val.val_start + g_att_val.val_len;
                 gn.ignore_blanks = 0;
                 cc = getnum( &gn );
 
@@ -267,11 +381,13 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
 
                     /* Groups are ignored, issue warning */
 
-                    xx_warn_att( wng_unsupp_att, "ix" );
+                    xx_warn_c( wng_unsupp_att, "ix" );
 
                     if( (gn.result < 1) || (gn.result > 9) ) { // out of range
-                        xx_line_err( err_struct_range, val_start );
+                        xx_line_err_c( err_struct_range, g_att_val.val_start );
                     }
+                } else if( cc == notnum ) {
+                    xx_line_err_c( err_num_too_large, g_att_val.val_start );
                 }
                 if( ProcFlags.tag_end_found ) {
                     break;
@@ -286,9 +402,26 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
     SkipDot( p );               // possible tag end
     SkipSpaces( p );            // step over spaces
     if( hx_lvl > 0 ) {          // not for IREF, take existing text, if any, as-is
-        while( *p == '\0' ) {   // we need a text line for :Ix :IHx
+        while( (*p == '\0') ) {   // we need a text line for :Ix :IHx
             get_line( true );
-            p = buff2;
+
+            /*******************************************************/
+            /* buff2 must be restored if it is to be reprocessed   */
+            /* so that any symbol substitutions will reflect any   */
+            /* changes made by the tag calling it                  */
+            /*******************************************************/
+
+            scan_start = buff2;
+            scan_stop  = buff2 + buff2_lg;
+            if( (*scan_start == SCR_char) ||    // cw found: error
+                (*scan_start == GML_char) ||    // tag found: error
+                (input_cbs->fmflags & II_eof) ) {   // EOF found: error
+                xx_err( err_text_not_tag_cw );
+            } else {
+                process_line();
+                p = scan_start; // new line is part of current tag
+                continue;
+            }
         }
         SkipSpaces( p );        // step over spaces
     }
@@ -298,7 +431,15 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
     /***********************************************************************/
 
     txt = p;
-    for( txtlen = strlen( txt ); txtlen > 0; txtlen-- ) { // back off trailing spaces
+    txtlen = strlen( txt );
+    if( txt[txtlen - 1] == CONT_char ) {
+        txt[txtlen - 1] = '\0';
+        txtlen--;
+    }
+    if( txt[txtlen - 1] != in_esc ) {
+        intrans( txt, strlen( txt ) + 1, g_curr_font );
+    }
+    for( txtlen; txtlen > 0; txtlen-- ) { // back off trailing spaces
         if( txt[txtlen - 1] != ' ' ) {
             break;
         }
@@ -318,13 +459,13 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
             ixhlvl[1] = false;          // second level not found
         } else if( hx_lvl == 2 ) {      // second level tag
             if( !ixhlvl[0] ) {          // first level must exist
-                xx_tag_err( err_parent_undef, hxstring );
+                xx_err_c( err_parent_undef, hxstring );
             } else {
                 ixhlvl[1] = true;       // record first level found
             }
         } else if( hx_lvl == 3 ) {      // third level tag
             if( !ixhlvl[1] ) {          // second level must exist
-                xx_tag_err( err_parent_undef, hxstring );
+                xx_err_c( err_parent_undef, hxstring );
             }
         }
     }
@@ -474,7 +615,7 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
             }
             if( GlobalFlags.lastpass ){         // last pass: add data
                 if( refwork == NULL ) {         // shouldn't happen
-                    xx_tag_err( err_id_undefined, id );
+                    xx_err_c( err_id_undefined, id );
                 } else {
                     refwork->u.ix.hblk = ixhwk;
                     refwork->u.ix.base = ixhtag[hx_lvl - 1];
@@ -493,7 +634,7 @@ static void gml_ixxx_common( const gmltag * entry, int hx_lvl )
     }
 
     ProcFlags.null_value = false;
-    ProcFlags.post_ix = true;
+    ProcFlags.post_ix = true;           // records use of index tag only if indexing is on
 
     scan_start = scan_stop + 1;
     return;

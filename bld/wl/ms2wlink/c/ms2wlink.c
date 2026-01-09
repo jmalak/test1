@@ -67,6 +67,7 @@ char *      ExtraNames[] = {
 
 bool            DebugInfo = FALSE;
 bool            MapOption = FALSE;
+bool            FarCallOpt = FALSE;
 format_type     FmtType = FMT_DEFAULT;
 extra_type      FmtInfo = NO_EXTRA;
 bool            HaveDefFile = FALSE;
@@ -156,6 +157,7 @@ static void BuildWATCOM( void )
     if( DebugInfo ) {
         CommandOut( "debug all" );
     }
+    CommandOut( FarCallOpt ? "option farcalls" : "option nofarcalls" );
     ImplyFormat( HaveDefFile ? FMT_OS2 : FMT_DOS );
     if( FmtInfo != NO_EXTRA ) {
         form = Msg3Splice( "system ", FormatNames[ FmtType ],

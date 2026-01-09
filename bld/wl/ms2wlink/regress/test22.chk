@@ -1,5 +1,6 @@
 # This file produced by MS2WLINK
 debug all
+option farcalls
 system os2 pmcompatible
 file obj.obj
 name exe.exe
@@ -19,7 +20,6 @@ option dosseg
 # linenumbers option is not supported by WLINK
 option nodefaultlibs
 # noextdictionary option is not necessary when using WLINK
-# nofarcalltranslation option is not necessary when using WLINK
 # nogroupassociation option is not supported by WLINK
 option caseexact
 option quiet

@@ -44,7 +44,7 @@
 .fnu _uasctime                  asctime.gml     DOS       WIN32
 .fnu _u_asctime                 asctime.gml     DOS       WIN32
 .fnc asctime_s                  asctim_s.gml    DOS       WIN32
-.fnc _wasctime_s                asctim_s.gml    DOS       WIN32
+.fnw _wasctime_s                asctim_s.gml    DOS       WIN32
 .fnc asin                       asin.gml        DOS QNX W WIN32
 .fnc asinh                      asinh.gml       DOS QNX W WIN32
 .fnc assert                     assert.gml      DOS QNX W WIN32
@@ -342,7 +342,7 @@
 .fnc fopen                      fopen.gml       DOS QNX W WIN32
 .fnw _wfopen                    fopen.gml       DOS QNX W WIN32
 .fnc fopen_s                    fopen_s.gml     DOS QNX W WIN32
-.fnc _wfopen_s                  fopen_s.gml     DOS QNX W WIN32
+.fnw _wfopen_s                  fopen_s.gml     DOS QNX W WIN32
 .fnu _ufopen                    fopen.gml       DOS       WIN32
 .fnc fork                       fork.gml            QXO
 .fnc FP_OFF                     fp_off.gml      DOS QNX W WIN32
@@ -375,7 +375,7 @@
 .fnw _wfreopen                  freopen.gml     DOS QNX W WIN32
 .fnu _ufreopen                  freopen.gml     DOS       WIN32
 .fnc freopen_s                  freop_s.gml     DOS QNX W WIN32
-.fnc _wfreopen_s                freop_s.gml     DOS QNX W WIN32
+.fnw _wfreopen_s                freop_s.gml     DOS QNX W WIN32
 .fnc frexp                      frexp.gml       DOS QNX W WIN32
 .fnc fscanf                     fscanf.gml      DOS QNX W WIN32
 .fnw fwscanf                    fscanf.gml      DOS QNX W WIN32
@@ -1495,6 +1495,11 @@
 .fnc strtod                     strtod.gml      DOS QNX W WIN32
 .fnw wcstod                     strtod.gml      DOS QNX W WIN32
 .fnu _ustrtod                   strtod.gml      DOS       WIN32
+.fnc strtof                     strtof.gml      DOS QNX W WIN32
+.fnw wcstof                     strtof.gml      DOS QNX W WIN32
+.fnc strtoimax                  strtoimx.gml    DOS QNX W WIN32
+.fnw wcstoimax                  strtoimx.gml    DOS QNX W WIN32
+.fnu _ustrtoimax                strtoimx.gml    DOS       WIN32
 .fnc strtok                     strtok.gml      DOS QNX W WIN32
 .fnf _fstrtok                   strtok.gml      DOS QNX W WIN32
 .fnw wcstok                     strtok.gml      DOS QNX W WIN32
@@ -1506,12 +1511,11 @@
 .fnc strtol                     strtol.gml      DOS QNX W WIN32
 .fnw wcstol                     strtol.gml      DOS QNX W WIN32
 .fnu _ustrtol                   strtol.gml      DOS       WIN32
+.fnc strtold                    strtold.gml     DOS QNX W WIN32
+.fnw wcstold                    strtold.gml     DOS QNX W WIN32
 .fnc strtoll                    strtoll.gml     DOS QNX W WIN32
 .fnw wcstoll                    strtoll.gml     DOS QNX W WIN32
 .fnu _ustrtoll                  strtoll.gml     DOS       WIN32
-.fnc strtoimax                  strtoimx.gml    DOS QNX W WIN32
-.fnc wcstoimax                  strtoimx.gml    DOS QNX W WIN32
-.fnu _ustrtoimax                strtoimx.gml    DOS       WIN32
 .fnc strtoul                    strtoul.gml     DOS QNX W WIN32
 .fnw wcstoul                    strtoul.gml     DOS QNX W WIN32
 .fnu _ustrtoul                  strtoul.gml     DOS       WIN32

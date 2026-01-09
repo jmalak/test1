@@ -63,8 +63,7 @@ $(xname) : sruparse.gh ytab.gh $(objs) $(__MAKEFILES__)
         $(linker) $(lflags) name $^@ @$(lnk)
 
 sruparse.gh ytab.gh: sruparse.y ../c/yydriver.c
-        @wtouch $^@
-        @rm $^@
+        @rm -f $^@
         $(byacc) $[@ ../c/yydriver.c > $(nulldevice)
         @cp ytab.c $^@
         @cp ytab.h ytab.gh

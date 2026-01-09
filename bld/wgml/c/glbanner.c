@@ -200,7 +200,6 @@ static  void    init_banner_wk( banner_lay_tag * ban )
 
 void    lay_banner( const gmltag * entry )
 {
-    att_args            l_args;
     banner_lay_tag  *   banwk;
     bf_place            match_place;
     bf_place            new_place;
@@ -220,22 +219,23 @@ void    lay_banner( const gmltag * entry )
         eat_lay_sub_tag();
         return;                         // process during first pass only
     }
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     if( ProcFlags.lay_xxx != el_banner ) {
         ProcFlags.lay_xxx = el_banner;
         ProcFlags.banner = true;
         init_banner_wk( &wk );
     }
-    cc = get_lay_sub_and_value( &l_args );  // get att with value
+    cc = get_attr_and_value();            // get att with value
     while( cc == pos ) {
         for( k = 0; k < att_count; k++ ) {
             curr = banner_att[k];
 
-            if( !strnicmp( att_names[curr], l_args.start[0], l_args.len[0] ) ) {
-                p = l_args.start[1];
+            if( !strnicmp( att_names[curr], g_att_val.att_start, g_att_val.att_len ) ) {
+                p = g_att_val.val_start;
 
                 if( count[k] ) {
                     if( sum_count == att_count ) {  // all attributes found
-                        xx_err( err_lay_text );  // per wgml 4.0: treat as text
+                        xx_err( err_lay_text );     // per wgml 4.0: treat as text
                     } else {
                         xx_err( err_att_dup );      // per wgml 4.0: treat as duplicated attribute
                     }
@@ -244,35 +244,69 @@ void    lay_banner( const gmltag * entry )
                     sum_count++;
                     switch( curr ) {
                     case e_left_adjust:
+                        if( AttrFlags.left_adjust ) {
+                            xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                                g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                        }
                         i_space_unit( p, curr, &wk.left_adjust );
+                        AttrFlags.left_adjust = true;
                         break;
                     case e_right_adjust:
+                        if( AttrFlags.right_adjust ) {
+                            xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                                g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                        }
                         i_space_unit( p, curr, &wk.right_adjust );
+                        AttrFlags.right_adjust = true;
                         break;
                     case e_depth:
+                        if( AttrFlags.depth ) {
+                            xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                                g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                        }
                         i_space_unit( p, curr, &wk.depth );
+                        AttrFlags.depth = true;
                         break;
                     case e_place:
+                        if( AttrFlags.place ) {
+                            xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                                g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                        }
                         i_place( p, curr, &wk.place );
+                        AttrFlags.place = true;
                         break;
                     case e_docsect:
+                        if( AttrFlags.docsect ) {
+                            xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                                g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                        }
                         i_docsect( p, curr, &wk.docsect );
+                        AttrFlags.docsect = true;
                         break;
                     case e_refplace:  // not stored in banner struct
+                        if( AttrFlags.refplace ) {
+                            xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                                g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                        }
                         i_place( p, curr, &refplace );
+                        AttrFlags.refplace = true;
                         break;
                     case e_refdoc:    // not stored in banner struct
+                        if( AttrFlags.refdoc ) {
+                            xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                                g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                        }
                         i_docsect( p, curr, &refdoc );
+                        AttrFlags.refdoc = true;
                         break;
                     default:
                         internal_err( __FILE__, __LINE__ );
-                        break;
                     }
                 }
                 break;                  // break out of for loop
             }
         }
-        cc = get_lay_sub_and_value( &l_args );  // get att with value
+        cc = get_attr_and_value();            // get att with value
     }
 
     /*******************************************************/
@@ -535,7 +569,7 @@ void    lay_ebanner( const gmltag * entry )
             curr_ban = NULL;
         }
     } else {
-        xx_tag_err( err_tag_expected, "BANNER" );
+        xx_err_c( err_tag_expected, "BANNER" );
     }
     scan_start = scan_stop + 1;
     return;

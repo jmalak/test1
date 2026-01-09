@@ -26,7 +26,6 @@
 *
 * Description: WGML implement utility functions for :LAYOUT processing
 *                   eat_lay_sub_tag()
-*                   get_lay_sub_and_value()
 *                   free_layout()
 *                   i_xxxx               input routines
 *                   o_xxxx               output routines
@@ -152,13 +151,13 @@ void    eat_lay_sub_tag( void )
 /***************************************************************************/
 /*  parse lines like right_margin = '7i'                                   */
 /*              or   right_margin='7i'                                     */
-/*          and store result in att_args struct                            */
+/*          and store result in g_att_val                                  */
 /*  rc = pos if all ok                                                     */
 /*  rc = no  in case of error                                              */
 /*  rc = omit if nothing found                                             */
 /***************************************************************************/
 
-condcode    get_lay_sub_and_value( att_args * args )
+condcode    get_attr_and_value( void )
 {
     char        *   p;
     char        *   pa;
@@ -171,12 +170,12 @@ condcode    get_lay_sub_and_value( att_args * args )
 
     SkipSpacesTabs( p );                    // over WS to start of name
 
-    args->start[0] = p;
-    args->len[0] = -1;                      // switch for scanning error
-    args->len[1] = -1;                      // switch for scanning error
+    g_att_val.att_start = p;
+    g_att_val.att_len = -1;                 // switch for scanning error
+    g_att_val.val_len = -1;                 // switch for scanning error
 
     for(;;) {                               // loop until attribute/value pair or rescan line found
-        while( is_lay_att_char( *p ) ) {
+        while( is_att_char( *p ) ) {
             p++;
         }
         if( *p == '\0' ) {                  // end of line: get new line
@@ -193,67 +192,67 @@ condcode    get_lay_sub_and_value( att_args * args )
                     } else {
                         p = scan_start;                 // new line is part of current tag
                         SkipSpacesTabs( p );            // over WS to start of alleged attribute
-                        args->start[0] = p;             // set for new line
+                        g_att_val.att_start = p;        // set for new line
                         continue;
                     }
                 }
             }
         }
-        args->len[0] = p - args->start[0];
+        g_att_val.att_len = p - g_att_val.att_start;
         if( *p == '.' ) {                   // end of tag
             ProcFlags.tag_end_found = true;
             return( omit );
         }
-        if( args->len[0] < 4 ) {            // attribute name length
-            xx_line_err( err_att_name_inv, pa );
+        if( g_att_val.att_len < 4 ) {       // attribute name length
+            xx_line_err_c( err_att_name_inv, pa );
         }
         SkipSpacesTabs( p );                // over WS to =
         if( *p == '=' ) {
             p++;
             SkipSpacesTabs( p );            // over WS to attribute value
             if( *p == '.' ) {               // final "." is end of tag
-                xx_line_err( err_att_val_missing, p );
+                xx_line_err_c( err_att_val_missing, p );
             }
         } else {                            // equals sign is required
-            xx_line_err( err_eq_missing, p );
+            xx_line_err_c( err_eq_missing, p );
         }
 
-        args->start[1] = p;                 // delimiters must be included for error checking
+        g_att_val.val_start = p;            // delimiters must be included for error checking
         pa = p;
 
         if( is_quote_char( *p ) ) {
             quote = *p;
             ++p;
-            args->quoted = true;
+            g_att_val.val_quoted = true;
         } else {
             quote = ' ';
-            args->quoted = false;
+            g_att_val.val_quoted = false;
         }
 
         while( *p != '\0' && *p != quote ) {
             ++p;
         }
 
-        if( args->quoted && is_quote_char( *p ) ) {
+        if( g_att_val.val_quoted && is_quote_char( *p ) ) {
             p++;                            // over terminating quote
         }
 
-        args->len[1] = p - args->start[1];
+        g_att_val.val_len = p - g_att_val.val_start;
 
-        if( args->len[1] < 1 ) {            // attribute value length
-            xx_line_err( err_att_val_missing, pa );
+        if( g_att_val.val_len < 1 ) {       // attribute value length
+            xx_line_err_c( err_att_val_missing, pa );
         } else {
             rc = pos;
         }
 
         if( *(p - 1) == '.' ) {             // final "." is end of tag
             ProcFlags.tag_end_found = true;
-            args->len[1]--;                 // remove final "." from value
+            g_att_val.val_len--;            // remove final "." from value
         }
 
-        val_start = args->start[1];
-        val_len = args->len[1];
-        if( args->quoted) {                 // delimiters must be omitted for these externs
+        val_start = g_att_val.val_start;
+        val_len = g_att_val.val_len;
+        if( g_att_val.val_quoted) {         // delimiters must be omitted for these externs
             val_start++;
             val_len -= 2;
         }
@@ -361,7 +360,7 @@ bool    i_case( char * p, lay_att curr, case_t * tm )
     } else if( !strnicmp( "upper", p, 5 ) ) {
         *tm = case_upper;
     } else {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 }
@@ -491,7 +490,7 @@ bool    i_default_frame( char * p, lay_att curr, def_frame * tm )
         }
     }
     if( cvterr ) {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 
@@ -538,7 +537,7 @@ bool    i_docsect( char * p, lay_att curr, ban_docsect * tm )
         }
     }
     if( *tm == no_ban ) {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 }
@@ -570,7 +569,7 @@ bool    i_frame( char * p, lay_att curr, bool * tm )
     } else if( !strnicmp( "rule", p, 4 ) ) {
         *tm = true;
     } else {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 
@@ -613,7 +612,7 @@ bool    i_int8( char * p, lay_att curr, int8_t * tm )
 
     wk = strtol( p, NULL, 10 );
     if( abs( wk ) > 255 ) {
-        xx_line_err( err_i_8, p );
+        xx_line_err_c( err_i_8, p );
     }
     *tm = wk;
     return( false );
@@ -667,7 +666,7 @@ bool    i_number_form( char * p, lay_att curr, num_form * tm )
     } else if( !strnicmp( "new", p, 3 ) ) {
         *tm = num_new;
     } else {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 }
@@ -756,7 +755,7 @@ bool    i_number_style( char * p, lay_att curr, num_style * tm )
     if( !cvterr ) {
         *tm = wk;
     } else {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 }
@@ -825,7 +824,7 @@ bool    i_page_eject( char * p, lay_att curr, page_ej * tm )
     } else if( !strnicmp( "even", p, 4 ) ) {
         *tm = ej_even;
     } else {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 }
@@ -865,7 +864,7 @@ bool    i_page_position( char * p, lay_att curr, page_pos * tm )
     } else if( !(strnicmp( "centre", p, 6 ) && strnicmp( "center", p, 6 )) ) {
         *tm = pos_center;
     } else {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 }
@@ -905,7 +904,7 @@ bool    i_place( char * p, lay_att curr, bf_place * tm )
         }
     }
     if( *tm == no_place ) {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 }
@@ -953,7 +952,7 @@ bool    i_pouring( char * p, lay_att curr, reg_pour * tm )
     } else if( !strnicmp( "head6", p, 5 ) ) {
         *tm = head6_pour;
     } else {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 }
@@ -1019,7 +1018,7 @@ bool    i_spacing( char *p, lay_att curr, text_space *tm )
     curr = curr;
     wk = strtol( p, NULL, 10 );
     if( wk < 0 || wk > 255 ) {
-        xx_line_err( err_ui_8, p );
+        xx_line_err_c( err_ui_8, p );
     }
     *tm = wk;
     return( false );
@@ -1047,13 +1046,13 @@ bool    i_threshold( char * p, lay_att curr, uint16_t * tm )
     
     for( pa = p; isdigit( *pa ); pa++ );
     if( *pa ) {
-        xx_line_err( err_num_too_large, p );
+        xx_line_err_c( err_num_too_large, p );
     }
     if( wk == 0 ) {
-        xx_line_err( err_num_zero, p );
+        xx_line_err_c( err_num_zero, p );
     }
     if( wk > 0x7fff ) {
-        xx_line_err( err_num_s16_neg, p );
+        xx_line_err_c( err_num_s16_neg, p );
     }
     *tm = wk;
     return( false );
@@ -1082,7 +1081,7 @@ bool    i_xx_string( char * p, lay_att curr, xx_str * tm )
         memcpy_s( tm, str_size, val_start, val_len );
         *(tm + val_len) = '\0';
     } else {
-        xx_line_err( err_xx_string, p );
+        xx_line_err_c( err_xx_string, p );
     }
     return( cvterr );
 }
@@ -1120,7 +1119,7 @@ bool    i_yes_no( char * p, lay_att curr, bool * tm )
     } else if( !strnicmp( stryes, p, 3 ) ) {
         *tm = true;
     } else {
-        xx_line_err( err_inv_att_val, p );
+        xx_line_err_c( err_inv_att_val, p );
     }
     return( cvterr );
 }

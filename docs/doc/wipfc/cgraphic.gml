@@ -1,4 +1,4 @@
-.section *refid='cgraphic' cgraphic
+.section *refid='cgrphic' cgraphic
 .ix 'cgraphic'
 .ix 'Figures' 'character'
 .tag begin

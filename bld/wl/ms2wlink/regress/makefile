@@ -25,6 +25,7 @@ tests = test01 &
 	test21 &
 	test22 &
 	test23 &
+	test24 &
 
 all : $(TESTS) .symbolic
     @echo ms2wlink tests PASS
@@ -98,3 +99,5 @@ test22 : .symbolic
 test23 : .symbolic
     $(MSWL) /XLX obj,,,,def8 | diff - $@.chk
 
+test24 : .symbolic
+    $(MSWL) /TINY obj,exe; | diff - $@.chk

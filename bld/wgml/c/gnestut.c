@@ -53,6 +53,8 @@ void init_nest_cb( void )
     wk->spacing = g_text_spacing;       // save spacing on entry
 
     if( nest_cb == NULL ) {             // if first one set defaults
+        wk->lm           = t_page.cur_left;
+        wk->rm           = t_page.max_width;
         wk->align        = 0;
         wk->left_indent  = 0;
         wk->right_indent = 0;
@@ -65,6 +67,8 @@ void init_nest_cb( void )
         wk->dl_break     = false;
         wk->in_list      = false;
    } else {
+        wk->lm           = t_page.cur_left;
+        wk->rm           = t_page.max_width;
         wk->in_list      = nest_cb->in_list;
    }
 

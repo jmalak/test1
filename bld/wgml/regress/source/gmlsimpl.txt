@@ -1,0 +1,25 @@
+ 
+-
+                Simple Document
++               _______________
++               Simple Document
+-
+0          This  is the  first  sentence  of the very first  paragraph.
+           This is the second sentence in that paragraph.
+0          Here is the second paragraph.    This is the second sentence
+           in the second paragraph.
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+0          Simple Document                                            1

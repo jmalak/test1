@@ -1312,7 +1312,7 @@ next : .symbolic
 In the above example, &maksname will not automatically update "target",
 despite the fact that it is the first one listed.
 .*
-.section *refid=extensions Defining Recognized File Extensions (.EXTENSIONS)
+.section *refid=xtnsns Defining Recognized File Extensions (.EXTENSIONS)
 .*
 .ix '&makcmdup directives' '.EXTENSIONS'
 .ix 'EXTENSIONS' '&makcmdup directive'
@@ -1793,7 +1793,7 @@ directive declares which extensions are allowed to be used in implicit
 rules and how these extensions are ordered. It is a synonym for the
 .id &sysper.EXTENSIONS
 directive.  See the section entitled
-:HDREF refid='extensions'.
+:HDREF refid='xtnsns'.
 for a full description of both directives.
 .*
 .section Targets Without Any Dependents (.SYMBOLIC)

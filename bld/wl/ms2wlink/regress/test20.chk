@@ -1,4 +1,5 @@
 # This file produced by MS2WLINK
+option nofarcalls
 system dos
 file object.obj
 file file.obj

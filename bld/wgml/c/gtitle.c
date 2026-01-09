@@ -68,7 +68,7 @@ void    gml_title( const gmltag * entry )
                     break;
                 }
                 if( GlobalFlags.firstpass && !ProcFlags.stitle_seen ) {  // first stitle goes into dictionary
-                    add_symvar( &global_dict, "$stitle", val_start, no_subscript, 0 );
+                    add_symvar( global_dict, "$stitle", val_start, no_subscript, 0 );
                     ProcFlags.stitle_seen = true;
                 }
                 if( ProcFlags.tag_end_found ) {
@@ -86,7 +86,7 @@ void    gml_title( const gmltag * entry )
     SkipSpaces( p );                    // over WS to title
 
     if( GlobalFlags.firstpass && !ProcFlags.title_text_seen && *p != '\0' ) {   // first title goes into dictionary
-        add_symvar( &global_dict, "$title", p, no_subscript, 0 );
+        add_symvar( global_dict, "$title", p, no_subscript, 0 );
         ProcFlags.title_text_seen = true;
     }
 
@@ -110,8 +110,7 @@ void    gml_title( const gmltag * entry )
     t_page.cur_left += left_indent;
     t_page.cur_width = t_page.cur_left;
     if( t_page.max_width < right_indent ) {
-        t_page.max_width = 0;               // negative right margin not allowed
-        xx_line_err( err_page_width_too_small, val_start );
+        xx_line_err_c( err_page_width_too_small, val_start );
     } else {
         t_page.max_width -= right_indent;
     }

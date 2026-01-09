@@ -270,7 +270,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case author_content :
-            rc = find_symvar( &global_dict, "$author", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$author", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -278,7 +278,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case bothead_content :
-            rc = find_symvar( &global_dict, "$bothead", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$bothead", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -287,11 +287,11 @@ static void content_reg( region_lay_tag * region )
             break;
         case date_content :
             /* This matches what wgml 4.0 actually does */
-            rc = find_symvar( &global_dict, "date", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "date", no_subscript, &symsubval );
             if( rc == 2 ){  // tag DATE used
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {        // tag DATE not used
-                rc = find_symvar( &global_dict, "$date", no_subscript, &symsubval );
+                rc = find_symvar( global_dict, "$date", no_subscript, &symsubval );
                 if( rc == 2 ) {
                     strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
                 } else {
@@ -300,7 +300,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case docnum_content :
-            rc = find_symvar( &global_dict, "$docnum", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$docnum", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -308,7 +308,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case head0_content :
-            rc = find_symvar( &global_dict, "$head0", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$head0", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -316,7 +316,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case head1_content :
-            rc = find_symvar( &global_dict, "$head1", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$head1", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -324,7 +324,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case head2_content :
-            rc = find_symvar( &global_dict, "$head2", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$head2", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -332,7 +332,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case head3_content :
-            rc = find_symvar( &global_dict, "$head3", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$head3", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -340,7 +340,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case head4_content :
-            rc = find_symvar( &global_dict, "$head4", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$head4", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -348,7 +348,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case head5_content :
-            rc = find_symvar( &global_dict, "$head5", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$head5", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -356,7 +356,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case head6_content :
-            rc = find_symvar( &global_dict, "$head6", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$head6", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -364,7 +364,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headnum0_content :
-            rc = find_symvar( &global_dict, "$hnum0", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$hnum0", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -372,7 +372,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headnum1_content :
-            rc = find_symvar( &global_dict, "$hnum1", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$hnum1", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -380,7 +380,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headnum2_content :
-            rc = find_symvar( &global_dict, "$hnum2", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$hnum2", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -388,7 +388,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headnum3_content :
-            rc = find_symvar( &global_dict, "$hnum3", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$hnum3", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -396,7 +396,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headnum4_content :
-            rc = find_symvar( &global_dict, "$hnum4", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$hnum4", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -404,7 +404,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headnum5_content :
-            rc = find_symvar( &global_dict, "$hnum5", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$hnum5", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -412,7 +412,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headnum6_content :
-            rc = find_symvar( &global_dict, "$hnum6", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$hnum6", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -420,7 +420,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headtext0_content :
-            rc = find_symvar( &global_dict, "$htext0", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$htext0", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -428,7 +428,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headtext1_content :
-            rc = find_symvar( &global_dict, "$htext1", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$htext1", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -436,7 +436,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headtext2_content :
-            rc = find_symvar( &global_dict, "$htext2", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$htext2", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -444,7 +444,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headtext3_content :
-            rc = find_symvar( &global_dict, "$htext3", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$htext3", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -452,7 +452,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headtext4_content :
-            rc = find_symvar( &global_dict, "$htext4", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$htext4", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -460,7 +460,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headtext5_content :
-            rc = find_symvar( &global_dict, "$htext5", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$htext5", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -468,7 +468,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case headtext6_content :
-            rc = find_symvar( &global_dict, "$htext6", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$htext6", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -476,7 +476,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case pgnuma_content :
-            rc = find_symvar( &global_dict, "$pgnuma", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$pgnuma", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -484,7 +484,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case pgnumad_content :
-            rc = find_symvar( &global_dict, "$pgnumad", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$pgnumad", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -492,7 +492,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case pgnumc_content :
-            rc = find_symvar( &global_dict, "$pgnumc", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$pgnumc", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -500,7 +500,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case pgnumcd_content :
-            rc = find_symvar( &global_dict, "$pgnumcd", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$pgnumcd", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -508,7 +508,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case pgnumr_content :
-            rc = find_symvar( &global_dict, "$pgnumr", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$pgnumr", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -516,7 +516,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case pgnumrd_content :
-            rc = find_symvar( &global_dict, "$pgnumrd", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$pgnumrd", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -524,7 +524,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case sec_content :
-            rc = find_symvar( &global_dict, "$sec", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$sec", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -532,7 +532,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case stitle_content :
-            rc = find_symvar( &global_dict, "$stitle", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$stitle", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -540,7 +540,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case title_content :
-            rc = find_symvar( &global_dict, "$title", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$title", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -548,7 +548,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case time_content :
-            rc = find_symvar( &global_dict, "$time", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$time", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -556,7 +556,7 @@ static void content_reg( region_lay_tag * region )
             }
             break;
         case tophead_content :
-            rc = find_symvar( &global_dict, "$tophead", no_subscript, &symsubval );
+            rc = find_symvar( global_dict, "$tophead", no_subscript, &symsubval );
             if( rc == 2 ) {
                 strcpy_s( buf, strlen(symsubval->value) + 1, symsubval->value );
             } else {
@@ -635,6 +635,93 @@ static void content_reg( region_lay_tag * region )
 }
 
 
+/****************************************************************************/
+/*  splits banner text_chars when subscript/superscript encountered         */
+/*  in_chars is the first text_chars in the fully-formed banner text_line   */
+/*  each text_chars in the linked list headed by in_chars will be processed */
+/*  as follows:                                                             */
+/*    if no subscript/superscript is found, it will not be split            */
+/*    if split, the new text_chars will be inserted into the list           */
+/*                                                                          */
+/*  Note: intended to be called from out_ban_common() only                  */
+/*        dependent on how banner text_lines are set up                     */
+/****************************************************************************/
+
+static text_chars * split_text_chars( text_chars * in_chars )
+{
+    char        *   p;
+    text_chars  *   c_chars;
+    text_chars  *   old_next;
+    uint32_t        o_count;
+    
+    old_next = in_chars->next;
+    if( old_next != NULL ) {
+        in_chars->next->prev = NULL;    // detach old_next
+        in_chars->next = NULL;      
+    }
+    while( in_chars != NULL ) {
+        c_chars = in_chars;
+        o_count = c_chars->count;
+        p = c_chars->text;
+        while( *p != '\0' ) {
+            if( (*p == function_escape) && (*(p + 1) >= function_end) &&
+                                           (*(p + 1) <= function_sup_end) ) {
+                if( *(p + 2) != '\0' ) {    // only split if text follows
+                    /* Reset c_chars to include text up to split */
+                    c_chars->count = p - c_chars->text;
+                    c_chars->width = cop_text_width( c_chars->text, c_chars->count,
+                                                       c_chars->font );
+
+                    /* Add new text_chars to list and move c_chars to point to it */
+                    c_chars->next = alloc_text_chars( p + 2, strlen( p + 2 ), c_chars->font );
+                    c_chars->next->prev = c_chars;
+                    c_chars = c_chars->next;
+
+                    /* Finish configuring the post-split text_chars */
+                    c_chars->width = cop_text_width( c_chars->text, c_chars->count, c_chars->font );
+                    c_chars->x_address = c_chars->prev->x_address + c_chars->prev->width;
+                    if( *(p + 1) == function_subscript ) {
+                        c_chars->type |= tx_sub;
+                    } else if( *(p + 1) == function_superscript ) {
+                        c_chars->type |= tx_sup;
+                    }
+
+                    /* Reset for next possible split */
+                    p = c_chars->text;
+                    o_count = c_chars->count;
+                } else {
+                    c_chars->count -= 2;
+                    c_chars->width = cop_text_width( c_chars->text, c_chars->count, c_chars->font );                    
+                    p += 2;
+                    /* Add marker for end of subscript/superscript */
+                    c_chars->next = alloc_text_chars( NULL, 0, c_chars->font );
+                    c_chars->next->prev = c_chars;
+                    c_chars = c_chars->next;
+                    c_chars->x_address = c_chars->prev->x_address + c_chars->prev->width;
+                    c_chars->width = 4 * wgml_fonts[c_chars->font].spc_width;   // for g_oc_hpos
+                }
+            } else {
+               p++;
+            }
+        }
+        if( old_next != NULL ) {
+            in_chars = c_chars;             // final c_chars
+            in_chars->next = old_next;      // reattach the next original text_chars
+            in_chars->next->prev = in_chars;
+            in_chars = old_next;            // next original text_chars to be worked
+            old_next = in_chars->next;      // next original text_chars to be saved/restored
+            if( old_next != NULL ) {
+                in_chars->next->prev = NULL;// detach old_next
+                in_chars->next = NULL;      
+            }
+        } else {
+            in_chars = old_next;
+        }
+    }
+    return( c_chars );
+}
+
+
 /***************************************************************************/
 /*  output top / bottom banner                                             */
 /*  on entry, ban->by_line contains the regions sorted in increasing order */
@@ -647,7 +734,7 @@ static void content_reg( region_lay_tag * region )
 /*  banners require a different approach                                   */
 /***************************************************************************/
 
-static  void    out_ban_common( banner_lay_tag * ban, bool top )
+static void out_ban_common( banner_lay_tag * ban, bool top )
 {
     ban_reg_group   *   cur_grp;
     char            *   cur_p;
@@ -765,14 +852,18 @@ static  void    out_ban_common( banner_lay_tag * ban, bool top )
                     }
                     memset( line_buff.text, bin_device->box.horizontal_line, line_buff.current );
                     line_buff.text[line_buff.current] = '\0';
+
                     while( cur_region->final_content[0].len < strlen( line_buff.text ) ) {
                         if( cur_region->final_content[0].string == NULL ) {
                             cur_region->final_content[0].string = mem_alloc( str_size );
+                            cur_region->final_content[0].len = str_size;
                         } else {
                             mem_realloc( cur_region->final_content[0].string,
                                                     cur_region->final_content[0].len + str_size );
+                            cur_region->final_content[0].len += str_size;
                         }
                     }
+
                     strcpy_s( cur_region->final_content[0].string, strlen( line_buff.text ) + 1,
                                                                             line_buff.text );
                 }
@@ -876,6 +967,7 @@ static  void    out_ban_common( banner_lay_tag * ban, bool top )
                             cur_line->last = cur_line->last->next;
                         }
                         cur_line->last->x_address = t_page.page_left + cur_region->final_content[0].hoffset;
+                        cur_line->last->width = cur_width;
                     }
                     cur_p = cur_region->final_content[1].string;
                     if( (cur_p != NULL) && *cur_p ) {
@@ -890,6 +982,7 @@ static  void    out_ban_common( banner_lay_tag * ban, bool top )
                             cur_line->last = cur_line->last->next;
                         }
                         cur_line->last->x_address = t_page.page_left + cur_region->final_content[1].hoffset;
+                        cur_line->last->width = cur_width;
                     }
                     cur_p = cur_region->final_content[2].string;
                     if( (cur_p != NULL) && *cur_p ) {
@@ -904,16 +997,17 @@ static  void    out_ban_common( banner_lay_tag * ban, bool top )
                             cur_line->last = cur_line->last->next;
                         }
                         cur_line->last->x_address = t_page.page_left + cur_region->final_content[2].hoffset;
+                        cur_line->last->width = cur_width;
                     }
                 } else {
                     for( k = 0; k < 3; ++k ) {          // for all region parts
                         if( cur_region->final_content[k].string == NULL ) {
                             continue;                   // skip empty part
                         }
-                        /* if k == 0, left-justify: already done */
                         text_width = cop_text_width( cur_region->final_content[k].string,
                                         strlen( cur_region->final_content[k].string ),
                                         cur_region->font);
+                        /* if k == 0, left-justify: already done */
                         if( k == 1 ) {  // center-justify
                             cur_region->final_content[1].hoffset += (cur_region->reg_width / 2) -
                                                                                 text_width / 2;
@@ -937,6 +1031,7 @@ static  void    out_ban_common( banner_lay_tag * ban, bool top )
                             cur_line->last = cur_line->last->next;
                         }
                         cur_line->last->x_address = t_page.page_left + cur_region->final_content[k].hoffset;
+                        cur_line->last->width = text_width;
                     }
 
                     /* Insert a marker for any completely empty regions */
@@ -965,6 +1060,9 @@ static  void    out_ban_common( banner_lay_tag * ban, bool top )
                 }
             }
             cur_region = cur_region->next;
+        }
+        if( cur_line->first != NULL ) {
+            cur_line->last = split_text_chars( cur_line->first );
         }
         cur_grp = cur_grp->next;
     }

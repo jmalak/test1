@@ -490,9 +490,7 @@ unsigned ReqProg_load( void )
         con.SegSs = con.SegDs; // Wow lies about the stack segment.  Reset it
         con.Esp = stack;
         MySetThreadContext( ti, &con );
-    } else
-#endif
-    if( IsDOS ) {
+    } else if( IsDOS ) {
         // TODO! Clean up this code
         ret->flags = 0; //LD_FLAG_IS_PROT;
         ret->err = 0;
@@ -525,7 +523,9 @@ unsigned ReqProg_load( void )
         con.SegSs = con.SegDs; // Wow lies about the stack segment.  Reset it
         con.Esp = stack;
         MySetThreadContext( ti, &con );
-    } else {
+    } else
+#endif  // WOW
+    {
         DWORD base;
 
         if( pid == 0 ) {

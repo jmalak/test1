@@ -104,7 +104,6 @@ condcode    scr_index( parm parms[MAX_FUN_PARMS], size_t parmcount, char * * res
     getnum_block        gn;
     char            *   ph;
     char            *   pn;
-    char                linestr[MAX_L_AS_STR];
 
     if( (parmcount < 2) || (parmcount > 3) ) {
         cc = neg;
@@ -133,16 +132,7 @@ condcode    scr_index( parm parms[MAX_FUN_PARMS], size_t parmcount, char * * res
             cc = getnum( &gn );
             if( (cc != pos) || (gn.result == 0) ) {
                 if( !ProcFlags.suppress_msg ) {
-                    g_err( err_func_parm, "3 (startpos)" );
-                    if( input_cbs->fmflags & II_tag_mac ) {
-                        ulongtodec( input_cbs->s.m->lineno, linestr );
-                        g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-                    } else {
-                        ulongtodec( input_cbs->s.f->lineno, linestr );
-                        g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                    }
-                    err_count++;
-                    show_include_stack();
+                    xx_source_err_c( err_func_parm, "3 (startpos)" );
                 }
                 return( cc );
             }
@@ -225,7 +215,6 @@ condcode    scr_lpos( parm parms[MAX_FUN_PARMS], size_t parmcount, char * * resu
     getnum_block        gn;
     char            *   ph;
     char            *   pn;
-    char                linestr[MAX_L_AS_STR];
 
     if( (parmcount < 2) || (parmcount > 3) ) {
         cc = neg;
@@ -254,16 +243,7 @@ condcode    scr_lpos( parm parms[MAX_FUN_PARMS], size_t parmcount, char * * resu
             cc = getnum( &gn );
             if( (cc != pos) || (gn.result == 0) ) {
                 if( !ProcFlags.suppress_msg ) {
-                    g_err( err_func_parm, "3 (startpos)" );
-                    if( input_cbs->fmflags & II_tag_mac ) {
-                        ulongtodec( input_cbs->s.m->lineno, linestr );
-                        g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-                    } else {
-                        ulongtodec( input_cbs->s.f->lineno, linestr );
-                        g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                    }
-                    err_count++;
-                    show_include_stack();
+                    xx_source_err_c( err_func_parm, "3 (startpos)" );
                 }
                 return( cc );
             }

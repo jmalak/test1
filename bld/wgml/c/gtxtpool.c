@@ -74,29 +74,29 @@ text_chars * alloc_text_chars( const char * text, size_t cnt, font_number font )
         if( text_pool == NULL ) {       // alloc 10 text_chars if pool empty
             int k;
 
-#define text_def    16              // default length if allocated in advance
-
-            text_pool = mem_alloc( sizeof( *prev ) + text_def );
+            text_pool = mem_alloc( sizeof( *prev ) + TEXT_CHARS_DEF );
             prev = text_pool;
             for( k = 0; k < 10; k++ ) {
-                prev->length = text_def;
-                prev->next = mem_alloc( sizeof( *prev ) + text_def );
+                prev->length = TEXT_CHARS_DEF;
+                prev->next = mem_alloc( sizeof( *prev ) + TEXT_CHARS_DEF );
                 prev = prev->next;
             }
             prev->next = NULL;
-            prev->length = text_def;
+            prev->length = TEXT_CHARS_DEF;
         }
     }
 
     curr->prev = NULL;
     curr->next = NULL;
     curr->fmflags = 0;
+    curr->post_ix = ProcFlags.post_ix;
     curr->pre_gap = false;
     curr->tab_align = al_left;
     curr->tab_pos = tt_none;
     curr->ts_width = 0;
     curr->type = tx_norm;
     curr->font = font;
+    curr->f_switch = fs_norm;
     curr->width = 0;
     if( text != NULL ) {                   // text supplied
         memcpy_s( curr->text, cnt + 1, text, cnt ); // yes copy text
@@ -108,6 +108,25 @@ text_chars * alloc_text_chars( const char * text, size_t cnt, font_number font )
     curr->text[cnt] = 0;
 
     return( curr );
+}
+
+
+/***************************************************************************/
+/*  add a single text_chars instance to the free pool for reuse            */
+/*                                                                         */
+/*  Note: very specialized, used to cancel a text_chars instance           */
+/***************************************************************************/
+
+void add_single_text_chars_to_pool( text_chars * a_chars )
+{
+    if( a_chars == NULL ) {
+        return;
+    }
+
+    // free text_chars in pool only have a valid next ptr
+
+    a_chars->next = text_pool;
+    text_pool = a_chars;
 }
 
 
@@ -317,7 +336,9 @@ doc_element * alloc_doc_el( element_type type )
     curr->type = type;
     curr->h_pos = 0;
     curr->v_pos = 0;
-    curr->sk_val = ProcFlags.sk_co;
+    curr->do_split = ProcFlags.sk_co;           // used to split doc_el_groups
+    curr->in_xmp = (cur_group_type == gt_xmp);  // used by BX
+    curr->op_co_on = ProcFlags.concat;          // used with FK output
     ProcFlags.sk_co = false;
 
     switch( type ) {
@@ -328,14 +349,16 @@ doc_element * alloc_doc_el( element_type type )
         curr->element.binc.at_top = false;
         curr->element.binc.has_rec_type = false;
         curr->element.binc.file[0] = '\0';
-        curr->element.binc.eol_index = NULL;
+        curr->element.binc.eol_index = g_eol_ix;
+        g_eol_ix = NULL;
         break;
     case el_dbox :
         curr->element.dbox.h_start = 0;
         curr->element.dbox.v_start = 0;
         curr->element.dbox.h_len = 0;
         curr->element.dbox.v_len = 0;
-        curr->element.dbox.eol_index = NULL;
+        curr->element.dbox.eol_index = g_eol_ix;
+        g_eol_ix = NULL;
         break;
     case el_graph :
         curr->element.graph.cur_left = 0;
@@ -346,16 +369,18 @@ doc_element * alloc_doc_el( element_type type )
         curr->element.graph.xoff = 0;
         curr->element.graph.yoff = 0;
         curr->element.graph.at_top = false;
-        curr->element.graph.prev_font = 0;
+        curr->element.graph.next_font = 0;
         curr->element.graph.file[0] = '\0';
-        curr->element.graph.eol_index = NULL;
+        curr->element.graph.eol_index = g_eol_ix;
+        g_eol_ix = NULL;
         break;
     case el_hline :
         curr->element.hline.h_start = 0;
         curr->element.hline.v_start = 0;
         curr->element.hline.h_len = 0;
         curr->element.hline.ban_adjust = false;
-        curr->element.hline.eol_index = NULL;
+        curr->element.hline.eol_index = g_eol_ix;
+        g_eol_ix = NULL;
         break;
     case el_text :
         curr->element.text.prev = NULL;
@@ -372,11 +397,13 @@ doc_element * alloc_doc_el( element_type type )
         curr->element.vline.v_start = 0;
         curr->element.vline.v_len = 0;
         curr->element.vline.twice = true;
-        curr->element.vline.eol_index = NULL;
+        curr->element.vline.eol_index = g_eol_ix;
+        g_eol_ix = NULL;
         break;
     case el_vspace :
         curr->element.vspace.font = 0;
-        curr->element.vspace.eol_index = NULL;
+        curr->element.vspace.eol_index = g_eol_ix;
+        g_eol_ix = NULL;
         break;
     default :
         internal_err( __FILE__, __LINE__ );
@@ -428,10 +455,11 @@ doc_el_group * alloc_doc_el_group( group_type type )
     }
     curr->next = NULL;
     curr->depth = 0;
+    curr->post_skip = 0;
     curr->first = NULL;
     curr->last = NULL;
     curr->owner = type;
-    curr->post_skip = 0;
+    curr->block_font = 0;
 
     return( curr );
 }
@@ -748,7 +776,6 @@ doc_element * init_doc_el( element_type type, uint32_t depth )
     g_subs_skip = 0;
     curr->top_skip = g_top_skip;
     g_top_skip = 0;
-    curr->do_split = false;
 
     if( type == el_text ) {             // overprint applies to text lines
         curr->element.text.overprint = ProcFlags.overprint;

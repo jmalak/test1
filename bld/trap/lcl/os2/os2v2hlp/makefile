@@ -1,9 +1,11 @@
-#pmake: os_os2 lcl cpu_386 support
+#pmake: build os_os2 lcl cpu_386 support
 #
 # Create OS2V2HLP.EXE
+# This is for debugging 32-bit programs with a 16-bit trap file
+# on OS/2 2.x.
 #
-host_CPU = 386
-host_OS = os2
+host_cpu = 386
+host_os  = os2
 
 !include cproj.mif
 !include deftarg.mif

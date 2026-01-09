@@ -1,0 +1,26 @@
+             menu float0
+                 menuitem "&Open" edit %1
+                 menuitem ""
+                 menuitem "&Change" keyadd cr
+                 menuitem "&Delete" keyadd dr
+                 menuitem "&Yank" keyadd yr
+                 menuitem ""
+                 menuitem "&Fgrep" fgrep "%1"
+                 meniutem "&Tag" tag %1
+             endmenu
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-                                                                     1

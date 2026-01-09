@@ -1,11 +1,12 @@
-#pmake: serv remote os_nt cpu_386 nov axp
-host_CPU = axp
-host_OS = nt
+#pmake: serv remote os_nt cpu_axp nov axp
 
-gui = 1
-os = nt
-srv = nov
-cpu = axp
+host_cpu = axp
+host_os  = nt
+
+gui   = 1
+os    = nt
+srv   = nov
+cpu   = axp
 which = SERVER
 type  = remote_link
 

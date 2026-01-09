@@ -24,8 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  Implementation of execle() and _wexecle().
 *
 ****************************************************************************/
 
@@ -54,11 +53,11 @@ _WCRTLINK int __F_NAME(execle,_wexecle)( const CHAR_TYPE *path, const CHAR_TYPE 
         va_start( ap, path );
         #if defined(__AXP__) || defined(__MIPS__)
             return( __F_NAME(execve,_wexecve)( path,
-                (const CHAR_TYPE**)ap.__base,
-                (const CHAR_TYPE**)env ) );
+                (EXCV_CHAR**)ap.__base,
+                (EXCV_CHAR**)env ) );
         #else
             return( __F_NAME(execve,_wexecve)( path,
-                (const CHAR_TYPE**)ap[0],
-                (const CHAR_TYPE**)env ) );
+                (EXCV_CHAR**)ap[0],
+                (EXCV_CHAR**)env ) );
         #endif
     }

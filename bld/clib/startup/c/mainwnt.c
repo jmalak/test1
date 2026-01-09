@@ -29,6 +29,34 @@
 ****************************************************************************/
 
 
+#ifndef __WIDECHAR__
+/* Windows NT 3.1 does not have GetEnvironmentStringsA/W APIs at all,
+ * it only has GetEnvironmentStrings. Win32s 1.20 and later does
+ * provide GetEnvironmentStringsA/W, but those functions always fail;
+ * only the unsuffixed GetEnvironmentStrings is functional on Win32s.
+ * The _OLD_WINNT_COMPATIBLE macro prevents the NT headers from
+ * mapping GetEnvironmentStrings to GetEnvironmentStringsA/W.
+ * Calling unsuffixed GetEnvironmentStrings is required for Windows
+ * NT 3.1 as well as for all versions of Win32s.
+ */
+#define _OLD_WINNT_COMPATIBLE
+#endif
+
+#ifdef RUN_ON_NT_31
+/* In addition, Windows NT 3.1 does not implement any form of the
+ * FreeEnvironmentStrings API. The same is true of old versions of Win32s.
+ * To allow creating applications which can run on NT 3.1, it is necessary
+ * to either dynamically query the FreeEnvironmentStringsA/W entry point,
+ * or not call it at all. The latter approach is safe for executables but
+ * could cause significant memory leaks with frequently loaded and unloaded
+ * DLLs on NT 3.5 and later.
+ *
+ * NB: To build NT 3.1 compatible executables, users must link with
+ * mainnt31.obj and also set the Windows subsystem version to 3.10 when
+ * linking.
+ */
+#endif
+
 #include "variety.h"
 #include <windows.h>
 
@@ -222,7 +250,18 @@ void __NTFini( void )
         _wcmd_ptr = NULL;
     }
     if( _RWD_Envptr != NULL ) {
+#ifdef RUN_ON_NT_31
+        HMODULE         khdl;
+        BOOL WINAPI     (*FESfunc)( LPCH );
+
+        khdl = GetModuleHandle( "KERNEL32.DLL" );
+        /* GetProcAddress will fail on NT 3.1 but there's nothing to free. */
+        FESfunc = GetProcAddress( khdl, "FreeEnvironmentStringsA" );
+        if( FESfunc )
+            FESfunc( _RWD_Envptr );
+#else
         FreeEnvironmentStrings( _RWD_Envptr );
+#endif
         _RWD_Envptr = NULL;
     }
 }

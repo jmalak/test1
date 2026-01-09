@@ -15,6 +15,18 @@ pick( INF_USE_SRC,     "srcfile has to come first.",
 pick( INF_USE_OP,      "Newoptions:",
                        "Newoptions:" )
 
+pick( INF_USE_OPI,     "-i <path>",
+                       "-i <path>" )
+
+pick( INF_USE_OPI1,    "\tOverride GMLINC path.",
+                       "\tOverride GMLINC path." )
+
+pick( INF_USE_OPL,     "-l <path>",
+                       "-l <path>" )
+
+pick( INF_USE_OPL1,    "\tOverride GMLLIB path.",
+                       "\tOverride GMLLIB path." )
+
 pick( INF_USE_OPQ,     "-q\tQuiet, don't show product info.",
                        "-q\tQuiet, don't show product info." )
 

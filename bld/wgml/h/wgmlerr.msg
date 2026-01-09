@@ -10,6 +10,9 @@
 pick( ERR_INTERN,               "Internal Error: File %s, Line %i",
                                 "Internal Error: File %s, Line %i" )
 
+pick( ERR_RES_NOT_FOUND,        "Resources not found",
+                                "Resources not found" )
+
 pick( ERR_STR_NOT_FOUND,        "Resourcestring not found",
                                 "Resourcestring not found" )
 
@@ -364,6 +367,9 @@ pick( ERR_TAG_EXIST,            "User tag '%s' already exists",
 pick( ERR_AUTO_ATT,             "Cannot specify the automatic attribute '%s'",
                                 "Cannot specify the automatic attribute '%s'" )
 
+pick( ERR_NO_ATT_VAL,           "A value must be specified for the attribute '%s'",
+                                "A value must be specified for the attribute '%s'" )
+
 pick( ERR_ATT_LEN_INV,          "Length value too large",
                                 "Length value too large" )
 
@@ -400,14 +406,20 @@ pick( ERR_ATT_TEXT_REQ,         "Tag text must be specified with the '%s' tag",
 pick( WNG_ATT_NAME,             "'%s' is not a valid attribute name",
                                 "'%s' is not a valid attribute name" )
 
-pick( ERR_ATT_REQ,              "For the tag '%s', the required attribute(s) %s have not been specified",
-                                "For the tag '%s', the required attribute(s) %s have not been specified" )
+pick( ERR_ATT_REQ,              "For the tag '%s', the required attribute(s)",
+                                "For the tag '%s', the required attribute(s)" )
+
+pick( INFO_ATT_REQ,             "have not been specified",
+                                "have not been specified" )
+
+pick( INFO_ATT_REQ_NAME,        "%s",
+                                "%s" )
 
 pick( ERR_CW_UNRECOGNIZED,      "Unrecognized SCRIPT control word or macro .%s",
                                 "Unrecognized SCRIPT control word or macro .%s" )
 
-pick( ERR_DC_OPT,               "Invalid / unimplemented .dc option %s",
-                                "Invalid / unimplemented .dc option %s" )
+pick( WNG_DC_OPT,               "Unimplemented .dc option %s",
+                                "Unimplemented .dc option %s" )
 
 pick( ERR_XX_OPT,               "Invalid %s option %s",
                                 "Invalid %s option %s" )
@@ -418,8 +430,8 @@ pick( ERR_NESTED_PE,            "Nested .pe not supported",
 pick( INF_ERROR_STOP,           "  Remaining pass%s skipped due to error count",
                                 "  Remaining pass%s skipped due to error count" )
 
-pick( ERR_PARM_INVALID,         "A control word parameter is invalid",
-                                "A control word parameter is invalid" )
+pick( ERR_PARM_INVALID,         "The control word parameter '%s' is invalid",
+                                "The control word parameter '%s' is invalid" )
 
 pick( ERR_PARM_MISSING,         "A control word parameter is required for %s",
                                 "A control word parameter is required for %s" )

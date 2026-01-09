@@ -433,6 +433,8 @@ static void new_list( int type )
 static void pop_list( void )
 /**************************/
 {
+    if ( List_level <= 0 )
+        error( ERR_BAD_LIST, TRUE );
     Curr_indent = Curr_list->prev_indent;
     --List_level;
     Curr_list = &Lists[List_level];

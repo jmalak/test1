@@ -220,7 +220,9 @@ extern thread_data *__MultipleThread( void );
 
 
 extern  unsigned        __GetMaxThreads(void);
-#pragma aux __GetMaxThreads "^"
+#if defined(_M_IX86)
+    #pragma aux __GetMaxThreads "^"
+#endif
 
 extern  unsigned        __MaxThreads;
 

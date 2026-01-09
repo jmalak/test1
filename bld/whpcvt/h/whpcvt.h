@@ -258,7 +258,8 @@ enum {
     ERR_MAX_LISTS,
     ERR_UNDEF_LINK,
     ERR_EMPTY_LINK,
-    ERR_BAD_ARGS
+    ERR_BAD_ARGS,
+    ERR_BAD_LIST
 };
 
 

@@ -39,6 +39,9 @@
 static void p_pc_setup( p_lay_tag * p_pc )
 {
     ProcFlags.keep_left_margin = true;  // special Note indent
+    if( ProcFlags.overprint && ProcFlags.cc_cp_done ) {
+        ProcFlags.overprint = false;    // cancel overprint
+    }
     ProcFlags.cc_cp_done = false;       // cancel CC/CP notification
     start_doc_sect();                   // if not already done
 
@@ -46,6 +49,20 @@ static void p_pc_setup( p_lay_tag * p_pc )
         ProcFlags.para_starting = false;    // clear for this tag's break
     }
     scr_process_break();
+
+    /* If ProcFlags.para_starting is false, scr_process_break() will not process ProcFlags.block_starting */
+
+    if( !ProcFlags.para_starting && ProcFlags.block_starting ) {
+        if( ProcFlags.wh_device ) {             // may apply to other devices as well, but not PS
+            if( g_top_skip > 0 ) {              // SP rather than SK
+                g_post_skip +=g_subs_skip;      // this appears to be correct so far
+                ProcFlags.block_starting = false;
+            }
+        } else {
+            g_post_skip +=g_subs_skip;          // this appears to be correct so far
+            ProcFlags.block_starting = false;
+        }
+    }
     g_line_indent = conv_hor_unit( &(p_pc->line_indent), g_curr_font );
 
     t_page.cur_width = t_page.cur_left + g_line_indent; // possibly indent first line
@@ -53,6 +70,12 @@ static void p_pc_setup( p_lay_tag * p_pc )
     g_cur_threshold = layout_work.widow.threshold; // standard threshold
 
     set_skip_vars( &(p_pc->pre_skip), NULL, &(p_pc->post_skip), g_text_spacing, g_curr_font );
+
+    if( ProcFlags.wh_device ) {             // for WHELP and perhaps other devices, but not for PS
+        // placeholder
+    } else {                                // for PS and perhaps other devices, but not for WHELP
+        g_subs_skip += g_top_skip;          // add value from SP
+    }
 
     ProcFlags.para_starting = true;     // for next break, not this tag's break
 
@@ -65,21 +88,31 @@ static void p_pc_setup( p_lay_tag * p_pc )
 /*  :P. :PC common routine                                                 */
 /***************************************************************************/
 
-static void proc_p_pc( p_lay_tag * p_pc )
+static void proc_p_pc( p_lay_tag * p_pc, e_tags t )
 {
     char    *   p;
 
     p_pc_setup( p_pc );
 
+    if( nest_cb->c_tag != t_LQ ) {
+        ProcFlags.block_starting = true;    // to catch empty paragraphs
+    }
     scan_err = false;
     p = scan_start;
 
     SkipDot( p );                       // over '.'
-
-    ProcFlags.ix_in_block = true;
-
     if( *p != '\0' ) {
+        if( (t == t_P) && !ProcFlags.concat ) {
+            if( input_cbs->fmflags & II_tag ) {
+                g_post_skip = 0;
+            } else {
+                g_subs_skip = g_post_skip;
+                g_post_skip = 0;
+            }
+        }
         process_text( p, g_curr_font );
+    } else if( (t == t_P) && !ProcFlags.concat ) {
+        g_post_skip = 0;
     }
 
     scan_start = scan_stop + 1;
@@ -92,7 +125,7 @@ static void proc_p_pc( p_lay_tag * p_pc )
 
 extern void gml_p( const gmltag * entry )
 {
-    proc_p_pc( &layout_work.p );
+    proc_p_pc( &layout_work.p, t_P );
 }
 
 /***************************************************************************/
@@ -101,7 +134,13 @@ extern void gml_p( const gmltag * entry )
 
 extern void gml_pc( const gmltag * entry )
 {
-    proc_p_pc( &layout_work.pc );
+    if( g_top_skip > 0 ) {                  // SP was used
+        if( g_subs_skip > g_top_skip ) {    // merge the values for PC
+            g_top_skip = g_subs_skip;
+        }
+    }
+
+    proc_p_pc( &layout_work.pc, t_PC );
 }
 
 /***************************************************************************/
@@ -121,8 +160,9 @@ extern void gml_note( const gmltag * entry )
 
     scr_process_break();
 
+    note_lm = t_page.cur_left;
     font_save = g_curr_font;
-    set_skip_vars( &layout_work.note.pre_skip, NULL, &layout_work.note.post_skip,
+    set_skip_vars( &layout_work.note.pre_skip, NULL, NULL,
                     g_text_spacing, layout_work.note.font );
 
     t_page.cur_left += conv_hor_unit( &layout_work.note.left_indent, layout_work.note.font );
@@ -135,12 +175,13 @@ extern void gml_note( const gmltag * entry )
     }
     insert_hard_spaces( layout_work.note.spaces, strlen(layout_work.note.spaces), FONT0 );
     t_page.cur_left = t_page.cur_width; // set indent for following text
+    ProcFlags.note_starting = true;
     ProcFlags.zsp = true;
 
     g_text_spacing = layout_work.note.spacing;
     g_curr_font = layout_work.defaults.font;
 
-    set_skip_vars( NULL, NULL, NULL, g_text_spacing, g_curr_font );
+    set_skip_vars( NULL, NULL, &layout_work.note.post_skip, g_text_spacing, g_curr_font );
     SkipDot( p );                       // over '.'
     SkipSpaces( p );                    // skip initial space
     if( *p != '\0' ) {                  // if text follows
@@ -165,6 +206,7 @@ extern void gml_note( const gmltag * entry )
         post_space = 0;
     }
 
+    ProcFlags.block_starting = true;    // to catch empty paragraphs
     g_curr_font = font_save;
     scan_start = scan_stop + 1;
     return;
@@ -172,15 +214,21 @@ extern void gml_note( const gmltag * entry )
 
 /***************************************************************************/
 /*  Force PC on text line following certain blocks                         */
+/*  Note: only called with text, so ProcFlags.block_starting is not set    */ 
 /***************************************************************************/
 
 extern void do_force_pc( char * p )
 {
+    if( g_top_skip > 0 ) {                  // SP was used
+        if( g_subs_skip > g_top_skip ) {    // merge the values for PC
+            g_top_skip = g_subs_skip;
+        }
+    }
+
     p_pc_setup( &layout_work.pc );
 
     /* Inline tags use NULL because the text font is different from the font needed by PC */
     if( (p != NULL) && (*p != '\0') ) {
-        SkipDot( p );                       // over '.'
         process_text( p, g_curr_font );
     }
 

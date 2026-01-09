@@ -136,9 +136,7 @@ void *mem_alloc( size_t size )
     p = malloc( size );
 #endif
     if( p == NULL ) {
-        g_err( err_nomem_avail );
-        err_count++;
-        g_suicide();
+        xx_simple_err( err_nomem_avail );
     }
     return( p );
 }
@@ -157,9 +155,7 @@ void *mem_realloc( void * oldp, size_t size )
     p = realloc( oldp, size );
 #endif
     if( p == NULL ) {
-        g_err( err_nomem_avail );
-        err_count++;
-        g_suicide();
+        xx_simple_err( err_nomem_avail );
     }
     return( p );
 }

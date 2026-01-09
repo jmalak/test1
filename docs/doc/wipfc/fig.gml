@@ -9,6 +9,6 @@ that the text is layed out as entered. If the text exceeds the current window di
 .tclass Block
 .tcont Text, Formatting, In-line, figcap
 .tseealso
-:HDREF refid='cgraphic'., :HDREF refid='figcap'., :HDREF refid='lines'.
+:HDREF refid='cgrphic'., :HDREF refid='figcap'., :HDREF refid='lines'.
 .tag end
 

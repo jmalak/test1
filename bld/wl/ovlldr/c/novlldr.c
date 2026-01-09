@@ -39,11 +39,11 @@
 extern  void DoFastCopyPara( unsigned dst, unsigned src, unsigned len_in_paras );
 
 #pragma aux DoFastCopyPara = \
-        ".386" \
         "xor si,si" \
         "xor di,di" \
         "test byte ptr CS:__OVLFLAGS__, 1 " \
         "jz   cpu86" \
+        ".386" \
         "shl cx,2" \
         "rep movsd" \
         "jmp short end" \

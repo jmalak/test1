@@ -1,0 +1,73 @@
+%!PS-Adobe-2.0
+%%Creator:  WATCOM GML V4.0 PC/DOS
+%%Title: WATCOM GML
+%%CreationDate: 12:34:56 January 23, 1999
+%%Pages: (atend)
+%%BoundingBox: 0 0 8500 10920
+%%EndComments
+/Courier findfont
+  dup length dict begin {1 index /FID ne {def} {pop pop} ifelse} forall
+  /Metrics 1 dict def
+  currentdict /FontBBox get 2 get currentdict /FontBBox get 0 get sub
+  Metrics begin
+  /underscore exch 1.05 mul def
+  end
+currentdict end
+/Courier exch definefont pop
+/@uline {
+   currentpoint exch /@underx exch def
+   currentfont /FontInfo get dup
+   /UnderlineThickness get 0
+   currentfont /FontMatrix get transform pop
+   /@underthick exch def
+   /UnderlinePosition get 0
+   currentfont /FontMatrix get transform pop
+   add @underthick sub
+   /@undery exch def } def
+/@euline {
+   currentpoint exch dup
+   @underx @undery moveto
+   @underx sub 0 rlineto
+   @underthick setlinewidth stroke
+   exch moveto } def
+/graphhead {
+   /@scale exch def
+   /@yoff exch def
+   /@xoff exch def
+   /@depth exch def
+   /@width exch def
+   /@y exch def
+   /@x exch def
+   1 setlinewidth /@clw currentlinewidth def
+   @x @clw 2 div sub @y @clw 2 div add moveto
+   0 @depth neg @clw sub rlineto
+   @width @clw add 0 rlineto
+   0 @depth @clw add rlineto
+   closepath clip newpath
+   @x @xoff sub dup @y @yoff add @depth add moveto
+   @y @yoff add translate
+   10 @scale mul 72 div dup scale
+ /restore {systemdict /restore get exec} bind def } def
+/plfdef {
+   /@fgmlname exch def
+   /@fdefname exch def
+   /@fptsiz exch def
+   /@fname exch def
+   /@bf @fname findfont @fptsiz 1000 mul 72 div scalefont def
+   /@nf @bf maxlength dict def
+   @bf { exch dup /FID ne { exch @nf 3 1 roll put } { pop pop }
+   ifelse} forall 
+   @nf /FontName @fdefname put
+   @fdefname @nf definefont pop
+   @fgmlname @fdefname /findfont cvx /setfont cvx 3 array astore cvx def } def
+/sd { exch currentpoint exch pop moveto shwd } def
+/shwd {show} def
+/am {moveto} def
+/Times-Roman 10.0 /@ft0 /@fs0 plfdef
+/Times-Italic 10.0 /@ft1 /@fs1 plfdef
+/Times-Bold 10.0 /@ft2 /@fs2 plfdef
+/Times-BoldItalic 10.0 /@ft3 /@fs3 plfdef
+
+showpage
+%%Trailer
+%%Pages: 0

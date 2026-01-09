@@ -270,7 +270,8 @@ static char *Error_list[]={
     "Maximum of 20 nested numbered lists allowed",
     "Cross-reference (hyperlink) to undefined topic",
     "Cross-reference (hyperlink) to an empty topic (use -lk option)",
-    "Invalid number of parameters."
+    "Invalid number of parameters.",
+    "Invalid list structure"
 };
 
 #define HELP_PREFIX     "HLP_"

@@ -127,15 +127,14 @@ const   lay_att     abspref_att[11] =
 
 void    lay_abspref( const gmltag * entry )
 {
+    abspref_lay_tag *   ap;
+    hx_sect_lay_tag *   apsect;
     char            *   p;
     condcode            cc;
     int                 k;
-    lay_att             curr;
-    att_args            l_args;
     int                 cvterr;
+    lay_att             curr;
     lay_sub             x_tag;
-    abspref_lay_tag *   ap;
-    hx_sect_lay_tag *   apsect;
 
     p = scan_start;
     cvterr = false;
@@ -156,71 +155,119 @@ void    lay_abspref( const gmltag * entry )
     } else {
         internal_err( __FILE__, __LINE__ );
     }
+
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     if( ProcFlags.lay_xxx != x_tag ) {
         ProcFlags.lay_xxx = x_tag;
     }
-    cc = get_lay_sub_and_value( &l_args );  // get att with value
+    cc = get_attr_and_value();            // get att with value
     while( cc == pos ) {
         cvterr = -1;
         for( k = 0, curr = abspref_att[k]; curr > 0; k++, curr = abspref_att[k] ) {
 
-            if( !strnicmp( att_names[curr], l_args.start[0], l_args.len[0] ) ) {
-                p = l_args.start[1];
+            if( !strnicmp( att_names[curr], g_att_val.att_start, g_att_val.att_len ) ) {
+                p = g_att_val.val_start;
 
                 switch( curr ) {
                 case   e_post_skip:
+                    if( AttrFlags.post_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_space_unit( p, curr, &(apsect->post_skip) );
+                    AttrFlags.post_skip = true;
                     break;
                 case   e_pre_top_skip:
+                    if( AttrFlags.pre_top_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_space_unit( p, curr, &(apsect->pre_top_skip) );
+                    AttrFlags.pre_top_skip = true;
                     break;
                 case   e_font:
+                    if( AttrFlags.font ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_font_number( p, curr, &(apsect->text_font) );
                     if( apsect->text_font >= wgml_font_cnt ) apsect->text_font = 0;
+                    AttrFlags.font = true;
                     break;
                 case   e_spacing:
+                    if( AttrFlags.spacing ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_spacing( p, curr, &(apsect->spacing) );
+                    AttrFlags.spacing = true;
                     break;
                 case   e_header:
+                    if( AttrFlags.header ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_yes_no( p, curr, &(apsect->header) );
+                    AttrFlags.header = true;
                     break;
                 case   e_abstract_string:
                     if( x_tag == el_abstract ) {
+                        if( AttrFlags.abstract_string ) {
+                            xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                                g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                        }
                         cvterr = i_xx_string( p, curr, ap->string );
+                        AttrFlags.abstract_string = true;
                     }
                     break;
                 case   e_preface_string:
                     if( x_tag == el_preface ) {
+                        if( AttrFlags.preface_string ) {
+                            xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                                g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                        }
                         cvterr = i_xx_string( p, curr, ap->string );
+                        AttrFlags.preface_string = true;
                     }
                     break;
                 case   e_page_eject:
+                    if( AttrFlags.page_eject ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_page_eject( p, curr, &(ap->page_eject) );
+                    AttrFlags.page_eject = true;
                     break;
                 case   e_page_reset:
+                    if( AttrFlags.page_reset ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_yes_no( p, curr, &(ap->page_reset) );
+                    AttrFlags.page_reset = true;
                     break;
                 case   e_columns:
+                    if( AttrFlags.columns ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_int8( p, curr, &(ap->columns) );
+                    AttrFlags.columns = true;
                     break;
                 default:
                     internal_err( __FILE__, __LINE__ );
                     break;
                 }
                 if( cvterr ) {          // there was an error
-                    err_count++;
-                    g_err( err_att_val_inv );
-                    file_mac_info();
+                    xx_err( err_att_val_inv );
                 }
                 break;                  // break out of for loop
             }
         }
         if( cvterr < 0 ) {
-            err_count++;
-            g_err( err_att_name_inv );
-            file_mac_info();
+            xx_err( err_att_name_inv );
         }
-        cc = get_lay_sub_and_value( &l_args );  // get one with value
+        cc = get_attr_and_value();        // get one with value
     }
     scan_start = scan_stop + 1;
     return;

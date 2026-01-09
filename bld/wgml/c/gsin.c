@@ -102,6 +102,9 @@ void    scr_in( void )
     cwcurr[2] = 'n';
     cwcurr[3] = '\0';
 
+    ProcFlags.block_starting = false;
+    scr_process_break();
+
     p = scan_start;
     SkipSpaces( p );                    // next word start
     pa = p;
@@ -120,9 +123,7 @@ void    scr_in( void )
             p = pa;
             scanerr = cw_val_to_su( &p, &indentwork );
             if( scanerr ) {
-                g_err( err_miss_inv_opt_value, cwcurr, pa );
-                err_count++;
-                show_include_stack();
+                xx_line_err_c( err_spc_not_valid, pa );
             } else {
                 newindent = round_indent( &indentwork );
             }
@@ -136,9 +137,7 @@ void    scr_in( void )
             pa = p;
             scanerr = cw_val_to_su( &p, &indentwork );
             if( scanerr ) {
-                g_err( err_miss_inv_opt_value, cwcurr, pa );
-                err_count++;
-                show_include_stack();
+                xx_line_err_cc( err_miss_inv_opt_value, cwcurr, pa );
             } else {
 
             /***************************************************************/

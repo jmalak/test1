@@ -32,18 +32,16 @@
 #include "wgml.h"
 
 
-static  int32_t    vspace  = 0;                 // vertical space entered (vbus)
+static  bool       c_seen  = false;    // records use of operand C (or COND)
+static  int32_t    vspace  = 0;        // vertical space entered (vbus)
 
 /**************************************************************************/
 /* Implements most of SK and SP                                           */
-/* NOTE: "C" does not appear to do anything in wgml 4.0, and so is not    */
-/*       implemented here                                                 */
 /**************************************************************************/
 
 static void sksp_common( void )
 {
     bool            a_seen          = false;    // records use of operand A (or ABS)
-    bool            c_seen          = false;    // records use of operand C (or COND)
     bool            scanerr         = false;
     char        *   p;
     char        *   pa;
@@ -51,6 +49,7 @@ static void sksp_common( void )
     su              spskwork;
     text_space      text_spacing;
 
+    c_seen = false;
     spskwork.su_u = SU_undefined;
     text_spacing = g_text_spacing;          // set spacing to default
 
@@ -91,8 +90,7 @@ static void sksp_common( void )
                 }
 
                 if( *p != '\0' ) {                      // more text on line
-                    xx_line_err( err_parm_invalid, p );
-                    break;                              // avoids looping
+                    xx_line_err_c( err_parm_invalid, p );
                 }
             }
         }
@@ -107,9 +105,10 @@ static void sksp_common( void )
             if( spskwork.su_whole < 0 ) {
                 ProcFlags.overprint = true;             // enable overprint
                 vspace = 0;                             // avoid evaluating negative spacing
+                op_nh_pages = 0;                        // reset page count
             } else {
                 ProcFlags.overprint = false;            // disable overprint
-                vspace = ( text_spacing * spskwork.su_whole * (int32_t)bin_device->vertical_base_units ) / LPI;
+                vspace = (text_spacing * spskwork.su_whole * (int32_t) bin_device->vertical_base_units) / LPI;
             }
         } else {
             vspace = conv_vert_unit( &spskwork, 1, g_curr_font );
@@ -175,12 +174,17 @@ static void sksp_common( void )
 
 void    scr_sk( void )
 {
-    scr_process_break();
+    ProcFlags.sk_has_c = false;     // ensure set only if this SK uses "C"
     sksp_common();                  // set vspace
+
     if( !ProcFlags.concat && (ProcFlags.overprint || (vspace > 0 )) ) {
         ProcFlags.sk_co = true;     // CO OFF and SK -1 or SK n, n < 0
     }
-    if( g_skip < vspace ) {         // merge with existing value
+
+    if( ProcFlags.wh_device && c_seen && (g_subs_skip > 0) ) {
+        ProcFlags.sk_has_c = true;
+        g_skip_c = vspace;          // keep conditional skip separate
+    } else if( g_skip < vspace ) {  // merge with existing value
         g_skip = vspace;
     }
 
@@ -211,9 +215,13 @@ void    scr_sk( void )
 
 void    scr_sp( void )
 {
-    scr_process_break();
+    ProcFlags.sp_has_c = false;     // ensure set only if this SP uses "C"
     sksp_common();                  // set vspace
-    if( g_space < vspace ) {        // merge with existing value
+
+    if( ProcFlags.wh_device && c_seen && (g_subs_skip > 0) ) {
+        ProcFlags.sp_has_c = true;
+        g_space_c = vspace;         // keep conditional skip separate
+    } else if( g_skip < vspace ) {  // merge with existing value
         g_space = vspace;
     }
 

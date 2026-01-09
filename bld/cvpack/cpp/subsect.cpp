@@ -24,8 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  Process CV4 subsections.
 *
 ****************************************************************************/
 
@@ -157,7 +156,10 @@ void SstGlobalTypes::Put( ExeMaker& eMaker ) const
     unsigned_32 offset = 0;
     uint        i;
 
-    eMaker.DumpToExe( (unsigned_32) 0 );
+    // The first dword is a signature; many tools (including our own)
+    // ignore it but some (e.g. IBM's IPMD) insist on it being 1 in accordance
+    // with the CV 4.0 spec
+    eMaker.DumpToExe( (unsigned_32) 1 );
     eMaker.DumpToExe( (unsigned_32) _globalTypingInfo.Entries() );
     for ( i = ToTypeIndex(0); i < ToTypeIndex(_globalTypingInfo.Entries()); i++ ) {
         eMaker.DumpToExe( offset );

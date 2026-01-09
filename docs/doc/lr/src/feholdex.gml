@@ -29,5 +29,5 @@ void main( void )
     feholdexcept( &env );
 }
 .exmp end
-.class C99
+.class ISO C99
 .system

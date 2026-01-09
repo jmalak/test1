@@ -56,7 +56,7 @@ void gml_author( const gmltag * entry )
 
     if( GlobalFlags.firstpass && !ProcFlags.author_tag_seen ) {
         if( *p != '\0' ) {
-            add_symvar( &global_dict, "$author", p, no_subscript, 0 );
+            add_symvar( global_dict, "$author", p, no_subscript, 0 );
         }
         ProcFlags.author_tag_seen = true;
     }
@@ -86,8 +86,7 @@ void gml_author( const gmltag * entry )
     t_page.cur_left += left_indent;
     t_page.cur_width = t_page.cur_left;
     if( t_page.max_width < right_indent ) {
-        t_page.max_width = 0;               // negative right margin not allowed
-        xx_line_err( err_page_width_too_small, val_start );
+        xx_line_err_c( err_page_width_too_small, val_start );
     } else {
         t_page.max_width -= right_indent;
     }

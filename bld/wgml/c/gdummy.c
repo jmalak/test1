@@ -51,9 +51,7 @@ void    scr_dummy( void )
 
     scan_restart = scan_stop + 1;
 
-    g_warn( wng_unsupp_cw, cwcurr );
-    wng_count++;
-//    file_mac_info();
+    xx_warn_c( wng_unsupp_cw, cwcurr );
 }
 
 
@@ -66,9 +64,7 @@ void    gml_dummy( const gmltag * entry )
 
     scan_start = scan_stop + 1;
 
-    g_warn( wng_unsupp_tag, entry->tagname );
-    wng_count++;
-//    file_mac_info();
+    xx_warn_c( wng_unsupp_tag, entry->tagname );
 }
 
 /***************************************************************************/
@@ -81,9 +77,7 @@ void    lay_dummy( const gmltag * entry )
     scan_start = scan_stop + 1;
 
     if( GlobalFlags.firstpass ) {       // layout msg only in pass 1
-        g_warn( wng_unsupp_lay, entry->tagname );
-        wng_count++;
-//        show_include_stack();
+        xx_warn_c( wng_unsupp_lay, entry->tagname );
     }
     eat_lay_sub_tag();                  // ignore any attribute / value
 }

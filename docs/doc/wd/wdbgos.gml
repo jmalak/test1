@@ -16,7 +16,7 @@ See the section entitled :HDREF refid='viddll'..
 .note Disabling 386/486 debug registers
 See the section entitled :HDREF refid='viddosd'..
 .note Linux debugging
-See the section entitled :HDREF refid='vidlinux'..
+See the section entitled :HDREF refid='vidlnx'..
 .note QNX debugging
 See the section entitled :HDREF refid='vidqnx'..
 .endnote
@@ -395,7 +395,7 @@ file parameter.
 C>&dbgcmd /trap=std;d calendar
 .exam end
 .*
-.section *refid=vidlinux Debugging Under Linux
+.section *refid=vidlnx Debugging Under Linux
 .*
 .np
 .ix 'debugging under Linux'
@@ -443,12 +443,12 @@ The "configfile" command marks
 as the default file name to use when the debugger writes out the
 current configuration.
 .np
-The following section entitled :HDREF refid='vidlinuxs'. describes the
+The following section entitled :HDREF refid='vidlnxs'. describes the
 search order for debugger files under Linux.
 .*
 .beglevel
 .*
-.section *refid=vidlinuxs Search Order for &dbgname Support Files under Linux
+.section *refid=vidlnxs Search Order for &dbgname Support Files under Linux
 .*
 .np
 There are several supporting files provided with the &dbgname..

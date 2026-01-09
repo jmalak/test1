@@ -57,7 +57,7 @@
 /* list are searched for the file.  If the file is still not found, the    */
 /* directories specified by the DOS environment symbol PATH are searched.  */
 /*                                                                         */
-/* NOTE: The attribute turns out to not, in face, be needed: the token     */
+/* NOTE: The attribute turns out to not, in fact, be needed: the token     */
 /*       after the tag is treated as a filename if it is not "file"        */
 /*                                                                         */
 /***************************************************************************/
@@ -67,36 +67,73 @@ extern  void    gml_include( const gmltag * entry )
     char    *   p;
     char    *   pa;
 
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     *token_buf = '\0';
     p = scan_start;
     p++;
     SkipSpaces( p );
+    g_att_val.val_start = NULL;                     // so is still NULL if no attribute was used
     if( *p == '.' ) {
         /* already at tag end */
     } else {
-        pa = get_att_start( p );
-        p = att_start;
-        if( !ProcFlags.reprocess_line ) {
+        for( ;; ) {
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
+            if( ProcFlags.reprocess_line ) {        // wgml 4.0 appears to mark "" as the filename
+                ProcFlags.newLevelFile = 1;         // start new include level
+                scan_start = scan_stop + 1;         // .. and ignore remaining line
+                break;
+            }
             if( !strnicmp( "file", p, 4 ) ) {
                 p += 4;
-                p = get_att_value( p );
-            } else {
-                p = pa;                 // reset for possible file name
-                p = get_tag_value( p );
-            }
-            if( val_start != NULL ) {
-                memcpy_s( token_buf, FILENAME_MAX, val_start, val_len );
-                if( val_len < FILENAME_MAX ) {
-                    token_buf[val_len] = '\0';
-                } else {
-                    token_buf[FILENAME_MAX - 1] = '\0';
+                p = get_value( p );
+                if( AttrFlags.depth ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
                 }
-                ProcFlags.newLevelFile = 1;     // start new include level
-                scan_start = scan_stop + 1;     // .. and ignore remaining line
+                AttrFlags.depth = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start != NULL ) {     // filename found
+                    memcpy_s( token_buf, FILENAME_MAX, g_att_val.val_start, g_att_val.val_len );
+                    if( g_att_val.val_len < FILENAME_MAX ) {
+                        token_buf[g_att_val.val_len] = '\0';
+                    } else {
+                        token_buf[FILENAME_MAX - 1] = '\0';
+                    }
+                    ProcFlags.newLevelFile = 1;     // start new include level
+                    scan_start = scan_stop + 1;     // .. and ignore remaining line
+                }
+                if( ProcFlags.tag_end_found ) {
+                    break;
+                }
+            } else if( g_att_val.val_start == NULL ) {      // IMBED/INCLUDE <filename> is allowed by wgml 4.0
+                p = pa;                                     // reset for possible file name
+                p = get_tag_value( p );
+                if( g_att_val.val_start != NULL ) {     // filename found
+                    memcpy_s( token_buf, FILENAME_MAX, g_att_val.val_start, g_att_val.val_len );
+                    if( g_att_val.val_len < FILENAME_MAX ) {
+                        token_buf[g_att_val.val_len] = '\0';
+                    } else {
+                        token_buf[FILENAME_MAX - 1] = '\0';
+                    }
+                    ProcFlags.newLevelFile = 1;     // start new include level
+                    scan_start = scan_stop + 1;     // .. and ignore remaining line
+                }
+                break;                
+            } else{                                         // no match = end-of-tag in wgml 4.0
+                p = pa;                                     // restore spaces before text
+                break;
             }
-        } else {                                // wgml 4.0 appears to mark "" as the filename
-            ProcFlags.newLevelFile = 1;         // start new include level
-            scan_start = scan_stop + 1;         // .. and ignore remaining line
         }
     }
 

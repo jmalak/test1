@@ -24,8 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  Module to load DIP libraries in PharLap REX format.
 *
 ****************************************************************************/
 
@@ -50,6 +49,7 @@ mad_status MADSysLoad( char *path, mad_client_routines *cli,
                                 mad_imp_routines **imp, unsigned long *sys_hdl )
 {
     int                 h;
+    int                 no_mem;
     imp_header          *mad;
     mad_imp_routines    *(*init_func)( mad_status *, mad_client_routines * );
     mad_status          status;
@@ -58,10 +58,13 @@ mad_status MADSysLoad( char *path, mad_client_routines *cli,
     if( h < 0 ) {
         return( MS_ERR|MS_FOPEN_FAILED );
     }
-    mad = ReadInImp( h );
+    mad = ReadInImp( h, &no_mem );
     DIGCliClose( h );
     if( mad == NULL || mad->sig != MADSIG ) {
-        return( MS_ERR|MS_INVALID_MAD );
+        if( no_mem )
+            return( MS_ERR|MS_NO_MEM );
+        else
+            return( MS_ERR|MS_INVALID_MAD );
     }
     init_func = (void *)mad->init_rtn;
     *imp = init_func( &status, cli );

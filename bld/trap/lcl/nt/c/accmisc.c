@@ -35,7 +35,9 @@
 #include "stdnt.h"
 #include "trperr.h"
 #include "madregs.h"
+#ifdef MD_x86
 #include "x86cpu.h"
+#endif
 
 BOOL IsBigSel( WORD sel )
 {

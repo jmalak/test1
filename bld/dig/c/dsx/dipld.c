@@ -63,6 +63,7 @@ dip_status DIPSysLoad( char *path, dip_client_routines *cli,
                                 dip_imp_routines **imp, unsigned long *sys_hdl )
 {
     int                 h;
+    int                 no_mem;
     imp_header          *dip;
     dip_imp_routines    *(*init_func)( dip_status *, dip_client_routines * );
     dip_status          status;
@@ -72,10 +73,13 @@ dip_status DIPSysLoad( char *path, dip_client_routines *cli,
     if( h < 0 ) {
         return( DS_ERR|DS_FOPEN_FAILED );
     }
-    dip = ReadInImp( h );
+    dip = ReadInImp( h, &no_mem );
     DIGCliClose( h );
     if( dip == NULL || dip->sig != DIPSIG ) {
-        return( DS_ERR|DS_INVALID_DIP );
+        if( no_mem )
+            return( DS_ERR|DS_NO_MEM );
+        else
+            return( DS_ERR|DS_INVALID_DIP );
     }
 #ifdef WATCOM_DEBUG_SYMBOLS
     /* Look for symbols in separate .sym files, not the .dip itself */

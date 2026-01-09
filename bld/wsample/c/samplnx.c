@@ -778,7 +778,11 @@ void StartProg( char *cmd, char *prog, char *full_args, char *dos_args )
             for( rc = 0; argv[rc] != NULL; ++rc )
                 dbg_printf( "argv[%d] = '%s'\n", rc, argv[rc] );
 
-            rc = execve( prog, (char const * const *)argv, (char const * const *)environ );
+#if defined(__WATCOMC__) && (__WATCOMC__ <= 1290)
+            rc = execve( prog, (const char **)argv, (const char **)environ );
+#else
+            rc = execve( prog, argv, environ );
+#endif
             dbg_printf( "execve() failed, returned %d\n", rc );
             InternalError( MsgArray[MSG_SAMPLE_3 - ERR_FIRST_MESSAGE] );  // failsafe
         }

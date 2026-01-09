@@ -41,141 +41,6 @@
 #pragma enable_message( 128 ); // reenable: Warning! W128: 3 padding byte(s) added
 #endif
 
-typedef struct global_flags {
-    unsigned        quiet         : 1;  // suppress product info
-    unsigned        bannerprinted : 1;  // product info shown
-    unsigned        wscript       : 1;  // enable WATCOM script extension
-    unsigned        firstpass     : 1;  // first or only pass
-    unsigned        lastpass      : 1;  // last or only pass
-    unsigned        inclist       : 1;  // show included files
-    unsigned        warning       : 1;  // show warnings
-    unsigned        statistics    : 1;  // output statistics at end
-
-    unsigned        index         : 1;  // index option
-    unsigned        free9         : 1;
-    unsigned        freea         : 1;
-    unsigned        freeb         : 1;
-    unsigned        freec         : 1;
-    unsigned        freed         : 1;
-    unsigned        freee         : 1;
-    unsigned        research      : 1;  // -r global research mode output
-} global_flags;                         // Global flags
-
-typedef struct proc_flags {
-    doc_section     doc_sect;           // which part are we in (FRONTM, BODY, ...
-    doc_section     doc_sect_nxt;       // next section (tag already seen)
-    unsigned        frontm_seen    : 1; // FRONTM tag seen
-    unsigned        start_section  : 1; // start section call done
-
-    unsigned        researchfile   : 1; // research for one file ( -r filename )
-
-    unsigned        fb_document_done    : 1;// true if fb_document() called
-    unsigned        fb_position_done    : 1;// first positioning on new page done
-    unsigned        page_ejected        : 1;// a page was deliberately ejected (headings)
-    unsigned        page_started        : 1;// we have something for the curr page
-    unsigned        col_started         : 1;// we have something for the curr page
-    unsigned        line_started        : 1;// we have something for current line
-    unsigned        just_override       : 1;// current line is to be justified
-
-    unsigned        author_tag_seen     : 1;// remember first :AUTHOR tag
-    unsigned        date_tag_seen       : 1;// :DATE is allowed only once
-    unsigned        docnum_tag_seen     : 1;// :DOCNUM is allowed only once
-    unsigned        index_tag_cw_seen   : 1;// .IX, :I1-3, :IH1-3, :IREF seen
-    unsigned        stitle_seen         : 1;// remember first stitle value
-    unsigned        title_tag_top       : 1;// :TITLE pre_top_skip used
-    unsigned        title_text_seen     : 1;// remember first :TITLE tag text
-
-    unsigned        heading_banner      : 1;// banner replaced for heading (Hn)
-    unsigned        goto_active         : 1;// processing .go label
-    unsigned        newLevelFile        : 1;// start new include Level (file)
-    unsigned        gml_tag             : 1;// input buf starts with GML_char
-    unsigned        scr_cw              : 1;// input buf starts with SCR_char
-    unsigned        if_cond             : 1;// symbol substitution in if condition
-    unsigned        macro_ignore        : 1;// .. in col 1-2
-    unsigned        CW_force_sep        : 1;// scr cw line was indented and separator must be recognized
-    unsigned        CW_noblank          : 1;// no blank between CW/macro and first operand
-    unsigned        CW_sep_ignore       : 1;// ignore scr cw separator
-    unsigned        indented_text       : 1;// text was indented      
-    unsigned        in_macro_define     : 1;// macro definition active
-    unsigned        in_figcap           : 1;// FIGCAP in progress
-    unsigned        suppress_msg        : 1;// suppress error msg (during scanning)
-    unsigned        blanks_allowed      : 1;// blanks allowed (during scanning)
-    unsigned        keep_ifstate        : 1;// leave ifstack unchanged for next line
-    unsigned        substituted         : 1;// variable substituted in current line
-    unsigned        unresolved          : 1;// variable found, but not yet resolved
-    unsigned        literal             : 1;// .li is active
-    unsigned        concat              : 1;// .co ON if set
-    unsigned        ct                  : 1;// .ct continue text is active
-    unsigned        fsp                 : 1;// force space in spite of .ct
-    unsigned        zsp                 : 1;// force no space (used when start position of next text_chars is already set)
-    unsigned        as_text_line        : 1;// process text as <text line>
-    unsigned        in_figlist_toc      : 1;// process FIGLIST/TOC text as <text line>
-    unsigned        force_pc            : 1;// use PC tag processing on text not preceded by a tag or control word
-    unsigned        utc                 : 1;// user tag with "continue" is active
-    unsigned        in_trans            : 1;// esc char is specified (.ti set x)
-    unsigned        reprocess_line      : 1;// unget for current input line
-    unsigned        sk_2nd              : 1;// .sk follows blank lines of .sp
-    unsigned        sk_co               : 1;// .sk -1/.sk n, n >0 processed with CO OFF
-    unsigned        overprint           : 1;// .sk -1 active or not
-    unsigned        tag_end_found       : 1;// '.' ending tag found
-    unsigned        skips_valid         : 1;// controls set_skip_vars() useage
-    unsigned        new_pagenr          : 1;// FIG/heading page number changed
-    unsigned        first_hdr           : 1;// first header done
-    unsigned        box_cols_cur        : 1;// current BX line had column list
-    unsigned        bx_set_done         : 1;// BX SET was done last before current BX line
-    unsigned        draw_v_line         : 1;// vertical lines are to be drawn for this BX line
-    unsigned        force_op            : 1;// force overprint (used with BX CAN/BX DEL)
-    unsigned        in_bx_box           : 1;// identifies first BX line
-    unsigned        no_bx_hline         : 1;// determines if a horizontal line is to be emitted or not
-    unsigned        top_line            : 1;// determines if current line is at top of page
-    unsigned        vline_done          : 1;// determines if a vertical line was done
-    unsigned        keep_left_margin    : 1;// for indent NOTE tag paragraph
-    unsigned        skip_blank_line     : 1;// for XMP/eXMP blocks in macros -- scope TBD
-    unsigned        in_reduced          : 1;// position resulting from IN reduced to left edge of device page
-    unsigned        dd_starting         : 1;// DD after break had no text (in next scr_process_break())
-    unsigned        para_starting       : 1;// :LP, :P or :PC had no text (in scr_process_break())
-    unsigned        para_has_text       : 1;// :LP, :P, :PB or :PC had text (used by PB)
-    unsigned        titlep_starting     : 1;// AUTHOR or TITLE had no text (in scr_process_break())
-
-    unsigned        ix_in_block         : 1;// index tag/cw term attaches to following text
-    unsigned        post_ix             : 1;// index tag/cw preceded current text
-
-    unsigned        cc_cp_done          : 1;// CC or CP done; apply current inset to first line only
-    unsigned        dd_break_done       : 1;// DD break done (first line of text only)
-    unsigned        dd_macro            : 1;// DT/DD were invoked inside a macro
-    unsigned        dt_space            : 1;// insert one space after DT text
-    unsigned        null_value          : 1;// current symbol has "" or equivalent as its value
-
-    unsigned        dd_space            : 1;// insert one space before DD text
-    unsigned        need_dd             : 1;// DT seen; DD must be next tag
-    unsigned        need_ddhd           : 1;// DTHD seen; DDHD must be next tag
-    unsigned        need_gd             : 1;// GT seen; GD must be next tag
-    unsigned        need_li_lp          : 1;// top of list/need LI/LP (OL,SL,UL)
-    unsigned        need_tag            : 1;// need tag now, not text
-    unsigned        need_text           : 1;// need text now, not tag or cw/macro
-    unsigned        no_var_impl_err     : 1;// suppress err_var_not_impl msg
-    unsigned        tophead_done        : 1;// tophead symbol set
-    unsigned        wrap_indent         : 1;// for index item/reference indent when line breaks
-
-    unsigned        has_aa_block        : 1;// true if device defined :ABSOLUTEADDRESS
-    unsigned        ps_device           : 1;// true if device is PS (PostScript)
-    unsigned        wh_device           : 1;// true if device is WHELP (help file)
-
-    unsigned        layout              : 1;// within :layout tag and sub tags
-    unsigned        lay_specified       : 1;// LAYOUT option or :LAYOUT tag seen
-    unsigned        banner              : 1;// within layout banner definition
-    unsigned        banregion           : 1;// within layout banregion definition
-    unsigned        hx_level            : 3;// 0 - 6  active Hx :layout sub tag
-    lay_sub         lay_xxx             : 8;// active :layout sub tag
-
-    ju_enum         justify             : 8;// .ju on half off ...
-
-} proc_flags;                           // processing flags
-
-#if defined( __WATCOMC__ )
-#pragma enable_message( 128 ); // reenable: Warning! W128: 3 padding byte(s) added
-#endif
-
 #endif  /* GVARS_H_INCLUDED */
 
 #if !defined( GVARS_H_INCLUDED ) || defined( global )
@@ -185,7 +50,7 @@ typedef struct proc_flags {
     #define global  extern
 #endif
 
-global struct tm        doc_tm;         // document time/date
+global struct tm            doc_tm;         // document time/date
 
 global  jmp_buf     *   environment;    // var for GSuicide()
 
@@ -197,6 +62,7 @@ global  char        *   scan_restart;   // used by character scanning routines
 global  bool            scan_err;       // used by character scanning routines
 global  char        *   tok_start;      // start of scanned token
 global  size_t          arg_flen;       // arg length
+global  tag_att_val     g_att_val;      // current attribute/value info
 global  char        *   att_start;      // (potential) attribute start
 global  size_t          val_len;        // attribute value length
 global  char        *   val_start;      // attribute value start
@@ -232,6 +98,7 @@ global  int32_t         gotargetno;     // .go to line no
 global  int             err_count;      // Overall Errorcount
 global  int             wng_count;      // Overall warning count
 
+global  char            CONT_char;      // CONTINUE char (normally 0x03)
 global  char            GML_char;       // GML Keywword start char (normally ":")
 global  char            SCR_char;       // SCRIPT keywword start char (normally ".")
 global  char            CW_sep_char;    // Control Word separator char (normally ";")
@@ -262,18 +129,20 @@ global  int32_t         fm;             // footing margin          &$fm
 global  int32_t         lm;             // left margin             &$pagelm
 global  int32_t         rm;             // right margin            &$pagerm
 
-global  symvar      *   global_dict;    // global symbol dictionary
-global  symvar      *   sys_dict;       // global system symbol dictionary
-global  mac_entry   *   macro_dict;     // macro dictionary
+global  symdict     *   global_dict;    // global symbol dictionary
+global  symdict     *   sys_dict;       // global system symbol dictionary
+global  mac_dict    *   macro_dict;     // macro dictionary
 global  gtentry     *   tag_dict;       // user tag dictionary
 
 global  char            research_file_name[48]; // filename for research
 global  line_number     research_from;  // line no start for research output
 global  line_number     research_to;    // line no end   for research output
 
-global  global_flags    GlobalFlags;    // Global flags
+global  global_flags    GlobalFlags;    // global flags
 
 global  proc_flags      ProcFlags;      // processing flags
+
+global  attr_flags      AttrFlags;      // attribute flags
 
 global  size_t          buf_size;       // default buffer size
 global  char        *   token_buf;
@@ -329,6 +198,7 @@ global  hdsrc           hd_level;       // current heading level
 global  ref_entry   *   hd_ref_dict;    // reference dictionary :Hx tags
 global  ffh_entry   *   hd_list;        // list of headings in order encountered
 global  hd_num_data     hd_nums[hds_appendix];  // heading hierarchy numbering
+global  uint32_t        op_nh_pages;    // pages with no heading following an overprinted line
 
 // index support
 global  bool            ixhlvl[2];      // true for levels that exist
@@ -338,12 +208,18 @@ global  ix_h_blk    *   index_dict;     // index structure dictionary
 global  ix_h_blk    *   ixhtag[3];      // current entry for each level in index
 global  ref_entry   *   ix_ref_dict;    // reference id dictionary :Ix :IHx :IREF
 
+// NOTE support
+global  uint32_t        note_lm;        // left margin on entering NOTE
+
 // page number format
 global  num_style       pgnum_style[pns_max];
 
 // symbol support
 global  sym_list_entry  *   sym_list_pool;  // sym_list_entry pool
 //global  sym_list_entry  *   g_sym_list;     // global stack of sym_list_entry instances
+
+// keyboard tab support
+global  uint32_t        kbtab_count;    // chars processed; used for keyboard tab expansion
 
 // tab support
 global  tab_stop    *   c_stop;         // current tab_stop
@@ -400,6 +276,8 @@ global  uint32_t    g_ll;               // line length
 global  uint32_t    g_cd;               // no of columns
 global  uint32_t    g_gutter;           // space between columns
 
+global  uint32_t    g_oc_hpos;          // horizontal position for OC output
+
 global  uint32_t    g_blank_text_lines; // blank lines (line count)
 global  units_space g_blank_units_lines;// blank lines (in vertical base units)
 global  uint32_t    g_post_skip;        // post_skip
@@ -407,8 +285,10 @@ global  uint32_t    g_subs_skip;        // subs_skip
 global  uint32_t    g_top_skip;         // top_skip
 global  text_space  g_text_spacing;     // spacing between lines (line count)
 global  units_space g_units_spacing;    // spacing (in vertical base units)
-global  int32_t     g_skip;             // .sk skip value (in vbus)
-global  int32_t     g_space;            // .sp space value (in vbus)
+global  int32_t     g_skip;             // .sk skip value (in vbus) (unconditional)
+global  int32_t     g_skip_c;           // .sk skip value (in vbus) (conditional)
+global  int32_t     g_space;            // .sp space value (in vbus) (unconditional)
+global  int32_t     g_space_c;          // .sp space value (in vbus) (conditional)
 
 global  uint32_t    post_space;         // spacing within a line
 global  uint32_t    ju_x_start;         // .. formatting
@@ -431,7 +311,8 @@ global  banner_lay_tag  * sect_ban_bot[2];// bot even / odd banner for curr sect
 
 global  uint32_t    msg_indent;         // indent for message output (to screen, not to device)
 
-global script_style_info    script_style;   // BD/US etc scope control
+global script_style_info    script_style;       // BD/BI/US scope control
+global script_style_info    script_style_sav;   // BD/BI/US scope control saved for inline tags
 
 /***************************************************************************/
 /*  tagnames as strings for msg display                                    */

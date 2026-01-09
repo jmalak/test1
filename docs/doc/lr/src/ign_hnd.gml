@@ -16,7 +16,7 @@ The &func function simply returns to its caller.
 .desc end
 .*
 .return begin
-The &func function does not returns no value.
+The &func function does not return a value.
 .return end
 .*
 .see begin

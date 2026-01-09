@@ -118,6 +118,37 @@ cdsay .
         <CPCMD> <DEVDIR>/dip/mapsym/rdos386/mapsym.dll      <RELROOT>/rdos/
         <CPCMD> <DEVDIR>/dip/mapsym/rdos386/mapsym.sym      <RELROOT>/rdos/
 
+# Copy the wmapsym executables
+[ BLOCK <1> rel2 cprel2 ]
+#========================
+  [ IFDEF (os_dos "") <2*> ]
+        <CPCMD> <DEVDIR>/dip/mapsym/msym/dosi86/wmapsym.exe     <RELROOT>/binw/
+        <CPCMD> <DEVDIR>/dip/mapsym/msym/dosi86/wmapsym.sym     <RELROOT>/binw/
+
+  [ IFDEF (os_os2 "") <2*> ]
+        <CPCMD> <DEVDIR>/dip/mapsym/msym/os2386/wmapsym.exe     <RELROOT>/binp/
+        <CPCMD> <DEVDIR>/dip/mapsym/msym/os2386/wmapsym.sym     <RELROOT>/binp/
+
+  [ IFDEF (os_nt "") <2*> ]
+        <CPCMD> <DEVDIR>/dip/mapsym/msym/nt386/wmapsym.exe      <RELROOT>/binnt/
+        <CPCMD> <DEVDIR>/dip/mapsym/msym/nt386/wmapsym.sym      <RELROOT>/binnt/
+
+  [ IFDEF (os_linux "") <2*> ]
+        <CPCMD> <DEVDIR>/dip/mapsym/msym/linux386/wmapsym.exe   <RELROOT>/binl/
+        <CPCMD> <DEVDIR>/dip/mapsym/msym/linux386/wmapsym.sym   <RELROOT>/binl/
+
+  [ IFDEF cpu_axp <2*> ]
+        <CPCMD> <DEVDIR>/dip/mapsym/msym/ntaxp/wmapsym.exe      <RELROOT>/axpnt/
+        <CPCMD> <DEVDIR>/dip/mapsym/msym/ntaxp/wmapsym.sym      <RELROOT>/axpnt/
+
+  [ IFDEF os_qnx <2*> ]
+#        <CPCMD> <DEVDIR>/dip/mapsym/msym/qnx386/wmapsym.exe     <RELROOT>/qnx/binq/
+#        <CPCMD> <DEVDIR>/dip/mapsym/msym/qnx386/wmapsym.sym     <RELROOT>/qnx/sym/
+
+  [ IFDEF (os_rdos "") <2*> ]
+#        <CPCMD> <DEVDIR>/dip/mapsym/msym/rdos386/wmapsym.exe     <RELROOT>/rdos/
+#        <CPCMD> <DEVDIR>/dip/mapsym/msym/rdos386/wmapsym.sym     <RELROOT>/rdos/
+
 [ BLOCK <1> clean ]
 #==================
     pmake -d build <2> <3> <4> <5> <6> <7> <8> <9> -h clean

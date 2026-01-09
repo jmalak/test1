@@ -24,21 +24,21 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  POSIX implementation of execvp().
 *
 ****************************************************************************/
 
 
 #include "variety.h"
+#include "widechar.h"
 #include <stdlib.h>
 #include <sys/types.h>
 #include <process.h>
 
 _WCRTLINK int (execvp)(
     const char  *file,          /* file name of file to be executed */
-    const char  *const argv[] ) /* Array of pointers to arguments */
+    EXCV_CHAR   *const argv[] ) /* Array of pointers to arguments */
 {
-    return( spawnvpe( P_OVERLAY, file, argv, (const char **)environ ) );
+    return( spawnvpe( P_OVERLAY, file, (const char **)argv, (const char **)environ ) );
     /* EXEC's shouldn't return unless there was an error */
 }

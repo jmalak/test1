@@ -57,7 +57,7 @@
   picks( ce, scr_dummy, cw_break+cw_o_t    )// center
   picks( ch, scr_dummy, 0                  )// change
   picks( cl, scr_dummy, cw_break+cw_o_t    )// column length
-//picks( cm, scr_dummy, 0                  )// comment ----- handled differently
+  picks( cm, scr_cm,    0                  )// comment
   picks( co, scr_co,    cw_break+cw_o_t    )// concatenate
   picks( cp, scr_cp,    cw_break+cw_o_t    )// conditional page
   picks( cs, scr_cs,    cw_o_t             )// conditional section
@@ -94,13 +94,13 @@
   picks( hm, scr_dummy, cw_break+cw_o_t    )// heading margin
   picks( hn, scr_dummy, 0                  )// head note
   picks( hs, scr_dummy, cw_break+cw_o_t    )// heading space
-  picks( hw, scr_hy,    0                  )// hyphenate word
-  picks( hy, scr_dummy, 0                  )// hyphenate
+  picks( hw, scr_dummy, 0                  )// hyphenate word
+  picks( hy, scr_hy,    0                  )// hyphenate
   picks( ie, scr_dummy, 0                  )// index entry
   picks( if, scr_if,    0                  )// if
   picks( il, scr_dummy, cw_break+cw_o_t    )// indent line
   picks( im, scr_im,    0                  )// imbed
-  picks( in, scr_in,    cw_break+cw_o_t    )// indent
+  picks( in, scr_in,    cw_o_t             )// indent
   picks( ir, scr_dummy, cw_break+cw_o_t    )// indent right
   picks( it, scr_dummy, cw_break+cw_o_t    )// input trace
   picks( ix, scr_ix,    0                  )// index
@@ -145,7 +145,7 @@
   picks( sa, scr_dummy, 0                  )// save environment
   picks( sc, scr_dummy, cw_break+cw_o_t    )// single column
   picks( se, scr_se,    0                  )// set symbol
-  picks( sk, scr_sk,    cw_break           )// skip (generate blank line(s)
+  picks( sk, scr_sk,    cw_break+cw_o_t    )// skip (generate blank line(s)
   picks( sl, scr_dummy, cw_break+cw_o_t    )// set leading
   picks( sp, scr_sp,    cw_break+cw_o_t    )// space
   picks( sr, scr_se,    0                  )// treat as .se as substitute is always on

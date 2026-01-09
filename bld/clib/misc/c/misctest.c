@@ -132,13 +132,21 @@ void TestLibgen( void )
     VERIFY( !strcmp( basename( NULL ), "." ) );
 
     VERIFY( !strcmp( dirname( "/usr/lib" ), "/usr" ) );
+    VERIFY( !strcmp( dirname( "/usr/lib/" ), "/usr" ) );
+    VERIFY( !strcmp( dirname( "usr/lib/" ), "usr" ) );
     VERIFY( !strcmp( dirname( "/usr/" ), "/" ) );
     VERIFY( !strcmp( dirname( "usr" ), "." ) );
     VERIFY( !strcmp( dirname( "/" ), "/" ) );
+    VERIFY( !strcmp( dirname( "///" ), "/" ) );
+    VERIFY( !strcmp( dirname( "//usr//lib//" ), "//usr" ) );
+    VERIFY( !strcmp( dirname( "///usr/lib" ), "///usr" ) );
     VERIFY( !strcmp( dirname( "." ), "." ) );
     VERIFY( !strcmp( dirname( ".." ), "." ) );
     VERIFY( !strcmp( dirname( "" ), "." ) );
     VERIFY( !strcmp( dirname( NULL ), "." ) );
+    /* Implementation defined. If only '//' remains, we return '/'. */
+    VERIFY( !strcmp( dirname( "//" ), "/" ) );
+    VERIFY( !strcmp( dirname( "//usr" ), "/" ) );
 }
 
 /****

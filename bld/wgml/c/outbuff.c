@@ -1080,13 +1080,15 @@ void ob_binclude( binclude_element * in_el )
 void ob_oc( const char *text )
 {
     if( ProcFlags.has_aa_block ) {
-        fb_absoluteaddress();
+        set_oc_pos();
     }
     ob_flush();
     ob_insert_block( text, strlen( text ), false, false, g_curr_font );
     if( ProcFlags.has_aa_block ) {
-        ob_insert_byte( ' ' );
-        fb_absoluteaddress();
+        if( (text[strlen( text ) - 1]) != ' ' ) {
+            ob_insert_byte( ' ' );
+        }
+        set_oc_pos();
     }
     ob_flush();
     return;
@@ -1105,6 +1107,8 @@ void ob_oc( const char *text )
 
 void ob_flush( void )
 {
+    if( !out_file_fp )
+        return;     /* Bail in case of fatal errors further up. */
 
     if( fwrite( buffout.text, sizeof( uint8_t ), buffout.current, out_file_fp )
             < buffout.current ) {
@@ -1191,9 +1195,9 @@ void ob_graphic( graphic_element * in_el )
     buffout.current = ps_size;
     ob_flush();
 
-    /* Only if font in use before the GRAPHIC was not font 0 */
+    /* Only if font in use after the GRAPHIC was not font 0 */
 
-    if( in_el->prev_font > 0 ) {
+    if( in_el->next_font > FONT0 ) {
         ob_flush();
         ps_size = strlen( fontstr );
         strcpy_s( buffout.text, buffout.length, fontstr );

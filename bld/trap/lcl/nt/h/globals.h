@@ -179,7 +179,11 @@ BOOL
     HANDLE          hProcess,
     HANDLE          hThread,
     WORD            wSelector,
+#ifdef WOW
     LPVDMLDT_ENTRY  lpSelectorEntry
+#else
+    LPVOID          lpSelectorEntry
+#endif
 );
 #undef TRPGLOBAL
 #undef TRPGLOBINIT

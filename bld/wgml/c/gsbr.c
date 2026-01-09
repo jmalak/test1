@@ -34,6 +34,196 @@
 #include "wgml.h"
 
 
+/****************************************************************************/
+/*  correctly place g_eol_ix when between two breaks                        */
+/*    g_eol_ix is only non-NULL following a break (or no index items exist) */
+/*    and is only non-NULL here if this is a second break with nothing      */
+/*    to attach the index items to                                          */
+/****************************************************************************/
+
+static void attach_eol( void )
+{
+    eol_ix      *       cur_eol;
+    text_line   *       cur_tl;
+
+    /* Find last entry in g_eol_ix */
+
+    cur_eol = g_eol_ix;
+    while( cur_eol->next != NULL ) {
+        cur_eol = cur_eol->next;      // find last text_line
+    }
+
+    /* Prepend g_eol_ix to the appropriate eol_index field */
+
+    if( (t_doc_el_group != NULL ) && (t_doc_el_group->first != NULL ) ) {
+        switch( t_doc_el_group->last->type ) {
+        case el_binc :
+            if( t_doc_el_group->last->element.binc.eol_index == NULL ) {
+                t_doc_el_group->last->element.binc.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_doc_el_group->last->element.binc.eol_index;
+                t_doc_el_group->last->element.binc.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        case el_dbox :
+            if( t_doc_el_group->last->element.dbox.eol_index == NULL ) {
+                t_doc_el_group->last->element.dbox.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_doc_el_group->last->element.dbox.eol_index;
+                t_doc_el_group->last->element.dbox.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        case el_graph :
+            if( t_doc_el_group->last->element.graph.eol_index == NULL ) {
+                t_doc_el_group->last->element.graph.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_doc_el_group->last->element.graph.eol_index;
+                t_doc_el_group->last->element.graph.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        case el_hline :
+            if( t_doc_el_group->last->element.hline.eol_index == NULL ) {
+                t_doc_el_group->last->element.hline.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_doc_el_group->last->element.hline.eol_index;
+                t_doc_el_group->last->element.hline.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        case el_text :
+            cur_tl = t_doc_el_group->last->element.text.first;
+            if( cur_tl != NULL ) {              // text_lines exist
+                while( cur_tl->next != NULL ) {
+                    cur_tl = cur_tl->next;      // find last text_line
+                }
+                if( cur_tl->eol_index == NULL ) {
+                    cur_tl->eol_index = g_eol_ix;
+                } else {
+                    cur_eol->next = cur_tl->eol_index;
+                    cur_tl->eol_index = g_eol_ix;
+                }
+                g_eol_ix = NULL;
+            }
+            break;
+        case el_vline :
+            if( t_doc_el_group->last->element.vline.eol_index == NULL ) {
+                t_doc_el_group->last->element.vline.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_doc_el_group->last->element.vline.eol_index;
+                t_doc_el_group->last->element.vline.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        case el_vspace :
+            if( t_doc_el_group->last->element.vspace.eol_index == NULL ) {
+                t_doc_el_group->last->element.vspace.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_doc_el_group->last->element.vspace.eol_index;
+                t_doc_el_group->last->element.vspace.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        default :
+            internal_err( __FILE__, __LINE__ ); // bad element type value
+        }
+    } else if( t_page.last_col_main != NULL ) {
+        switch( t_page.last_col_main->type ) {
+        case el_binc :
+            if( t_page.last_col_main->element.binc.eol_index == NULL ) {
+                t_page.last_col_main->element.binc.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_page.last_col_main->element.binc.eol_index;
+                t_page.last_col_main->element.binc.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        case el_dbox :
+            if( t_page.last_col_main->element.dbox.eol_index == NULL ) {
+                t_page.last_col_main->element.dbox.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_page.last_col_main->element.dbox.eol_index;
+                t_page.last_col_main->element.dbox.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        case el_graph :
+            if( t_page.last_col_main->element.graph.eol_index == NULL ) {
+                t_page.last_col_main->element.graph.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_page.last_col_main->element.graph.eol_index;
+                t_page.last_col_main->element.graph.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        case el_hline :
+            if( t_page.last_col_main->element.hline.eol_index == NULL ) {
+                t_page.last_col_main->element.hline.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_page.last_col_main->element.hline.eol_index;
+                t_page.last_col_main->element.hline.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        case el_text :
+            cur_tl = t_page.last_col_main->element.text.first;
+            if( cur_tl != NULL ) {              // text_lines exist
+                while( cur_tl->next != NULL ) {
+                    cur_tl = cur_tl->next;      // find last text_line
+                }
+                if( cur_tl->eol_index == NULL ) {
+                    cur_tl->eol_index = g_eol_ix;
+                } else {
+                    cur_eol->next = cur_tl->eol_index;
+                    cur_tl->eol_index = g_eol_ix;
+                }
+                g_eol_ix = NULL;
+            } else {    // only t_page is left!
+                if( t_page.eol_index == NULL ) {
+                    t_page.eol_index = g_eol_ix;
+                } else {
+                    cur_eol->next = t_page.eol_index;
+                    t_page.eol_index = g_eol_ix;
+                }
+                g_eol_ix = NULL;
+            }
+            break;
+        case el_vline :
+            if( t_page.last_col_main->element.vline.eol_index == NULL ) {
+                t_page.last_col_main->element.vline.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_page.last_col_main->element.vline.eol_index;
+                t_page.last_col_main->element.vline.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        case el_vspace :
+            if( t_page.last_col_main->element.vspace.eol_index == NULL ) {
+                t_page.last_col_main->element.vspace.eol_index = g_eol_ix;
+            } else {
+                cur_eol->next = t_page.last_col_main->element.vspace.eol_index;
+                t_page.last_col_main->element.vspace.eol_index = g_eol_ix;
+            }
+            g_eol_ix = NULL;
+            break;
+        default :
+            internal_err( __FILE__, __LINE__ ); // bad element type value
+        }
+    } else {    // only t_page is left!
+        if( t_page.eol_index == NULL ) {
+            t_page.eol_index = g_eol_ix;
+        } else {
+            cur_eol->next = t_page.eol_index;
+            t_page.eol_index = g_eol_ix;
+        }
+        g_eol_ix = NULL;
+    }
+    return;
+}
+
+
 /**************************************************************************/
 /* BREAK forces  the current partially-full output  line (if any)   to be */
 /* printed without  justification (if on),  and  a new output line  to be */
@@ -80,7 +270,7 @@ void    scr_br( void )
     if( *p != '\0' ) {
         SkipSpaces( p );
         if( *p != '\0' ) {
-            split_input( scan_start, p, input_cbs->fmflags & (II_sol | II_eol));// line operand
+            split_input( scan_start, p, input_cbs->fmflags );   // line operand
         }
     }
     scr_process_break();                // break processing
@@ -99,6 +289,14 @@ void  scr_process_break( void )
 {
     doc_element *   cur_el;
     text_chars  *   marker  = NULL;
+
+    if( (script_style.style != SCT_none) && ProcFlags.scr_scope_eip ) {
+        scr_style_end();
+    }
+
+    if( g_eol_ix != NULL ) {
+        attach_eol();
+    }
 
     if( t_line != NULL ) {
         if( t_line->first != NULL ) {
@@ -158,30 +356,54 @@ void  scr_process_break( void )
         insert_col_main( t_element );
         t_element = NULL;
         t_el_last = NULL;
-    } else if( ProcFlags.para_starting ) {    // LP, P or PC : no text before break
-
-        /* Putting set_skip_vars() first can affect the result of the if() */
-
-        if( (g_line_indent > 0) || (g_blank_units_lines > 0) ) {
-            set_skip_vars( NULL, NULL, NULL, g_text_spacing, g_curr_font);
-
-            t_element = init_doc_el( el_text, wgml_fonts[g_curr_font].line_height );
-            if( g_line_indent == 0 ) {  // special case
-                t_element->depth = 0;
+    } else if( ProcFlags.note_starting || ProcFlags.para_starting ) {
+        /*  */
+        if( ProcFlags.block_starting ) {        // LP. P, PC, NOTE paragraph is empty
+            if( ProcFlags.wh_device ) {         // and possibly other devices (but not PS)
+                if( ProcFlags.para_is_lp ) {    // LP is an exception
+                    g_subs_skip += g_post_skip;
+                    g_post_skip = 0;
+                    ProcFlags.block_starting = false;
+                } else if( g_top_skip > 0 ) {   // SP was used 
+                    g_subs_skip += g_top_skip;
+                    ProcFlags.block_starting = false;
+                }
+            } else {                            // this works for PS and perhaps other devices (but not WHELP)
+                g_subs_skip += g_post_skip;
+                g_post_skip = 0;
+                ProcFlags.block_starting = false;
             }
-            t_element->element.text.first = alloc_text_line();
+        }
+        if( ProcFlags.note_starting ) {      // NOTE with no text before break
+            t_page.cur_left = note_lm;
+            ProcFlags.note_starting = false;
+        } else if( ProcFlags.para_starting ) {      // LP, P or PC with no text before break
 
-            if( g_line_indent > 0 ) {
-                t_element->element.text.first->line_height = wgml_fonts[g_curr_font].line_height;
+            /* ProcFlags.block_starting must be done before this point or the   */
+            /* call to set_skip_vars() will change the results                  */
+            /* Putting set_skip_vars() first can affect the result of the if()  */
+
+            if( (g_line_indent > 0) || (g_blank_units_lines > 0) ) {
+                set_skip_vars( NULL, NULL, NULL, g_text_spacing, g_curr_font);
+
+                t_element = init_doc_el( el_text, wgml_fonts[g_curr_font].line_height );
+                if( g_line_indent == 0 ) {  // special case
+                    t_element->depth = 0;
+                }
+                t_element->element.text.first = alloc_text_line();
+
+                if( g_line_indent > 0 ) {
+                    t_element->element.text.first->line_height = wgml_fonts[g_curr_font].line_height;
+                } else {
+                    t_element->element.text.first->line_height = 0;
+                }
+                t_element->element.text.first->first = NULL;
+                insert_col_main( t_element );
+                t_element = NULL;
+                t_el_last = NULL;
             } else {
-                t_element->element.text.first->line_height = 0;
+                set_skip_vars( NULL, NULL, NULL, g_text_spacing, g_curr_font);
             }
-            t_element->element.text.first->first = NULL;
-            insert_col_main( t_element );
-            t_element = NULL;
-            t_el_last = NULL;
-        } else {
-            set_skip_vars( NULL, NULL, NULL, g_text_spacing, g_curr_font);
         }
     } else if( g_blank_text_lines > 0  ) {                  // pending blank lines
         set_skip_vars( NULL, NULL, NULL, 1, g_curr_font );  // emits vspace doc_element
@@ -192,12 +414,17 @@ void  scr_process_break( void )
         t_el_last = NULL;
     }
     set_h_start();      // to stop paragraph indent from being used after a break
+    ProcFlags.br_done = true;
+    ProcFlags.cont_char = false;
     ProcFlags.dd_space = false;
-    ProcFlags.para_starting = false;
     ProcFlags.para_has_text = false;
+    ProcFlags.para_is_lp = false;
+    ProcFlags.para_starting = false;
+    ProcFlags.scr_scope_eip = false;
     ProcFlags.skips_valid = false;
     ProcFlags.titlep_starting = false;
     c_stop = NULL;
+    kbtab_count = 0;
     post_space = 0;
 
     return;

@@ -56,7 +56,7 @@ extern  void    gml_set( const gmltag * entry )
     int             rc;
     symvar          sym;
     sub_index       subscript;
-    symvar      * * working_dict;
+    symdict     *   working_dict;
 
     subscript = no_subscript;           // not subscripted
     scan_err = false;
@@ -111,9 +111,9 @@ extern  void    gml_set( const gmltag * entry )
 
     if( symbol_found && value_found ) {   // both attributes
         if( sym.flags & local_var ) {
-            working_dict = &input_cbs->local_dict;
+            working_dict = input_cbs->local_dict;
         } else {
-            working_dict = &global_dict;
+            working_dict = global_dict;
         }
         rc = add_symvar( working_dict, sym.name, token_buf, subscript, sym.flags );
     } else {

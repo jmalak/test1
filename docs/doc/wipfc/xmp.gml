@@ -10,6 +10,6 @@ as it is entered. If the width of the text exceeds the width of the window, the 
 .tclass Block
 .tcont Text, Formatting, In-line
 .tseealso
-:HDREF refid='cgraphic'., :HDREF refid='lines'.
+:HDREF refid='cgrphic'., :HDREF refid='lines'.
 .tag end
 

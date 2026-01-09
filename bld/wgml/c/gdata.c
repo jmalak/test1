@@ -85,9 +85,9 @@ void init_global_vars( void )
     err_count           = 0;            // total error count
     wng_count           = 0;            // total warnig count
 
-    GML_char            = GML_CHAR_DEFAULT; // GML start char
-    SCR_char            = SCR_CHAR_DEFAULT; // script start char
-    CW_sep_char         = CW_SEP_CHAR_DEFAULT;// script control word seperator
+    GML_char            = GML_CHAR_DEFAULT;     // GML start char
+    SCR_char            = SCR_CHAR_DEFAULT;     // script start char
+    CW_sep_char         = CW_SEP_CHAR_DEFAULT;  // script control word seperator
 
     CPI                 = 10;           // chars per inch
     CPI_units           = SU_chars;
@@ -118,6 +118,7 @@ void init_global_vars( void )
 
     in_esc              = ' ';
     tab_char            = 0x09;
+
 
     box_col_set_pool    = NULL;
     box_col_stack_pool  = NULL;
@@ -195,6 +196,7 @@ void init_global_vars( void )
     n_page.col_main         = NULL;
     n_page.col_bot          = NULL;
     n_page.col_fn           = NULL;
+    n_page.prev_pg_depth    = 0;
 
     text_pool               = NULL;
     line_pool               = NULL;
@@ -318,54 +320,54 @@ void init_pass_data( void )
 
         /* First pass: create the heading symbols & set them to an empty string */
 
-        add_symvar_addr( &global_dict, "$tophead", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$tophead", "", no_subscript, 0,
                                                         &t_page.topheadsub );
-        add_symvar_addr( &global_dict, "$bothead", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$bothead", "", no_subscript, 0,
                                                         &t_page.botheadsub );
 
-        add_symvar_addr( &global_dict, "$head0", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$head0", "", no_subscript, 0,
                                                         &hd_nums[hds_h0].headsub );
-        add_symvar_addr( &global_dict, "$head1", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$head1", "", no_subscript, 0,
                                                         &hd_nums[hds_h1].headsub );
-        add_symvar_addr( &global_dict, "$head2", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$head2", "", no_subscript, 0,
                                                         &hd_nums[hds_h2].headsub );
-        add_symvar_addr( &global_dict, "$head3", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$head3", "", no_subscript, 0,
                                                         &hd_nums[hds_h3].headsub );
-        add_symvar_addr( &global_dict, "$head4", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$head4", "", no_subscript, 0,
                                                         &hd_nums[hds_h4].headsub );
-        add_symvar_addr( &global_dict, "$head5", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$head5", "", no_subscript, 0,
                                                         &hd_nums[hds_h5].headsub );
-        add_symvar_addr( &global_dict, "$head6", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$head6", "", no_subscript, 0,
                                                         &hd_nums[hds_h6].headsub );
 
-        add_symvar_addr( &global_dict, "$hnum0", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$hnum0", "", no_subscript, 0,
                                                         &hd_nums[hds_h0].hnumsub );
-        add_symvar_addr( &global_dict, "$hnum1", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$hnum1", "", no_subscript, 0,
                                                         &hd_nums[hds_h1].hnumsub );
-        add_symvar_addr( &global_dict, "$hnum2", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$hnum2", "", no_subscript, 0,
                                                         &hd_nums[hds_h2].hnumsub );
-        add_symvar_addr( &global_dict, "$hnum3", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$hnum3", "", no_subscript, 0,
                                                         &hd_nums[hds_h3].hnumsub );
-        add_symvar_addr( &global_dict, "$hnum4", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$hnum4", "", no_subscript, 0,
                                                         &hd_nums[hds_h4].hnumsub );
-        add_symvar_addr( &global_dict, "$hnum5", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$hnum5", "", no_subscript, 0,
                                                         &hd_nums[hds_h5].hnumsub );
-        add_symvar_addr( &global_dict, "$hnum6", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$hnum6", "", no_subscript, 0,
                                                         &hd_nums[hds_h6].hnumsub );
 
-        add_symvar_addr( &global_dict, "$htext0", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$htext0", "", no_subscript, 0,
                                                         &hd_nums[hds_h0].htextsub );
-        add_symvar_addr( &global_dict, "$htext1", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$htext1", "", no_subscript, 0,
                                                         &hd_nums[hds_h1].htextsub );
-        add_symvar_addr( &global_dict, "$htext2", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$htext2", "", no_subscript, 0,
                                                         &hd_nums[hds_h2].htextsub );
-        add_symvar_addr( &global_dict, "$htext3", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$htext3", "", no_subscript, 0,
                                                         &hd_nums[hds_h3].htextsub );
-        add_symvar_addr( &global_dict, "$htext4", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$htext4", "", no_subscript, 0,
                                                         &hd_nums[hds_h4].htextsub );
-        add_symvar_addr( &global_dict, "$htext5", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$htext5", "", no_subscript, 0,
                                                         &hd_nums[hds_h5].htextsub );
-        add_symvar_addr( &global_dict, "$htext6", "", no_subscript, 0,
+        add_symvar_addr( global_dict, "$htext6", "", no_subscript, 0,
                                                         &hd_nums[hds_h6].htextsub );
 
         /* These never change, so can be done on the first pass only */
@@ -399,6 +401,13 @@ void init_pass_data( void )
     g_indent    = 0;
     g_indentr   = 0;
 
+    g_skip = 0;
+    g_skip_c = 0;
+    g_space = 0;
+    g_space_c = 0;
+
+    g_oc_hpos = bin_device->x_start;
+
     figlist_toc = gs_none;
 
     fig_count   = 0;
@@ -415,4 +424,21 @@ void init_pass_data( void )
     ixhtag[0]   = NULL;         // current level 1 entry in index
     ixhtag[1]   = NULL;         // current level 2 entry in index
     ixhtag[2]   = NULL;         // current level 3 entry in index
+
+    kbtab_count = 0;
+
+    new_file_parms = NULL;      // set for initial file
+
+    CONT_char           = CONT_CHAR_DEFAULT;    // CONT start char 
+
+    script_style_sav.font           = FONT0;// initialize BD/BI/US scope control save
+    script_style_sav.style          = SCT_none;
+    script_style_sav.cw_bd.count    = 0;
+    script_style_sav.cw_bd.scope    = SCS_none;
+    script_style_sav.cw_us.count    = 0;
+    script_style_sav.cw_us.scope    = SCS_none;
+
+    /* These items may be needed because the extern is not being reset properly in the code */
+    op_nh_pages = 0;            // clear count of pages without headers after overprint line
+
 }

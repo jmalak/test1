@@ -62,7 +62,8 @@ _WCRTLINK int (spawnve)( int mode, const char *path, const char *const argv[], c
     int                 status_pipe[2];
 
     if( mode == P_OVERLAY )
-        return( execve( path, argv, envp ) );
+        /* Must undo const to match POSIX execve() definition. */
+        return( execve( path, (char **)argv, (char **)envp ) );
 
     if( pipe( status_pipe ) == -1 )
         return( -1 );
@@ -85,7 +86,8 @@ _WCRTLINK int (spawnve)( int mode, const char *path, const char *const argv[], c
     err = pid = fork();
     if( pid == 0 ) {
         close( status_pipe[0] );
-        execve( path, argv, envp );
+        /* Must undo const to match POSIX execve() definition. */
+        execve( path, (char **)argv, (char **)envp );
         write( status_pipe[1], &errno, sizeof errno );
         _exit( 127 );
     }

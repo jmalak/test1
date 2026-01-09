@@ -60,8 +60,14 @@ orl_return CoffCreateSymbolHandles( coff_file_handle file_hnd )
         current->coff_file_hnd = file_hnd;
         current->symbol = (coff_symbol *) &(file_hnd->symbol_table->contents[sizeof( coff_symbol ) * loop]);
         if( current->symbol->name.non_name.zeros == 0 ) {
-            current->name = file_hnd->string_table->contents + current->symbol->name.non_name.offset - sizeof( coff_sec_size );
-            current->name_alloced = COFF_FALSE;
+            if( file_hnd->string_table->contents ) {
+                current->name = file_hnd->string_table->contents + current->symbol->name.non_name.offset - sizeof( coff_sec_size );
+                current->name_alloced = COFF_FALSE;
+            } else {
+                /* Symbols may be stripped. */
+                current->name = NULL;
+                current->name_alloced = COFF_FALSE;
+            }
         } else {
             len = strlen( current->symbol->name.name_string );
             if( strlen( current->symbol->name.name_string ) >= COFF_SYM_NAME_LEN ) {
@@ -74,7 +80,7 @@ orl_return CoffCreateSymbolHandles( coff_file_handle file_hnd )
                 current->name_alloced = COFF_FALSE;
             }
         }
-        if( memcmp( current->name, ".bf", 4 ) == 0 ) {
+        if( current->name && memcmp( current->name, ".bf", 4 ) == 0 ) {
             if( current->symbol->num_aux >= 1 ) {
                 file_hnd->symbol_handles[prev].has_bf = COFF_TRUE;
             }
@@ -145,7 +151,7 @@ orl_return CoffCreateSymbolHandles( coff_file_handle file_hnd )
             case IMAGE_SYM_CLASS_STATIC:
                 current->binding = ORL_SYM_BINDING_LOCAL;
                 if( current->symbol->num_aux == 0 ) {
-                    if( sechdl != NULL
+                    if( sechdl && current->name
                         && strcmp( sechdl->name, current->name ) == 0 ) {
                         current->type |= ORL_SYM_TYPE_SECTION;
                     } else {

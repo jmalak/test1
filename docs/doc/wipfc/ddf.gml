@@ -10,6 +10,6 @@ The resource id number. Must be between 1 and 64000.
 .tclass Block
 .tcont None
 .tseealso
-:HDREF refid='acviewport'.
+:HDREF refid='acvwprt'.
 .tag end
 

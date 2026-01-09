@@ -36,6 +36,7 @@
 
 extern  void    __fprem( double, double, int *, double * );
 extern  int     __sgn( double );
+extern  double  __log87_err( double, unsigned char );
 
 extern  int    (*__matherr_handler)( struct _exception * );
 
@@ -62,7 +63,6 @@ extern  int    (*__matherr_handler)( struct _exception * );
 
     extern  double  __pow87_err( double, double, unsigned char );
     extern  double  __math87_err( double, unsigned char );
-    extern  double  __log87_err( double, unsigned char );
 
     _WMRTLINK extern int    __matherr( struct _exception * );
  #endif

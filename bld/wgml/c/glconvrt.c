@@ -1942,60 +1942,60 @@ static  void    put_lay_letter_unsupported( FILE * layfile )
 {
 
     fprintf_s( layfile, ":FROM\n");
-    fprintf_s( layfile, "\tleft_adjust = 0\n");
-    fprintf_s( layfile, "\tpage_position = right\n");
-    fprintf_s( layfile, "\tpre_top_skip = 6\n");
-    fprintf_s( layfile, "\tfont = 0\n");
+    fprintf_s( layfile, "        left_adjust = 0\n");
+    fprintf_s( layfile, "        page_position = right\n");
+    fprintf_s( layfile, "        pre_top_skip = 6\n");
+    fprintf_s( layfile, "        font = 0\n");
 
     fprintf_s( layfile, ":TO\n");
-    fprintf_s( layfile, "\tleft_adjust = 0\n");
-    fprintf_s( layfile, "\tpage_position = left\n");
-    fprintf_s( layfile, "\tpre_top_skip = 1\n");
-    fprintf_s( layfile, "\tfont = 0\n");
+    fprintf_s( layfile, "        left_adjust = 0\n");
+    fprintf_s( layfile, "        page_position = left\n");
+    fprintf_s( layfile, "        pre_top_skip = 1\n");
+    fprintf_s( layfile, "        font = 0\n");
 
     fprintf_s( layfile, ":ATTN\n");
-    fprintf_s( layfile, "\tleft_adjust = 0\n");
-    fprintf_s( layfile, "\tpage_position = left\n");
-    fprintf_s( layfile, "\tpre_top_skip = 1\n");
-    fprintf_s( layfile, "\tfont = 1\n");
-    fprintf_s( layfile, "\tattn_string = \"Attention: \"\n");
-    fprintf_s( layfile, "\tstring_font = 1\n");
+    fprintf_s( layfile, "        left_adjust = 0\n");
+    fprintf_s( layfile, "        page_position = left\n");
+    fprintf_s( layfile, "        pre_top_skip = 1\n");
+    fprintf_s( layfile, "        font = 1\n");
+    fprintf_s( layfile, "        attn_string = \"Attention: \"\n");
+    fprintf_s( layfile, "        string_font = 1\n");
 
     fprintf_s( layfile, ":SUBJECT\n");
-    fprintf_s( layfile, "\tleft_adjust = 0\n");
-    fprintf_s( layfile, "\tpage_position = centre\n");
-    fprintf_s( layfile, "\tpre_top_skip = 2\n");
-    fprintf_s( layfile, "\tfont = 1\n");
+    fprintf_s( layfile, "        left_adjust = 0\n");
+    fprintf_s( layfile, "        page_position = centre\n");
+    fprintf_s( layfile, "        pre_top_skip = 2\n");
+    fprintf_s( layfile, "        font = 1\n");
 
     fprintf_s( layfile, ":LETDATE\n");
-    fprintf_s( layfile, "\tdate_form = \"$ml $dsn, $yl\"\n");
-    fprintf_s( layfile, "\tdepth = 15\n");
-    fprintf_s( layfile, "\tfont = 0\n");
-    fprintf_s( layfile, "\tpage_position = right\n");
+    fprintf_s( layfile, "        date_form = \"$ml $dsn, $yl\"\n");
+    fprintf_s( layfile, "        depth = 15\n");
+    fprintf_s( layfile, "        font = 0\n");
+    fprintf_s( layfile, "        page_position = right\n");
 
     fprintf_s( layfile, ":OPEN\n");
-    fprintf_s( layfile, "\tpre_top_skip = 2\n");
-    fprintf_s( layfile, "\tfont = 0\n");
-    fprintf_s( layfile, "\tdelim = ':'\n");
+    fprintf_s( layfile, "        pre_top_skip = 2\n");
+    fprintf_s( layfile, "        font = 0\n");
+    fprintf_s( layfile, "        delim = ':'\n");
 
     fprintf_s( layfile, ":CLOSE\n");
-    fprintf_s( layfile, "\tpre_skip = 2\n");
-    fprintf_s( layfile, "\tdepth = 6\n");
-    fprintf_s( layfile, "\tfont = 0\n");
-    fprintf_s( layfile, "\tpage_position = centre\n");
-    fprintf_s( layfile, "\tdelim = ','\n");
-    fprintf_s( layfile, "\textract_threshold = 2\n");
+    fprintf_s( layfile, "        pre_skip = 2\n");
+    fprintf_s( layfile, "        depth = 6\n");
+    fprintf_s( layfile, "        font = 0\n");
+    fprintf_s( layfile, "        page_position = centre\n");
+    fprintf_s( layfile, "        delim = ','\n");
+    fprintf_s( layfile, "        extract_threshold = 2\n");
 
     fprintf_s( layfile, ":ECLOSE\n");
-    fprintf_s( layfile, "\tpre_skip = 1\n");
-    fprintf_s( layfile, "\tfont = 0\n");
+    fprintf_s( layfile, "        pre_skip = 1\n");
+    fprintf_s( layfile, "        font = 0\n");
 
     fprintf_s( layfile, ":DISTRIB\n");
-    fprintf_s( layfile, "\tpre_top_skip = 3\n");
-    fprintf_s( layfile, "\tskip = 1\n");
-    fprintf_s( layfile, "\tfont = 0\n");
-    fprintf_s( layfile, "\tindent = '0.5i'\n");
-    fprintf_s( layfile, "\tpage_eject = no\n");
+    fprintf_s( layfile, "        pre_top_skip = 3\n");
+    fprintf_s( layfile, "        skip = 1\n");
+    fprintf_s( layfile, "        font = 0\n");
+    fprintf_s( layfile, "        indent = '0.5i'\n");
+    fprintf_s( layfile, "        page_eject = no\n");
 }
 
 
@@ -2015,7 +2015,7 @@ static  void    put_layout( char * name, layout_data * lay )
 
     fprintf_s( layfile, ":LAYOUT\n" );
 //  if( GlobalFlags.research ) {
-        find_symvar( &global_dict, "$version", no_subscript, &sversion );
+        find_symvar( global_dict, "$version", no_subscript, &sversion );
         fprintf_s( layfile, ":cmt. Created with %s\n", sversion->value );
 //  }
 
@@ -2120,9 +2120,7 @@ void    lay_convert( const gmltag * entry )
         }
     }
     if( *token_buf == '\0' ) {           // file name missing
-        err_count++;
-        g_err( err_att_missing );
-        file_mac_info();
+        xx_err( err_att_missing );
     } else {
         put_layout( token_buf, &layout_work );
     }

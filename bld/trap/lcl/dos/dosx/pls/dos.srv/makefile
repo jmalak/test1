@@ -16,7 +16,7 @@ pharlap_c_flags = -DWATCOM=7 -DCMPLR=7 -D__STKCALL=cdecl -D_Far=__far -D_Near=__
 
 extra_c_flags = -DPHARLAP $(compflags_$[&)
 
-extra_c_flags_dilglue = -3s $(pharlap_c_flags)
+extra_c_flags_dilglue = -3s $(pharlap_c_flags) -wcd=304
 extra_c_flags_dosxlink = $(pharlap_c_flags)
 extra_c_flags_plsacc = $(pharlap_c_flags)
 

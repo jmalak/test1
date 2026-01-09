@@ -53,7 +53,7 @@ void    gml_docnum( const gmltag * entry )
     }
 
     if( ProcFlags.docnum_tag_seen ) {   // only one DOCNUM tag allowed
-        xx_line_err( err_2nd_docnum, buff2 );
+        xx_line_err_c( err_2nd_docnum, buff2 );
     }
 
     p = scan_start;
@@ -71,7 +71,7 @@ void    gml_docnum( const gmltag * entry )
     }
 
     if( GlobalFlags.firstpass && *p != '\0' ) {
-        add_symvar( &global_dict, "$docnum", p, no_subscript, 0 );
+        add_symvar( global_dict, "$docnum", p, no_subscript, 0 );
     }
     ProcFlags.docnum_tag_seen = true;
 
@@ -96,8 +96,7 @@ void    gml_docnum( const gmltag * entry )
     t_page.cur_left += left_indent;
     t_page.cur_width = t_page.cur_left;
     if( t_page.max_width < right_indent ) {
-        t_page.max_width = 0;               // negative right margin not allowed
-        xx_line_err( err_page_width_too_small, val_start );
+        xx_line_err_c( err_page_width_too_small, val_start );
     } else {
         t_page.max_width -= right_indent;
     }

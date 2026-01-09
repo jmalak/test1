@@ -1,0 +1,56 @@
+# There are several methods of testing WGML.
+#  The most basic method tests console output produced with the .TY
+# keyword. This is completely independent of any output device,
+# formatting, etc.
+#  The next level tests formatted output using the TASA device (TASA
+# stands for Triple-spacing ASA printer). This produces output
+# formatted to a very basic device with a single monospaced font,
+# such as a line printer or a text console.
+#  The final level tests PostScript formatted output.
+
+# Add more tests here as needed...
+test_targ_list = &
+    hellocon$(err_con) &
+    hellotxt$(err_asa) &
+    hellopsc$(err_psc) &
+    dateover$(err_psc) &
+    continue$(err_asa) &
+    macargs1$(err_con) &
+    macargs2$(err_con) &
+    scomment$(err_asa) &
+    longmnam$(err_con) &
+    contngml$(err_asa) &
+    mntcolon$(err_asa) &
+    symcolon$(err_asa) &
+    mntfakev$(err_asa) &
+    specsymb$(err_asa) &
+    arrayvar$(err_asa) &
+    gmlsymbl$(err_asa) &
+    symnames$(err_asa) &
+    scrloops$(err_asa) &
+    scrfuncs$(err_asa) &
+    scrsubst$(err_asa) &
+    scrorder$(err_asa) &
+    libmnmac$(err_asa) &
+    tagmacro$(err_asa) &
+    figcapdt$(err_asa) &
+#    figcapdt$(err_psc) &  # Long caption is not justified
+    figcapsp$(err_asa) &
+    figcapsp$(err_psc) &
+#    sysamper$(err_asa) &  # :XMP layout currently does not match
+    gmlsimpl$(err_psc) &
+#    gmlsimpl$(err_asa) &  # Does not produce matching output
+
+    
+err_con = .erc     # Console output
+err_asa = .era     # Basic formatted text for ASA printers
+err_psc = .erp     # PostScript output
+
+
+test_targ = $+ $(test_targ_list) $-
+    
+    
+err_con =
+err_asa =
+err_psc =
+

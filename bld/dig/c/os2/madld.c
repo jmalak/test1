@@ -24,8 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  MAD module loader for 16-bit OS/2.
 *
 ****************************************************************************/
 
@@ -37,18 +36,18 @@
 #include "madimp.h"
 
 mad_status MADSysLoad( char *path, mad_client_routines *cli,
-                                mad_imp_routines **imp, unsigned long *sys_hdl )
+                       mad_imp_routines **imp, unsigned long *sys_hdl )
 {
     HMODULE             dll;
     mad_imp_routines    *(*init_func)( mad_status *, mad_client_routines * );
     mad_status          status;
 
     if( DosLoadModule( NULL, 0, path, &dll ) != 0 ) {
-        return( MS_ERR|MS_FOPEN_FAILED );
+        return( MS_ERR | MS_FOPEN_FAILED );
     }
     if( DosGetProcAddr( dll, "MADLOAD", (PFN FAR *)&init_func ) != 0 ) {
         DosFreeModule( dll );
-        return( MS_ERR|MS_INVALID_MAD );
+        return( MS_ERR | MS_INVALID_MAD );
     }
     *imp = init_func( &status, cli );
     if( *imp == NULL ) {

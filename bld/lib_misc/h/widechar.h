@@ -52,6 +52,7 @@
     #define UNICODE
     #define _UNICODE
     #define __UNICODE__
+    #define EXCV_CHAR           const CHAR_TYPE
 #else
     #define DIR_TYPE            struct dirent
     #define CHAR_TYPE           char
@@ -65,6 +66,12 @@
     #define IS_ASCII(c)         ( 1 )
     #define TO_ASCII(c)         ( (unsigned char)c )
     #define __F_NAME(n1,n2)     n1
+  #ifdef __LINUX__
+    /* POSIX defines execv() et al. argv/envp as non-const, causing clashes in the library. */
+    #define EXCV_CHAR           CHAR_TYPE
+  #else
+    #define EXCV_CHAR           const CHAR_TYPE
+  #endif
 #endif
 #define CHARSIZE                (sizeof( CHAR_TYPE ))
 

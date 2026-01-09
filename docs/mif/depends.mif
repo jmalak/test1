@@ -1857,10 +1857,13 @@ objs_lr2 = &
 ../doc/lr/src/strstr.gml &
 ../doc/lr/src/strtime.gml &
 ../doc/lr/src/strtod.gml &
+../doc/lr/src/strtof.gml &
+../doc/lr/src/strtoflt.gml &
 ../doc/lr/src/strtoimx.gml &
 ../doc/lr/src/strtok.gml &
 ../doc/lr/src/strtok_s.gml &
 ../doc/lr/src/strtol.gml &
+../doc/lr/src/strtold.gml &
 ../doc/lr/src/strtoul.gml &
 ../doc/lr/src/strtoumx.gml &
 ../doc/lr/src/structtm.gml &

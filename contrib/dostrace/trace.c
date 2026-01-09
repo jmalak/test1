@@ -36,7 +36,7 @@
  */
 static int stringprint, hexprint, otherprint, nameprint, regdump, tracechildren;
 static int timeprint, count, tracetsr, tsrpsp, numprint, worderror, pspprint;
-static int branchprint, append;
+static int branchprint, append, envprint;
 static unsigned datalen = 15;
 static int someprefix;
 static char *fname = "trace.log";
@@ -162,6 +162,26 @@ makestring(unsigned sseg, unsigned soff)
     p = makefptr(sseg, soff);
     s = buff;
     while (*p != '$' && count < datalen) {
+        *s++ = *p++;
+        count++;
+    }
+    *s = '\0';
+    return buff;
+}
+
+/*
+ * Convert a Pascal style length-prefixed string to a 0 terminated one
+ */
+static char *
+makepstring(const char _far *p)
+{
+    char _far *s;
+    unsigned slen = *(const unsigned char _far *)p++;
+    unsigned count = 0;
+
+    s = buff;
+    slen = min(datalen, slen);
+    while (count < slen) {
         *s++ = *p++;
         count++;
     }
@@ -634,6 +654,33 @@ prefix(int fun, unsigned cs, unsigned ip)
 
 
 /*
+ * Print DOS environment segment
+ */
+void printenv(int fun, unsigned cs, unsigned ip, unsigned envseg)
+{
+    const char _far *env;
+    const char _far *end;
+    unsigned ofs = 0;
+    unsigned len;
+    unsigned old_dlen;
+
+    old_dlen = datalen;
+    datalen = max(datalen,48);
+    end = env = makefptr(envseg, 0);
+    while (*end) {
+        while (*end)
+            ++end;
+        len = end - env;
+        outbuff(envseg, ofs, len);
+        tputs("\n");
+        ofs += len + 1;
+        end = env = makefptr(envseg, ofs);
+        prefix(fun, cs, ip);
+    }
+    datalen = old_dlen;
+}
+
+/*
  * The new DOS interrupt handler - this is supposed to receive an union INTPACK
  * argument, but we cheat and break down the union into individual args passed
  * on the stack for easier manipulation.
@@ -846,11 +893,19 @@ dos_handler(
     case 0x4b:              /* Exec */
         switch (funl = (_ax & 0xff)) {
         case 0:
-            tprintf("exec(\"%Fs", makefptr(_ds, _dx));
+            if (envprint) {
+                if (*(unsigned _far *)makefptr(_es, _bx)) {
+                    tputs("exec() child environment:\n");
+                    prefix(fun, _cs, _ip);
+                    printenv(fun, _cs, _ip, *(unsigned _far *)makefptr(_es, _bx));
+                }
+            }
+            tprintf("exec(\"%Fs\"", makefptr(_ds, _dx));
+            tprintf(", \"%s\"", makepstring(*(void _far * _far *)makefptr(_es, _bx + 2)));
             if (tracechildren)
-                tputs("\") = ...\r\n");
+                tputs(") = ...\r\n");
             else
-                tputs("\") = ");
+                tputs(") = ");
             if (tracechildren) {
                 setpsp(tracedpsp);
                 trace = 1;
@@ -858,7 +913,7 @@ dos_handler(
             }
             break;
         default:
-            tprintf("exec(%d,\"%Fs) = ", funl, makefptr(_ds, _dx));
+            tprintf("exec(%d,\"%Fs\") = ", funl, makefptr(_ds, _dx));
         }
         break;
     case 0x4c:              /* Exit */
@@ -1364,7 +1419,7 @@ main(int argc, char *argv[])
         *p = '\0';
     if (!*argv[0])
         argv[0] = "trace";
-    while ((c = getopt(argc, argv, "abfo:h:sxl:nitrevcp:wy")) != EOF)
+    while ((c = getopt(argc, argv, "abfo:h:sxl:mnitrevcp:wy")) != EOF)
         switch (c) {
         case 'i':           /* Print PSP */
             pspprint = 1;
@@ -1382,7 +1437,7 @@ main(int argc, char *argv[])
             tracechildren = 1;
             break;
         case 'v':           /* Verbose */
-            branchprint = pspprint = worderror = numprint = timeprint = tracechildren = regdump = stringprint = hexprint = otherprint = nameprint = 1;
+            branchprint = envprint = pspprint = worderror = numprint = timeprint = tracechildren = regdump = stringprint = hexprint = otherprint = nameprint = 1;
             break;
         case 'f':           /* Print function number */
             numprint = 1;
@@ -1422,6 +1477,9 @@ main(int argc, char *argv[])
         case 'a':           /* Print all DOS functions */
             otherprint = 1;
             break;
+        case 'm':           /* Print child environment on exec */
+            envprint = 1;
+            break;
         case 'n':           /* Print names of other DOS functions */
             nameprint = 1;
             break;
@@ -1448,6 +1506,7 @@ main(int argc, char *argv[])
             fputs("-h\tPrint this list\n", stdout);
             fputs("-i\tPrefix calls with process id (psp address)\n", stdout);
             fputs("-l L\tSpecify I/O printed data length\n", stdout);
+            fputs("-m\tPrint child environment on exec\n", stdout);
             fputs("-n\tPrint other functions by name\n", stdout);
             fputs("-o F\tSpecify output file name\n", stdout);
             fputs("-p P\tTrace resident process with PSP P\n", stdout);

@@ -52,8 +52,8 @@ static  char    *reloc_addr_type[] = {
 /*
  * Dump a segment
  */
-static void dmp_segment( struct segment_record *seg )
-/***************************************************/
+static void dmp_segment( struct segment_record *seg, bool prt_hdr )
+/*****************************************************************/
 {
     unsigned_32           file_off;
     unsigned_32           iter;
@@ -81,9 +81,13 @@ static void dmp_segment( struct segment_record *seg )
         Putdec( iter > 16 );
         Wdputslc( "\n" );
     }
-    Wdputslc( "        segment data =\n" );
+    if( prt_hdr )
+        Wdputslc( "        segment data =\n" );
+
     Dmp_seg_data( file_off, seg_len );
-    Wdputslc( "\n" );
+
+    if( prt_hdr )
+        Wdputslc( "\n" );
 }
 
 /*
@@ -229,6 +233,23 @@ void Dmp_relocs( void )
 }
 
 /*
+ * Dump the data of one segment
+ */
+void Dmp_one_seg_data( unsigned_16 seg_spec )
+/*******************************************/
+{
+    struct segment_record   *seg;
+
+    if( seg_spec > Os2_head.segments ) {
+        Wdputslc( "segment specified was too large\n" );
+        return;
+    }
+    seg = &Int_seg_tab[ seg_spec - 1 ];
+    dmp_segment( seg, FALSE );
+    return;
+}
+
+/*
  * Dump the Segments
  */
 void Dmp_segments( void )
@@ -248,7 +269,7 @@ void Dmp_segments( void )
         Wdputs( "segment # " );
         Putdec( Segspec );
         seg = &Int_seg_tab[ Segspec - 1 ];
-        dmp_segment( seg );
+        dmp_segment( seg, TRUE );
         return;
     }
     seg = Int_seg_tab;
@@ -256,7 +277,7 @@ void Dmp_segments( void )
     for( segnum = 1; segnum != num_segs; segnum++ ) {
         Wdputs( "segment # " );
         Putdec( segnum );
-        dmp_segment( seg++ );
+        dmp_segment( seg++, TRUE );
     }
 }
 

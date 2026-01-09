@@ -47,6 +47,7 @@ typedef unsigned long ULONG;
 typedef signed long SLONG;
 typedef unsigned short USHORT;
 typedef int INT;
+typedef signed long LNUM;
 
 #define  EOS    0
 #define  TEMPFILE  "diff.tmp"
@@ -61,7 +62,7 @@ typedef struct candidate {
 
 typedef struct line {
     USHORT      hash;       /* Hash value etc.       */
-    short       serial;     /* Line number        */
+    LNUM        serial;     /* Line number        */
 }               LINE;
 
 LINE            *file[2];       /* Hash/line for total file  */
@@ -90,7 +91,7 @@ FILE            *tempfd;        /* Temp for input redirection  */
  * The following vectors overlay the area defined by fileA
  */
 
-short           *class;         /* Unsorted line numbers  */
+LNUM            *class;         /* Unsorted line numbers  */
 SLONG           *klist;         /* Index of element in clist  */
 CANDIDATE       *clist;         /* Storage pool for candidates  */
 SLONG           clength = 0;    /* Number of active candidates  */
@@ -104,7 +105,7 @@ long            *oldseek;       /* Seek position in file A  */
  * The following vectors overlay the area defined by fileB
  */
 
-short           *member;        /* Concatenated equiv. classes  */
+LNUM            *member;        /* Concatenated equiv. classes  */
 long            *newseek;       /* Seek position in file B  */
 
 /*
@@ -303,18 +304,18 @@ INT main( int argc, char **argv )
     /*
      * Build equivalence classes.
      */
-    member = ( short * ) fileB;
+    member = ( LNUM * ) fileB;
     equiv();
-    member = ( short * ) compact( ( char *) member, ( slenB + 2 ) * sizeof( SLONG ),
+    member = ( LNUM * ) compact( ( char *) member, ( slenB + 2 ) * sizeof( SLONG ),
                                  "squeezing member vector" );
     fileB = ( LINE * ) member;
 
     /*
      * Reorder equivalence classes into array class[]
      */
-    class = ( short * ) fileA;
+    class = ( LNUM * ) fileA;
     unsort();
-    class = ( short * ) compact( ( char *) class, ( slenA + 2 ) * sizeof( SLONG ),
+    class = ( LNUM * ) compact( ( char *) class, ( slenA + 2 ) * sizeof( SLONG ),
                                 "compacting class vector" );
     fileA = ( LINE * ) class;
     /*
@@ -498,7 +499,7 @@ void equiv( void )
     register LINE       *ap;
     union {
         LINE    *bp;
-        short   *mp;
+        LNUM    *mp;
     }                   r;
     register SLONG      j;
     LINE                *atop;
@@ -576,10 +577,10 @@ void unsort( void )
     register SLONG      *tp;
     union {
         LINE    *ap;
-        short   *cp;
+        LNUM    *cp;
     }                   u;
     LINE                *evec;
-    short               *eclass;
+    LNUM                *eclass;
 #ifdef DEBUG
     SLONG               i;
 #endif

@@ -156,31 +156,30 @@ void    scr_pe( void )
                 if( !strnicmp( "ON", pa, 2 ) ) {
                     init_pe_line( INT_MAX );    // partial implementation (no nesting)
                 } else {
-                    xx_opt_err( cwcurr, pa );
+                    xx_line_err_cc( err_xx_opt, cwcurr, pa );
                 }
                 break;
             case 3 :
                 if( !strnicmp( "OFF", pa, 3 ) ) {
                     reset_pe_cb();              // partial implementation (no nesting)
                 } else {
-                    xx_opt_err( cwcurr, pa );
+                    xx_line_err_cc( err_xx_opt, cwcurr, pa );
                 }
                 break;
             case 6 :
                 if( !strnicmp( "DELETE", pa, 6 ) ) {
                     reset_pe_cb();              // partial implementation (no nesting)
                 } else {
-                    xx_opt_err( cwcurr, pa );
+                    xx_line_err_cc( err_xx_opt, cwcurr, pa );
                 }
                 break;
             default:
-                xx_opt_err( cwcurr, pa );
-                break;
+                xx_line_err_cc( err_xx_opt, cwcurr, pa );
             }
         } else {
             scan_start = gn.argstart;
             if( gn.result < 0 ) {
-                xx_line_err( err_val_neg, pa );
+                xx_line_err_c( err_val_neg, pa );
             } else {
                 init_pe_line( gn.result );
             }

@@ -27,6 +27,8 @@
 * Description:  Declares everything used by wgml to find and open files:
 *                   dirseq
 *                   ff_setup()
+*                   ff_set_incpath()
+*                   ff_set_libpath()
 *                   ff_teardown()
 *                   search_file_in_dirs()
 *                   try_file_name
@@ -78,6 +80,8 @@ extern "C" {    /* Use "C" linkage when in C++ mode. */
 #endif
 
 extern  void        ff_teardown( void );
+extern  void        ff_set_incpath( const char * );
+extern  void        ff_set_libpath( const char * );
 extern  void        ff_setup( void );
 extern  int         search_file_in_dirs( const char *filename, const char *defext, const char *altext, dirseq seq );
 

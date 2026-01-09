@@ -26,11 +26,3 @@ inc_dirs_os2 = -I"$(vi_dir)/ctl" -I"$(vi_dir)/pm" $(winstuff)
 !else
 inc_dirs_win = -I"$(vi_dir)/win"
 !endif
-
-!ifeq host_cpu axp
-! ifdef sys_windowed
-inc_dirs_nt = -I"$(vi_dir)/ctl" -I"$(vi_dir)/win" -I"$(sdk_dir)/misc" -I"$(wpi_dir)/h"
-! else
-inc_dirs_nt = -I"$(watcom_dir)/h"
-! endif
-!endif

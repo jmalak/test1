@@ -181,152 +181,84 @@ void find_create_ix_e_entry( ix_h_blk * ixhwork, char * ref, size_t len,
     text_line   *       cur_tl;
 
     switch( type ) {
-        case pgmajor :
-        case pgpageno :
-        case pgstart :
-        case pgend :
-            if( ProcFlags.ix_in_block ) {
+    case pgmajor :
+    case pgpageno :
+    case pgstart :
+    case pgend :
+        if( (t_line == NULL) && (t_element == NULL) ) {
 
-                /**********************************************************/
-                /*  some tags/control words set ProcFlags.ix_in_block to  */
-                /*  indicate that any index item preceding any following  */
-                /*  text is to be attached to the first text_line in the  */
-                /*  block                                                 */
-                /**********************************************************/
+            /**********************************************************/
+            /*  if there is no pending text, then add this entry to   */
+            /*  g_eol_ix so that it can be assigned properly in       */
+            /*  attach_eol() (used by scr_process_break())            */
+            /*                                                        */
+            /*  NOTE: flag "found" is borrowed from the code that     */
+            /*        determines whether to create a new ix_e_block   */
+            /*        its usage here may appear confusing             */
+            /**********************************************************/
 
-                if( g_eol_ix == NULL ) {
-                    g_eol_ix = alloc_eol_ix( ixhwork, type );
-                    cur_eol = g_eol_ix;
-                } else {
-                    cur_eol = g_eol_ix;
-                    while( cur_eol->next != NULL ) {
-                        cur_eol = cur_eol->next;        // append at end of list
-                    }
-                    cur_eol->next = alloc_eol_ix( ixhwork, type );
-                }
+            if( g_eol_ix == NULL ) {
+                g_eol_ix = alloc_eol_ix( ixhwork, type );
+                cur_eol = g_eol_ix;
             } else {
-                if( t_line != NULL) {
-                    if( t_line->eol_index == NULL ) {
-                        t_line->eol_index = alloc_eol_ix( ixhwork, type );
-                        found = false;
-                    }
-                    cur_eol = t_line->eol_index;
-                } else if( t_element != NULL) {
-                    cur_tl = t_element->element.text.first;
-                    while( cur_tl->next != NULL ) {
-                        cur_tl = cur_tl->next;    // find last text_line
-                    }
-                    if( cur_tl->eol_index == NULL ) {
-                        cur_tl->eol_index = alloc_eol_ix( ixhwork, type );
-                        found = false;
-                    }
-                    cur_eol = cur_tl->eol_index;
-                } else if( t_page.last_col_main != NULL ) {
-                    switch( t_page.last_col_main->type ) {
-                        case el_binc :
-                            if( t_page.last_col_main->element.binc.eol_index == NULL ) {
-                                t_page.last_col_main->element.binc.eol_index = alloc_eol_ix( ixhwork, type );
-                                found = false;
-                            }
-                            cur_eol = t_page.last_col_main->element.binc.eol_index;
-                            break;
-                        case el_dbox :
-                            if( t_page.last_col_main->element.dbox.eol_index == NULL ) {
-                                t_page.last_col_main->element.dbox.eol_index = alloc_eol_ix( ixhwork, type );
-                                found = false;
-                            }
-                            cur_eol = t_page.last_col_main->element.dbox.eol_index;
-                            break;
-                        case el_graph :
-                            if( t_page.last_col_main->element.graph.eol_index == NULL ) {
-                                t_page.last_col_main->element.graph.eol_index = alloc_eol_ix( ixhwork, type );
-                                found = false;
-                            }
-                            cur_eol = t_page.last_col_main->element.graph.eol_index;
-                            break;
-                        case el_hline :
-                            if( t_page.last_col_main->element.hline.eol_index == NULL ) {
-                                t_page.last_col_main->element.hline.eol_index = alloc_eol_ix( ixhwork, type );
-                                found = false;
-                            }
-                            cur_eol = t_page.last_col_main->element.hline.eol_index;
-                            break;
-                        case el_text :
-                            cur_tl = t_page.last_col_main->element.text.first;
-                            if( cur_tl != false ) {         // text_lines exist
-                                while( cur_tl->next != NULL ) {
-                                    cur_tl = cur_tl->next;      // find last text_line
-                                }
-                                if( cur_tl->eol_index == NULL ) {
-                                    cur_tl->eol_index = alloc_eol_ix( ixhwork, type );
-                                    found = false;
-                                }
-                                cur_eol = cur_tl->eol_index;
-                            } else {    // only t_page is left!
-                                if( t_page.eol_index == NULL ) {
-                                    t_page.eol_index = alloc_eol_ix( ixhwork, type );
-                                    found = false;
-                                }
-                                cur_eol = t_page.eol_index;
-                            }
-                            break;
-                        case el_vline :
-                            if( t_page.last_col_main->element.vline.eol_index == NULL ) {
-                                t_page.last_col_main->element.vline.eol_index = alloc_eol_ix( ixhwork, type );
-                                found = false;
-                            }
-                            cur_eol = t_page.last_col_main->element.vline.eol_index;
-                            break;
-                        case el_vspace :
-                            if( t_page.last_col_main->element.vspace.eol_index == NULL ) {
-                                t_page.last_col_main->element.vspace.eol_index = alloc_eol_ix( ixhwork, type );
-                                found = false;
-                            }
-                            cur_eol = t_page.last_col_main->element.vspace.eol_index;
-                            break;
-                        default :
-                            internal_err( __FILE__, __LINE__ ); // bad element type value
-                    }
-                } else {    // only t_page is left!
-                    if( t_page.eol_index == NULL ) {
-                        t_page.eol_index = alloc_eol_ix( ixhwork, type );
-                        found = false;
-                    }
-                    cur_eol = t_page.eol_index;
+                cur_eol = g_eol_ix;
+                while( cur_eol->next != NULL ) {
+                    cur_eol = cur_eol->next;        // append at end of list
                 }
-
-                if( found ) {
-                    while( cur_eol->next != NULL ) {
-                        cur_eol = cur_eol->next;        // append at end of list
-                    }
-                    cur_eol->next = alloc_eol_ix( ixhwork, type );
-                } else {
-                    found = true;
-                }
+                cur_eol->next = alloc_eol_ix( ixhwork, type );
             }
-            break;
-        case pgmajorstring :
-            base = &ixhwork->entry->major_string;
-            ixework = ixhwork->entry->major_string;
-            found = find_string_ref( ref, len, &ixework );
-            break;
-        case pgstring :
-            base = &ixhwork->entry->normal_string;
-            ixework = ixhwork->entry->normal_string;
-            found = find_string_ref( ref, len, &ixework );
-            break;
-        case pgsee :
-            base = &ixhwork->entry->see_string;
-            ixework = ixhwork->entry->see_string;
-            if( (seeidwork != 0) && ixhwork->prt_term_len > 0 ) {   // insert per seeid->ix_term, display prt_term
-                found = find_string_ref( seeidwork->ix_term, seeidwork->ix_term_len, &ixework );
+        } else {
+            if( t_line != NULL ) {
+                if( t_line->eol_index == NULL ) {
+                    t_line->eol_index = alloc_eol_ix( ixhwork, type );
+                    found = false;
+                }
+                cur_eol = t_line->eol_index;
+            } else if( t_element != NULL ) {
+                cur_tl = t_element->element.text.first;
+                while( cur_tl->next != NULL ) {
+                    cur_tl = cur_tl->next;    // find last text_line
+                }
+                if( cur_tl->eol_index == NULL ) {
+                    cur_tl->eol_index = alloc_eol_ix( ixhwork, type );
+                    found = false;
+                }
+                cur_eol = cur_tl->eol_index;
             } else {
-                found = find_string_ref( ref, len, &ixework );
+                internal_err( __FILE__, __LINE__ ); // bad element type value
             }
-            break;
-        case pgnone :       // should never appear used here, nothing to do
-        default :           // out-of-range enum value
-            internal_err( __FILE__, __LINE__ );
+            if( found ) {
+                while( cur_eol->next != NULL ) {
+                    cur_eol = cur_eol->next;        // append at end of list
+                }
+                cur_eol->next = alloc_eol_ix( ixhwork, type );
+            } else {
+                found = true;
+            }
+        }
+        break;
+    case pgmajorstring :
+        base = &ixhwork->entry->major_string;
+        ixework = ixhwork->entry->major_string;
+        found = find_string_ref( ref, len, &ixework );
+        break;
+    case pgstring :
+        base = &ixhwork->entry->normal_string;
+        ixework = ixhwork->entry->normal_string;
+        found = find_string_ref( ref, len, &ixework );
+        break;
+    case pgsee :
+        base = &ixhwork->entry->see_string;
+        ixework = ixhwork->entry->see_string;
+        if( (seeidwork != 0) && ixhwork->prt_term_len > 0 ) {   // insert per seeid->ix_term, display prt_term
+            found = find_string_ref( seeidwork->ix_term, seeidwork->ix_term_len, &ixework );
+        } else {
+            found = find_string_ref( ref, len, &ixework );
+        }
+        break;
+    case pgnone :       // should never appear here, but nothing to do
+    default :           // out-of-range enum value
+        internal_err( __FILE__, __LINE__ );
     }
 
     if( found ) {
@@ -477,7 +409,10 @@ ix_h_blk * find_create_ix_h_entry( ix_h_blk * ixhwork, ix_h_blk * ixhbase,
         /* Replace print term text if one is given and it differs at all */
 
         if( printtxt != NULL ) {
-            if( printtxtlen > ixhwork->prt_term_len ) {
+            if( ixhwork->prt_term == NULL ) {
+                ixhwork->prt_term = mem_alloc( printtxtlen + 1 );
+                strcpy_s( ixhwork->prt_term, printtxtlen + 1, printtxt );
+            } else if( printtxtlen > ixhwork->prt_term_len ) {
                 ixhwork->prt_term_len = printtxtlen;
                 ixhwork->prt_term = mem_realloc( ixhwork->prt_term, printtxtlen + 1 );
                 strcpy_s( ixhwork->prt_term, printtxtlen + 1, printtxt );

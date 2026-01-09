@@ -50,7 +50,11 @@ int SysRunCommandPipe( const char *cmd, int *readpipe )
     pid_t       pid;
     char        *cmdnam = strdup( cmd );
     char        *sp = cmdnam;
+#if defined(__WATCOMC__) && (__WATCOMC__ <= 1290)
     const char  **argv = malloc( strlen( cmd )* sizeof( char * ) );
+#else
+    char        **argv = malloc( strlen( cmd )* sizeof( char * ) );
+#endif
     int         i = 0;
 
     while( sp != NULL ) {

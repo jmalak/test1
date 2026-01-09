@@ -14,7 +14,7 @@ The following topics are discussed:
 .bull
 :HDREF refid='winopt'.
 .bull
-:HDREF refid='linuxopt'.
+:HDREF refid='lnxopt'.
 .bull
 :HDREF refid='qnxopt'.
 .bull
@@ -502,7 +502,7 @@ with all video adapters.
 
 .endnote
 .*
-.section *refid=linuxopt Linux Options
+.section *refid=lnxopt Linux Options
 .*
 .np
 You can use the following switch for the Linux debugger.

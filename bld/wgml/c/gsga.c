@@ -485,10 +485,9 @@ void    scr_ga( void )
 
     if( cc == omit || (*tok_start == '*' && tag_entry == NULL) ) {
         // no operands or tagname * and no previous definition
-        tag_name_missing_err();
+        xx_err_c( err_missing_name, "" );
     }
     if( tag_entry == NULL ) {           // error during previous .gt
-
         scan_restart = scan_stop + 1;   // ignore .ga
         return;
     }
@@ -528,8 +527,7 @@ void    scr_ga( void )
         }
         tag_entry = find_tag( &tag_dict, tagname );
         if( tag_entry == NULL ) {
-            nottag_err();                   // tagname not defined
-            return;
+            xx_err_c( err_user_tag, tagname );  // tagname not defined
         }
     }
 

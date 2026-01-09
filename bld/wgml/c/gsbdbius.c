@@ -135,6 +135,7 @@ static void scr_style_common( style_cw_type type, style_cw_info * cw_info )
 {
     char            *   p;
     char            *   pa;
+    char            *   pb;
     condcode            cc;
     getnum_block        gn;
     int                 len;
@@ -144,7 +145,8 @@ static void scr_style_common( style_cw_type type, style_cw_info * cw_info )
     }
 
     p = scan_start;     // for use later
-    cc = getarg();      // sets token_start, scan_start and scan_end
+    pb = scan_start;    // for use if outputting text
+    cc = getarg();      // sets tok_start, scan_start and scan_end
 
     if( cc == omit ) {                  // same as BD 1
         script_style.style |= type;
@@ -195,7 +197,12 @@ static void scr_style_common( style_cw_type type, style_cw_info * cw_info )
 
                 cc = getnum( &gn );             // try numeric expression evaluation
                 if( (cc == notnum) || (cc == neg) ) {
-                    p = pa;                     // output as text
+                    if( ProcFlags.concat ) {
+                        p = pa;                 // output as text
+                    } else {
+                        pb++;                   // over blank after control word
+                        pa = pb;                // keep spaces at start of text when CO is OFF
+                    }
                 } else if( gn.result == 0 ) {
                     pa = p;                     // nothing happens at all
                 } else {                        // number > 0
@@ -230,7 +237,7 @@ static void scr_style_common( style_cw_type type, style_cw_info * cw_info )
             cw_info->count = 0;
             cw_info->scope = SCS_line;
         }
-        process_text( pa, g_curr_font );     // submit text on the same line
+        process_text( pa, g_curr_font );         // submit text on the same line
         if( type == SCT_bi ) {
             script_style.style &= ~SCT_bd;
             script_style.cw_bd.scope = SCS_none ;
@@ -267,8 +274,27 @@ void scr_us( void )
 }
 
 /************************************************************************/
+/* scr_style_copy() copies the contents of the fields from parameter    */
+/* first to those of parameter second                                   */
+/* the inline phrase tags use this to interact properly with the        */
+/* control words in this file                                           */
+/************************************************************************/
+
+void scr_style_copy( script_style_info * first, script_style_info * second )
+{
+    second->font = first->font;
+    second->style = first->style;
+    second->cw_bd.count = first->cw_bd.count;
+    second->cw_bd.scope = first->cw_bd.scope;
+    second->cw_us.count = first->cw_us.count;
+    second->cw_us.scope = first->cw_us.scope;
+
+    return;
+}
+
+/************************************************************************/
 /* scr_style_end() terminates all processing controlled by the control  */
-/*   words defined in this file                                         */
+/* words defined in this file                                           */
 /* for example, the next tag will cause this function to be called      */
 /************************************************************************/
 
@@ -294,7 +320,7 @@ font_number scr_style_font( font_number in_font )
 {
     font_number     font;
 
-    if( input_cbs->fmflags & II_sol ) {             // only adjust for SOL
+    if( !input_cbs->fm_hh ) {                           // only adjust for SOL
         if( script_style.cw_bd.scope == SCS_count ) {   // adjust/remove BD if appropriate
             if( script_style.cw_bd.count > 0 ) {
                 script_style.cw_bd.count --;

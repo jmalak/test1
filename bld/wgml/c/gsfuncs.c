@@ -282,8 +282,7 @@ char * scr_multi_funcs( char * in, char * pstart, char ** result, int32_t valsiz
     /* Missing ')' is only a problem if the function was found */
 
     if( p_level > 0 ) {      // at least one missing ')'
-        xx_line_err( err_func_parm_end, p - 1 );
-        return( pret );
+        xx_line_err_c( err_func_parm_end, p - 1 );
     }
 
     // collect the mandatory parm(s)
@@ -311,8 +310,7 @@ char * scr_multi_funcs( char * in, char * pstart, char ** result, int32_t valsiz
     m = k + (k < scr_functions[funcind].parm_cnt);// mandatory parm count
 
     if( m < scr_functions[funcind].parm_cnt ) {
-        xx_line_err( err_func_parm_miss, p - 1 );
-        return( pret );
+        xx_line_err_c( err_func_parm_miss, p - 1 );
     }
 
     // collect the optional parm(s)

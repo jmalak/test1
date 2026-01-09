@@ -64,7 +64,6 @@ condcode    scr_width( parm parms[MAX_FUN_PARMS], size_t parmcount, char * * res
     char            *   pe;
     int                 len;
     char                type;
-    char                linestr[MAX_L_AS_STR];
     uint32_t            width;
 
     if( (parmcount < 1) || (parmcount > 2) ) {
@@ -105,18 +104,7 @@ condcode    scr_width( parm parms[MAX_FUN_PARMS], size_t parmcount, char * * res
                 width = len;
                 break;
             default:
-                g_err( err_func_parm, "2 (type)" );
-                if( input_cbs->fmflags & II_tag_mac ) {
-                    ulongtodec( input_cbs->s.m->lineno, linestr );
-                    g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-                } else {
-                    ulongtodec( input_cbs->s.f->lineno, linestr );
-                    g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                }
-                err_count++;
-                show_include_stack();
-                return( neg );
-                break;
+                xx_source_err_c( err_func_parm, "2 (type)" );
             }
         }
     } else {                            // default type c processing

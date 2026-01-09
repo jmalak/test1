@@ -80,6 +80,7 @@ char *LoadTrap( char *trapbuff, char *buff, trap_version *trap_ver )
 {
     char                init_error[256];
     int                 filehndl;
+    int                 no_mem;
     char                *ptr;
     char                *parm;
     const trap_requests *(*ld_func)( const trap_callbacks * );
@@ -92,10 +93,13 @@ char *LoadTrap( char *trapbuff, char *buff, trap_version *trap_ver )
         sprintf( buff, TC_ERR_CANT_LOAD_TRAP, trapbuff );
         return( buff );
     }
-    TrapCode = ReadInImp( filehndl );
+    TrapCode = ReadInImp( filehndl, &no_mem );
     DIGCliClose( filehndl );
     if( TrapCode == NULL || TrapCode->sig != TRAPSIG ) {
-        strcpy( buff, TC_ERR_BAD_TRAP_FILE );
+        if( no_mem )
+            strcpy( buff, TC_ERR_CANT_LOAD_TRAP );
+        else
+            strcpy( buff, TC_ERR_BAD_TRAP_FILE );
         return( buff );
     }
     ld_func = (void *)TrapCode->init_rtn;

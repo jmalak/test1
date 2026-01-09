@@ -82,6 +82,7 @@
 
 #define TAB_COUNT           16          // used with tab_list
 
+#define TEXT_CHARS_DEF      16          // default text_chars text length if allocated or reallocated
 
 /* default filename extensions */
 #define DEF_EXT             ".def"
@@ -90,12 +91,14 @@
 #define LAY_EXT             ".lay"
 #define OPT_EXT             ".opt"
 
+#define CONT_CHAR_DEFAULT   0x03        // cont character
 #define GML_CHAR_DEFAULT    ':'         // start of GML tag
 #define SCR_CHAR_DEFAULT    '.'         // start of Script keyword
-#define CW_SEP_CHAR_DEFAULT ';'         // script controlline seperator
+#define CW_SEP_CHAR_DEFAULT ';'         // script control line seperator
 
 #define CPI10               10          // 10 as a CPI value
 #define FONT0               0           // 0 as a font number
+#define LPI6                6           // 6 as an LPI value
 
 /* string start / end characters Possible incomplete list*/
 #define d_q                 '\"'        // change also is_quote_char()
@@ -106,7 +109,7 @@
 #define slash               '/'
 #define vbar1               '|'
 #define vbar2               '\xdd'
-#define l_q                 '\x60'
+#define l_q                 '`'
 
 #define my_tolower( p )     tolower( (unsigned char)(p) )
 #define my_toupper( p )     toupper( (unsigned char)(p) )
@@ -125,6 +128,10 @@
 typedef uint32_t    line_number;
 typedef uint8_t     text_space;
 typedef uint32_t    units_space;
+
+#if defined( __WATCOMC__ )
+#pragma enable_message( 128 ); // reenable: Warning! W128: 3 padding byte(s) added
+#endif
 
 /***************************************************************************/
 /*  Space units Horiz + Vert              to be redesigned      TBD        */
@@ -168,8 +175,11 @@ typedef struct {
 typedef enum {
     min_subscript = -1000000L,          // smallest valid subscript
     max_subscript =  1000000L,          // largest  valid subscript
-    no_subscript  = 0x11223344          // value if not subscripted
-                // must be outside of range min_subscript,max_subscript
+    // the rest must be outside of range min_subscript,max_subscript
+    no_subscript  = 0x11223344,         // value if not subscripted
+    neg_subscript = 0x22334454,         // negative subscripts (*-)
+    all_subscript = 0x22334455,         // all subscripts (*)
+    pos_subscript = 0x22334456          // positive subscripts (*+)
 } sub_index;
 
 typedef enum {
@@ -184,7 +194,7 @@ typedef enum {
 //    type_char   = 0x0100,
     access_fun  = 0x0200,               // get value via function call
     is_AMP      = 0x0400,               // identify predefined symbol AMP
-    deleted     = 0x0800
+    deleted     = 0x1000
 } symbol_flags;
 
 /***************************************************************************/
@@ -212,6 +222,24 @@ typedef struct symvar {
     void                (*varfunc)( struct symvar * e );// access function
     symbol_flags        flags;
 } symvar;
+
+
+/***************************************************************************/
+/*  Symbolic variable dictionary                                           */
+/*                                                                         */
+/*  Note: fields are those of struct sym_dcp                               */
+/*        this is a debugging aid: it allows the debugger to show the      */
+/*        local symbol dictionary entries wherever input_cbs is in use     */
+/***************************************************************************/
+
+typedef struct symdict {
+    symvar          *   first;          // first symbol in chain
+    symvar      *   *   htbl;           // hash table
+    long                lookups;        // lookup counter
+    long                symbols;        // symbol counter
+    long                compares;       // strcmp counter
+    bool                local;          // local/global flag
+} symdict;
 
 
 /***************************************************************************/
@@ -268,8 +296,6 @@ typedef enum {
     II_input    = II_file | II_macro | II_tag, // all input types (inputcb only)
     II_research = 0x08,                 // research mode (for file only) (inputcb only)
     II_eof      = 0x10,                 // end of file (input) (inputcb only)
-    II_sol      = 0x20,                 // start of line
-    II_eol      = 0x40,                 // end of line (last part)
 } i_flags;
 
 /***************************************************************************/
@@ -279,8 +305,10 @@ typedef enum {
 
 typedef struct inp_line {
     struct inp_line *   next;           // next line
-    i_flags             fmflags;        // II_none, II_sol, and II_eol only
+    i_flags             fmflags;        // II_none only
     bool                fm_symbol;      // hidden_head is from a symbol substition
+    bool                hh_tag;         // hidden_head is from a tag
+    bool                ip_start;       // hidden_head is from an input phrase start tag
     bool                sym_space;      // symbol substitution was preceeded by a space
     char                value[1];       // line content variable length
 } inp_line;
@@ -295,6 +323,12 @@ typedef struct labelcb {
     line_number         lineno;         // lineno of label
     char                label_name[LABEL_NAME_LENGTH + 1];
 } labelcb;
+
+/***************************************************************************/
+/*  Macro  dictionary                                                      */
+/***************************************************************************/
+
+typedef void    mac_dict;
 
 /***************************************************************************/
 /*  macro definition entry  for macro dictionary                           */
@@ -346,6 +380,7 @@ typedef struct  macrocb {
     mac_entry       *   mac;            // macro definition entry
     struct gtentry  *   tag;            // tag entry if macro called via tag
     fflags              flags;
+    bool                ix_seen;        // set when index tag/cw seen (even if indexing is off)
 } macrocb;
 
 /***************************************************************************/
@@ -392,9 +427,10 @@ typedef struct pecb {                   // for .pe control
 
 typedef struct  inputcb {
     struct inputcb  *   prev;
+    char            *   reprocess;      // line saved for reprocessing (uned with IMBED/INCLUDE)
     inp_line        *   hidden_head;    // manage lines split at ; or :
     inp_line        *   hidden_tail;    // manage lines split at ; or :
-    symvar          *   local_dict;     // local symbol dictionary
+    symdict         *   local_dict;     // local symbol dictionary
     ifcb            *   if_cb;          // for controlling .if .th .el
     pecb                pe_cb;          // for controlling .pe perform
     union  {
@@ -402,7 +438,9 @@ typedef struct  inputcb {
         macrocb     *   m;              // used if input is from macro/tag
     } s;
     i_flags             fmflags;
+    bool                fm_hh;          // logical input record is from a hidden_head
     bool                fm_symbol;      // logical input record is from a symbol substition
+    bool                hh_tag;         // hidden_head is indeed from a tag
     bool                sym_space;      // symbol substitution was preceeded by a space
 } inputcb;
 
@@ -820,15 +858,15 @@ typedef enum lay_sub {
     el_ebanregion
 } lay_sub;
 
-/***************************************************************************/
-/*  definitions for functioncodes inserted into input buffer               */
-/*  function start should be an even value                                 */
-/*  function end the following odd value                                   */
-/*                                                                         */
-/*  0xfe 0x02 subscripted text 0xfe 0x03     example for subscripted text  */
-/*                                                                         */
-/*  incomplete will change                                      TBD        */
-/***************************************************************************/
+/****************************************************************************/
+/*  definitions for function codes inserted into input buffer               */
+/*  originally intended for subscript and superscript and similar items     */
+/*    function start should be an even value                                */
+/*    function end the following odd value                                  */
+/*    0xfd 0x02 subscripted text 0xfd 0x03     example for subscripted text */
+/*                                                                          */
+/*  incomplete will change                                      TBD         */
+/****************************************************************************/
 
 typedef enum functs {
     function_escape         = '\xfd',
@@ -838,7 +876,7 @@ typedef enum functs {
     function_sub_end        = '\x03',
 
     function_superscript    = '\x04',
-    function_sup_end        = '\x05'
+    function_sup_end        = '\x05',
 } functs;
 
 /***************************************************************************/
@@ -998,14 +1036,13 @@ typedef struct {
 
 /***************************************************************************/
 /*  word, line, page, column, element items                                */
-/*  Note: to be expanded as needed, and it will need expansion!            */
 /***************************************************************************/
 
 typedef enum {
-    tx_norm = 0,    // normal text
-    tx_sup,         // superscript text
-    tx_sub,         // subscript text
-    tx_figcap,      // FIGCAP prefix ending (only used with WHELP)
+    tx_norm     = 0,    // normal text
+    tx_sup      = 1,    // superscript text
+    tx_sub      = 2,    // subscript text
+    tx_figcap   = 4,    // FIGCAP prefix ending (only used with WHELP)
 } text_type;
 
 typedef enum {
@@ -1013,6 +1050,27 @@ typedef enum {
     tt_def,
     tt_user
 } tab_type;
+
+/***************************************************************************/
+/*  Character device markers                                               */
+/*  These run the functions defined by the first LINEPROCS instance in     */
+/*  the FONTSTYLE block (in the DRIVER)                                    */
+/*  These functions are not part of the font switch sequence as such       */
+/*  Some tags allow multiple markers to be condensed into one              */
+/*                                                                         */
+/*  Note: Although the code does not distinguish, WHELP is the device      */
+/*        these markers produce visible effects with                       */
+/*  Note: PS markers are fs_norm text_chars with no text                   */
+/***************************************************************************/
+
+typedef enum {
+    fs_norm,        // this is not a marker; it is a normal text_chars instance
+    fs_full,        // this is a full marker: both startvalue and endvalue functions are run
+    fs_from,        // this is a half-marker which runs the endvalue function only
+    fs_from2,       // allow one half-marker to do the work of two fs_from half-markers
+    fs_to,          // this is a half-marker which runs the startvalue function only
+    fs_to2          // allow one half-marker to do the work of two fs_to half-markers
+} fontswitch_type;
 
 typedef struct text_chars {                 // tabbing-related fields have comments
     struct  text_chars  *   next;
@@ -1024,9 +1082,11 @@ typedef struct text_chars {                 // tabbing-related fields have comme
             uint16_t        length;
             alignment       tab_align;      // tab alignment
             bool            pre_gap;        // true if original text had preceding space
+            bool            post_ix;        // record state of ProcFlags.post_ix
             font_number     font;
             font_number     phrase_font;    // actual SF font, even if too large
-            i_flags         fmflags;        // flags such as II_sol
+            fontswitch_type f_switch;       // font switch type (bx-related)
+            i_flags         fmflags;        // flags from inputcb
             tab_type        tab_pos;        // if not tt_none, text_chars was positioned by a tab character
             text_type       type;
             char            text[1];
@@ -1087,7 +1147,7 @@ typedef struct {
             bool            at_top;
     struct  eol_ix      *   eol_index;
             FILE        *   fp;
-            font_number     prev_font;
+            font_number     next_font;
             char            short_name[FILENAME_MAX];
             char            file[FILENAME_MAX];
 } graphic_element;
@@ -1096,6 +1156,8 @@ typedef struct {
             uint32_t        h_start;
             uint32_t        v_start;
             uint32_t        h_len;
+            uint32_t        o_subs_skip;
+            uint32_t        o_top_skip;
     struct  eol_ix      *   eol_index;
             bool            ban_adjust; // hline is first line in an outer box at effective top of page
 } hline_element;
@@ -1143,7 +1205,8 @@ typedef struct doc_element {
     } element;
             element_type        type;       // placement avoids padding warning
             bool                do_split;   // split the group with this element starting the new group
-            bool                sk_val;     // true if preceded by SK -1 or SK > 0 (used with CO)
+            bool                in_xmp;     // true is element was inside an XMP/eXMP block
+            bool                op_co_on;   // true if concatenation was on when element was processed
 } doc_element;
 
 /********************************************************************/
@@ -1187,6 +1250,7 @@ typedef struct doc_el_group {
             doc_element     *   first;
             doc_element     *   last;
             group_type          owner;      // tag or control word using this instance
+            font_number         block_font; // used by CO OFF/CO ON blocks
 } doc_el_group;
 
 typedef struct {
@@ -1261,6 +1325,7 @@ typedef struct {
             doc_element     *   col_main;       // cols->main
             doc_el_group    *   col_bot;        // cols->bot
             doc_el_group    *   col_fn;         // cols->fn
+            uint32_t            prev_pg_depth;
 } doc_next_page;
 
 /***************************************************************************/
@@ -1531,5 +1596,282 @@ typedef struct {
     font_number     font;   // font to restore when all scope fields are SCS_none
     style_cw_type   style;  // the current script style to use
 } script_style_info;
+
+/***************************************************************************/
+/*  Bit-flag structs                                                       */
+/***************************************************************************/
+
+/***************************************************************************/
+/*  Mostly command-line option flags, plus pass control                    */
+/***************************************************************************/
+
+typedef struct global_flags {
+    unsigned        quiet         : 1;  // suppress product info
+    unsigned        bannerprinted : 1;  // product info shown
+    unsigned        wscript       : 1;  // enable WATCOM script extension
+    unsigned        firstpass     : 1;  // first or only pass
+    unsigned        lastpass      : 1;  // last or only pass
+    unsigned        inclist       : 1;  // show included files
+    unsigned        warning       : 1;  // show warnings
+    unsigned        statistics    : 1;  // output statistics at end
+
+    unsigned        index         : 1;  // index option
+    unsigned        free9         : 1;
+    unsigned        freea         : 1;
+    unsigned        freeb         : 1;
+    unsigned        freec         : 1;
+    unsigned        freed         : 1;
+    unsigned        freee         : 1;
+    unsigned        research      : 1;  // -r global research mode output
+} global_flags;                         // Global flags
+
+/***************************************************************************/
+/*  Processing flags, some of which are not bit flags at all               */
+/***************************************************************************/
+
+typedef struct proc_flags {
+    doc_section     doc_sect;               // which part are we in (FRONTM, BODY, ...
+    doc_section     doc_sect_nxt;           // next section (tag already seen)
+    unsigned        frontm_seen         : 1;// FRONTM tag seen
+    unsigned        start_section       : 1;// start section call done
+
+    unsigned        researchfile        : 1;// research for one file ( -r filename )
+
+    unsigned        fb_document_done    : 1;// true if fb_document() called
+    unsigned        fb_position_done    : 1;// first positioning on new page done
+    unsigned        page_ejected        : 1;// a page was deliberately ejected (headings)
+    unsigned        page_started        : 1;// we have something for the curr page
+    unsigned        col_started         : 1;// we have something for the curr page
+    unsigned        line_started        : 1;// we have something for current line
+    unsigned        just_override       : 1;// current line is to be justified
+
+    unsigned        author_tag_seen     : 1;// remember first :AUTHOR tag
+    unsigned        date_tag_seen       : 1;// :DATE is allowed only once
+    unsigned        docnum_tag_seen     : 1;// :DOCNUM is allowed only once
+    unsigned        index_tag_cw_seen   : 1;// .IX, :I1-3, :IH1-3, :IREF seen
+    unsigned        stitle_seen         : 1;// remember first stitle value
+    unsigned        title_tag_top       : 1;// :TITLE pre_top_skip used
+    unsigned        title_text_seen     : 1;// remember first :TITLE tag text
+
+    unsigned        heading_banner      : 1;// banner replaced for heading (Hn)
+    unsigned        goto_active         : 1;// processing .go label
+    unsigned        newLevelFile        : 1;// start new include Level (file)
+    unsigned        gml_tag             : 1;// input buf starts with GML_char
+    unsigned        scr_cw              : 1;// input buf starts with SCR_char
+    unsigned        if_cond             : 1;// symbol substitution in if condition
+    unsigned        macro_ignore        : 1;// .. in col 1-2
+    unsigned        CW_force_sep        : 1;// scr cw line was indented and separator must be recognized
+    unsigned        CW_noblank          : 1;// no blank between CW/macro and first operand
+    unsigned        CW_sep_ignore       : 1;// ignore scr cw separator
+    unsigned        indented_text       : 1;// text was indented      
+    unsigned        in_macro_define     : 1;// macro definition active
+    unsigned        suppress_msg        : 1;// suppress error msg (during scanning)
+    unsigned        blanks_allowed      : 1;// blanks allowed (during scanning)
+    unsigned        keep_ifstate        : 1;// leave ifstack unchanged for next line
+    unsigned        substituted         : 1;// variable substituted in current line
+    unsigned        unresolved          : 1;// variable found, but not yet resolved
+    unsigned        literal             : 1;// .li is active
+    unsigned        concat              : 1;// .co ON if set
+    unsigned        cont_char           : 1;// continue char found at end of line
+    unsigned        ct                  : 1;// .ct continue text is active
+    unsigned        pre_fsp             : 1;// activate fsp if line ended in a space from substitution
+    unsigned        fsp                 : 1;// force space in spite of .ct
+    unsigned        co_on_indent        : 1;// indent line if line started with a space from substitution
+    unsigned        zsp                 : 1;// force no space (used when start position of next text_chars is already set)
+    unsigned        as_text_line        : 1;// process text as <text line>
+    unsigned        in_figlist_toc      : 1;// process FIGLIST/TOC text as <text line>
+    unsigned        force_pc            : 1;// use PC tag processing on text not preceded by a tag or control word
+    unsigned        utc                 : 1;// user tag with "continue" is active
+    unsigned        in_trans            : 1;// esc char is specified (.ti set x)
+    unsigned        sk_2nd              : 1;// .sk follows blank lines of .sp
+    unsigned        sk_co               : 1;// CO OFF and .sk -1 or .sk n, n > 0 done
+    unsigned        sk_has_c            : 1;// operand c (cond) used with control word SK
+    unsigned        sp_has_c            : 1;// operand c (cond) used with control word SP
+    unsigned        skips_valid         : 1;// controls set_skip_vars() useage
+    unsigned        new_pagenr          : 1;// FIG/heading page number changed
+    unsigned        first_hdr           : 1;// first header done
+    unsigned        box_cols_cur        : 1;// current BX line had column list
+    unsigned        bx_set_done         : 1;// BX SET was done last before current BX line
+    unsigned        draw_v_line         : 1;// vertical lines are to be drawn for this BX line
+    unsigned        in_bx_box           : 1;// identifies first BX line
+    unsigned        no_bx_hline         : 1;// determines if a horizontal line is to be emitted or not
+    unsigned        top_line            : 1;// determines if current line is at top of page
+    unsigned        vline_done          : 1;// determines if a vertical line was done
+    unsigned        skip_blank_line     : 1;// for XMP/eXMP blocks in macros
+    unsigned        in_reduced          : 1;// position resulting from IN reduced to left edge of device page
+    unsigned        dd_starting         : 1;// DD after break had no text (in next scr_process_break())
+    unsigned        titlep_starting     : 1;// AUTHOR or TITLE had no text (in scr_process_break())
+    unsigned        space_fnd           : 1;// last input record ended with a space character
+    unsigned        force_op            : 1;// force overprint (used with BX CAN/BX DEL)
+    unsigned        op_done             : 1;// overprint done (used for heading page adjustment)
+    unsigned        overprint           : 1;// .sk -1 active or not
+
+    unsigned        block_starting      : 1;// P, PC, LP, NOTE, DL, FIG, GL, LQ, XMP block starting
+    unsigned        keep_left_margin    : 1;// for indented NOTE tag paragraph (and others)
+    unsigned        note_starting       : 1;// :NOTE had no text (in scr_process_break())
+    unsigned        para_is_lp          : 1;// current paragraph was started with tag LP   
+    unsigned        para_starting       : 1;// :LP, :P or :PC had no text (in scr_process_break())
+    unsigned        para_has_text       : 1;// :LP, :P, :PB or :PC had text (used by PB)
+
+    unsigned        no_equal_sign       : 1;// equal sign not found after attribute name (whitespace allowed)
+    unsigned        no_value_found      : 1;// value not found after attribute name =
+    unsigned        reprocess_line      : 1;// unget for current input line
+    unsigned        tag_end_found       : 1;// '.' ending tag found
+
+    unsigned        ix_seen             : 1;// index tag/cw preceded current text (indexing on or not)
+    unsigned        post_ix             : 1;// index tag/cw preceded current text (indexing on)
+
+    unsigned        br_done             : 1;// break done after einl_in_inlp set: set font to FONT0 in process_text()
+    unsigned        einl_in_inlp        : 1;// inline end tag inside inline phrase
+    unsigned        inl_text            : 1;// text just processed was inside an inline phrase
+    unsigned        scr_scope_eip       : 1;// inline phrase end tag inside BD/BI/US scope
+    unsigned        xmp_ut_sf           : 1;// SF in user-defined tag inside XMP block
+
+    unsigned        cc_cp_done          : 1;// CC or CP done; apply current inset to first line only
+    unsigned        dd_break_done       : 1;// DD break done (first line of text only)
+    unsigned        dd_macro            : 1;// DT/DD were invoked inside a macro
+    unsigned        dt_space            : 1;// insert one space after DT text
+    unsigned        null_value          : 1;// current symbol has "" or equivalent as its value
+
+    unsigned        dd_space            : 1;// insert one space before DD text
+    unsigned        need_dd             : 1;// DT seen; DD must be next tag
+    unsigned        need_ddhd           : 1;// DTHD seen; DDHD must be next tag
+    unsigned        need_gd             : 1;// GT seen; GD must be next tag
+    unsigned        need_li_lp          : 1;// top of list/need LI/LP (OL,SL,UL)
+    unsigned        need_tag            : 1;// need tag now, not text
+    unsigned        need_text           : 1;// need text now, not tag or cw/macro
+    unsigned        no_var_impl_err     : 1;// suppress err_var_not_impl msg
+    unsigned        tophead_done        : 1;// tophead symbol set
+    unsigned        wrap_indent         : 1;// for index item/reference indent when line breaks
+
+    unsigned        has_aa_block        : 1;// true if device defined :ABSOLUTEADDRESS
+    unsigned        ps_device           : 1;// true if device is PS (PostScript)
+    unsigned        wh_device           : 1;// true if device is WHELP (help file)
+
+    unsigned        layout              : 1;// within :layout tag and sub tags
+    unsigned        lay_specified       : 1;// LAYOUT option or :LAYOUT tag seen
+    unsigned        banner              : 1;// within layout banner definition
+    unsigned        banregion           : 1;// within layout banregion definition
+    unsigned        hx_level            : 3;// 0 - 6  active Hx :layout sub tag
+    lay_sub         lay_xxx             : 8;// active :layout sub tag
+
+    ju_enum         justify             : 8;// .ju on half off ...
+
+} proc_flags;                           // processing flags
+
+/***************************************************************************/
+/*  Attribute flags; used to catch duplicate/missing required attributes   */
+/*  Note: must be zeroed before each use                                   */
+/***************************************************************************/
+
+typedef struct attr_flags {
+    unsigned    align               : 1;
+    unsigned    abstract_string     : 1;
+    unsigned    appendix_string     : 1;
+    unsigned    binding             : 1;
+    unsigned    backm_string        : 1;
+    unsigned    body_string         : 1;
+    unsigned    bullet              : 1;
+    unsigned    bullet_translate    : 1;
+    unsigned    bullet_font         : 1;
+    unsigned    case_a              : 1;    // using just "case" causes compiler problems
+    unsigned    columns             : 1;
+    unsigned    contents            : 1;
+    unsigned    date_form           : 1;
+    unsigned    default_frame       : 1;
+    unsigned    default_place       : 1;
+    unsigned    delim               : 1;
+    unsigned    depth               : 1;
+    unsigned    display_heading     : 1;
+    unsigned    display_in_toc      : 1;
+    unsigned    docnum_string       : 1;
+    unsigned    docsect             : 1;
+    unsigned    figcap_string       : 1;
+    unsigned    file                : 1;
+    unsigned    fill_string         : 1;
+    unsigned    font                : 1;
+    unsigned    frame               : 1;
+    unsigned    group               : 1;
+    unsigned    gutter              : 1;
+    unsigned    hoffset             : 1;
+    unsigned    header              : 1;
+    unsigned    id                  : 1;
+    unsigned    indent              : 1;
+    unsigned    index_delim         : 1;
+    unsigned    index_string        : 1;
+    unsigned    input_esc           : 1;
+    unsigned    ix                  : 1;
+    unsigned    ixhead_frame        : 1;
+    unsigned    justify             : 1;
+    unsigned    left_adjust         : 1;
+    unsigned    left_indent         : 1;
+    unsigned    left_margin         : 1;
+    unsigned    level               : 1;
+    unsigned    line_break          : 1;
+    unsigned    line_indent         : 1;
+    unsigned    line_left           : 1;
+    unsigned    max_group           : 1;
+    unsigned    note_string         : 1;
+    unsigned    number_font         : 1;
+    unsigned    number_form         : 1;
+    unsigned    number_reset        : 1;
+    unsigned    number_style        : 1;
+    unsigned    page_eject          : 1;
+    unsigned    page_position       : 1;
+    unsigned    page_reset          : 1;
+    unsigned    para_indent         : 1;
+    unsigned    pg                  : 1;
+    unsigned    place               : 1;
+    unsigned    post_skip           : 1;
+    unsigned    pouring             : 1;
+    unsigned    pre_lines           : 1;
+    unsigned    pre_skip            : 1;
+    unsigned    pre_top_skip        : 1;
+    unsigned    preface_string      : 1;
+    unsigned    print               : 1;
+    unsigned    refdoc              : 1;
+    unsigned    refid               : 1;
+    unsigned    refnum              : 1;
+    unsigned    refplace            : 1;
+    unsigned    region_position     : 1;
+    unsigned    reposition          : 1;
+    unsigned    right_adjust        : 1;
+    unsigned    right_indent        : 1;
+    unsigned    right_margin        : 1;
+    unsigned    scale               : 1;
+    unsigned    script_format       : 1;
+    unsigned    sec                 : 1;
+    unsigned    section_eject       : 1;
+    unsigned    see                 : 1;
+    unsigned    see_also_string     : 1;
+    unsigned    see_string          : 1;
+    unsigned    seeid               : 1;
+    unsigned    size                : 1;
+    unsigned    skip                : 1;
+    unsigned    spacing             : 1;
+    unsigned    stitle              : 1;
+    unsigned    stop_eject          : 1;
+    unsigned    string_font         : 1;
+    unsigned    threshold           : 1;
+    unsigned    toc_levels          : 1;
+    unsigned    top_margin          : 1;
+    unsigned    voffset             : 1;
+    unsigned    width               : 1;
+    unsigned    wrap_indent         : 1;
+    unsigned    xoff                : 1;
+    unsigned    yoff                : 1;
+} attr_flags;                           // attribute flags
+
+/***************************************************************************/
+/*  structure for parsed tag attribute names and values                    */
+/***************************************************************************/
+
+typedef struct tag_att_val {
+    char        *   att_start;
+    uint32_t        att_len;
+    char        *   val_start;
+    uint32_t        val_len;
+    bool            val_quoted;
+} tag_att_val;
 
 #endif                                  // GTYPE_H_INCLUDED

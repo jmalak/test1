@@ -1,4 +1,4 @@
-#pmake: os_nt watcom axp
+#pmake: os_nt cpu_axp watcom axp
 
 host_os  = nt
 host_cpu = axp

@@ -120,6 +120,7 @@ extern void Dmp_resources( void );
 /*
  * wdseg.c
  */
+extern void Dmp_one_seg_data( unsigned_16 );
 extern void Dmp_seg_tab( void );
 
 /*

@@ -34,7 +34,6 @@
 
 extern int   _ProcSetsFP( void * );
 extern void  *RtlLookupFunctionEntry( unsigned long );
-extern void  RtlUnwind( unsigned long, unsigned long, void *, unsigned long );
 extern void  RtlUnwindRfp( unsigned long, unsigned long, void *, unsigned long );
 
 typedef struct
@@ -60,7 +59,7 @@ void longjmpex( jmp_buf jb, int ret )
     er.ExceptionInformation[0] = jd->sp;
 
     if( !_ProcSetsFP( RtlLookupFunctionEntry( jd->pc ) ) )
-        RtlUnwind( jd->sp, jd->pc, &er, ret );
+        RtlUnwind( (PVOID)jd->sp, (PVOID)jd->pc, &er, (PVOID)ret );
     else
         RtlUnwindRfp( jd->fp, jd->pc, &er, ret );
 } /* longjmp() */

@@ -24,8 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  Implementation of execv() and _wexecv().
 *
 ****************************************************************************/
 
@@ -38,7 +37,7 @@
 #include "_environ.h"
 #include "_process.h"
 
-_WCRTLINK int __F_NAME(execv,_wexecv)( const CHAR_TYPE *path, const CHAR_TYPE * const *argv )
+_WCRTLINK int __F_NAME(execv,_wexecv)( const CHAR_TYPE *path, EXCV_CHAR * const *argv )
     {
         #ifdef __WIDECHAR__
             if( _RWD_wenviron == NULL )  __create_wide_environment();
@@ -47,7 +46,7 @@ _WCRTLINK int __F_NAME(execv,_wexecv)( const CHAR_TYPE *path, const CHAR_TYPE * 
             #ifdef __RDOS__
                 return( _doexec( path, argv );
             #else
-                return( execve( path, argv, (const CHAR_TYPE **)_RWD_environ ) );
+                return( execve( path, argv, (EXCV_CHAR **)_RWD_environ ) );
             #endif            
         #endif
     }

@@ -523,7 +523,6 @@ const   lay_att     ul_att[13] =
 
 void    lay_dl( const gmltag * entry )
 {
-    att_args            l_args;
     char            *   p;
     condcode            cc;
     dl_lay_level    *   curr_level  = NULL;
@@ -538,6 +537,7 @@ void    lay_dl( const gmltag * entry )
         eat_lay_sub_tag();
         return;                         // process during first pass only
     }
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     if( ProcFlags.lay_xxx != el_dl ) {
         ProcFlags.lay_xxx = el_dl;
     }
@@ -558,49 +558,93 @@ void    lay_dl( const gmltag * entry )
 
     /* Get the DL LAYOUT settings */
 
-    cc = get_lay_sub_and_value( &l_args );  // get att with value
+    cc = get_attr_and_value();            // get att with value
     while( cc == pos ) {
         for( k = 0, curr = dl_att[k]; curr > 0; k++, curr = dl_att[k] ) {
 
-            if( !strnicmp( att_names[curr], l_args.start[0], l_args.len[0] ) ) {
-                p = l_args.start[1];
+            if( !strnicmp( att_names[curr], g_att_val.att_start, g_att_val.att_len ) ) {
+                p = g_att_val.val_start;
 
                 switch( curr ) {
                 case   e_level:
+                    if( AttrFlags.level ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_int8( p, curr, &dl_layout->level );
+                    AttrFlags.level = true;
                     break;
                 case   e_left_indent:
+                    if( AttrFlags.left_indent ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &dl_layout->left_indent );
+                    AttrFlags.left_indent = true;
                     break;
                 case   e_right_indent:
+                    if( AttrFlags.right_indent ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &dl_layout->right_indent );
+                    AttrFlags.right_indent = true;
                     break;
                 case   e_pre_skip:
+                    if( AttrFlags.pre_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &dl_layout->pre_skip );
+                    AttrFlags.pre_skip = true;
                     break;
                 case   e_skip:
+                    if( AttrFlags.skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &dl_layout->skip );
+                    AttrFlags.skip = true;
                     break;
                 case   e_spacing:
+                    if( AttrFlags.spacing ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_spacing( p, curr, &dl_layout->spacing );
+                    AttrFlags.spacing = true;
                     break;
                 case   e_post_skip:
+                    if( AttrFlags.post_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &dl_layout->post_skip );
+                    AttrFlags.post_skip = true;
                     break;
                 case   e_align:
+                    if( AttrFlags.align ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &dl_layout->align );
+                    AttrFlags.align = true;
                     break;
                 case   e_line_break:
+                    if( AttrFlags.line_break ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_yes_no( p, curr, &dl_layout->line_break );
+                    AttrFlags.line_break = true;
                     break;
                 default:
                     internal_err( __FILE__, __LINE__ );
-                    break;
                 }
                 break;                  // break out of for loop
             }
         }
-        cc = get_lay_sub_and_value( &l_args );  // get att with value
+        cc = get_attr_and_value();            // get att with value
     }
 
     /* Now integrate the DL LAYOUT into the linked list */
@@ -669,7 +713,6 @@ void    lay_dl( const gmltag * entry )
 
 void    lay_gl( const gmltag * entry )
 {
-    att_args            l_args;
     char            *   p;
     condcode            cc;
     gl_lay_level    *   curr_level  = NULL;
@@ -684,6 +727,7 @@ void    lay_gl( const gmltag * entry )
         eat_lay_sub_tag();
         return;                         // process during first pass only
     }
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     if( ProcFlags.lay_xxx != el_gl ) {
         ProcFlags.lay_xxx = el_gl;
     }
@@ -704,49 +748,93 @@ void    lay_gl( const gmltag * entry )
 
     /* Get the GL LAYOUT settings */
 
-    cc = get_lay_sub_and_value( &l_args );  // get att with value
+    cc = get_attr_and_value();            // get att with value
     while( cc == pos ) {
         for( k = 0, curr = gl_att[k]; curr > 0; k++, curr = gl_att[k] ) {
 
-            if( !strnicmp( att_names[curr], l_args.start[0], l_args.len[0] ) ) {
-                p = l_args.start[1];
+            if( !strnicmp( att_names[curr], g_att_val.att_start, g_att_val.att_len ) ) {
+                p = g_att_val.val_start;
 
                 switch( curr ) {
                 case   e_level:
+                    if( AttrFlags.level ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_int8( p, curr, &gl_layout->level );
+                    AttrFlags.level = true;
                     break;
                 case   e_left_indent:
+                    if( AttrFlags.left_indent ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &gl_layout->left_indent );
+                    AttrFlags.left_indent = true;
                     break;
                 case   e_right_indent:
+                    if( AttrFlags.right_indent ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &gl_layout->right_indent );
+                    AttrFlags.right_indent = true;
                     break;
                 case   e_pre_skip:
+                    if( AttrFlags.pre_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &gl_layout->pre_skip );
+                    AttrFlags.pre_skip = true;
                     break;
                 case   e_skip:
+                    if( AttrFlags.skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &gl_layout->skip );
+                    AttrFlags.skip = true;
                     break;
                 case   e_spacing:
+                    if( AttrFlags.spacing ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_spacing( p, curr, &gl_layout->spacing );
+                    AttrFlags.spacing = true;
                     break;
                 case   e_post_skip:
+                    if( AttrFlags.post_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &gl_layout->post_skip );
+                    AttrFlags.post_skip = true;
                     break;
                 case   e_align:
+                    if( AttrFlags.align ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &gl_layout->align );
+                    AttrFlags.align = true;
                     break;
                 case   e_delim:
+                    if( AttrFlags.delim ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_char( p, curr, &gl_layout->delim );
+                    AttrFlags.delim = true;
                     break;
                 default:
                     internal_err( __FILE__, __LINE__ );
-                    break;
                 }
                 break;                  // break out of for loop
             }
         }
-        cc = get_lay_sub_and_value( &l_args );  // get att with value
+        cc = get_attr_and_value();            // get att with value
     }
 
     /* Now integrate the GL LAYOUT into the linked list */
@@ -815,7 +903,6 @@ void    lay_gl( const gmltag * entry )
 
 void    lay_ol( const gmltag * entry )
 {
-    att_args            l_args;
     char            *   p;
     condcode            cc;
     int                 k;
@@ -830,6 +917,7 @@ void    lay_ol( const gmltag * entry )
         eat_lay_sub_tag();
         return;                         // process during first pass only
     }
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     if( ProcFlags.lay_xxx != el_ol ) {
         ProcFlags.lay_xxx = el_ol;
     }
@@ -852,61 +940,115 @@ void    lay_ol( const gmltag * entry )
 
     /* Get the OL LAYOUT settings */
 
-    cc = get_lay_sub_and_value( &l_args );  // get att with value
+    cc = get_attr_and_value();            // get att with value
     while( cc == pos ) {
         for( k = 0, curr = ol_att[k]; curr > 0; k++, curr = ol_att[k] ) {
 
-            if( !strnicmp( att_names[curr], l_args.start[0], l_args.len[0] ) ) {
-                p = l_args.start[1];
+            if( !strnicmp( att_names[curr], g_att_val.att_start, g_att_val.att_len ) ) {
+                p = g_att_val.val_start;
 
                 switch( curr ) {
                 case   e_level:
+                    if( AttrFlags.level ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_int8( p, curr, &ol_layout->level );
+                    AttrFlags.level = true;
                     break;
                 case   e_left_indent:
+                    if( AttrFlags.left_indent ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ol_layout->left_indent );
+                    AttrFlags.left_indent = true;
                     break;
                 case   e_right_indent:
+                    if( AttrFlags.right_indent ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ol_layout->right_indent );
+                    AttrFlags.right_indent = true;
                     break;
                 case   e_pre_skip:
+                    if( AttrFlags.pre_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ol_layout->pre_skip );
+                    AttrFlags.pre_skip = true;
                     break;
                 case   e_skip:
+                    if( AttrFlags.skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ol_layout->skip );
+                    AttrFlags.skip = true;
                     break;
                 case   e_spacing:
+                    if( AttrFlags.spacing ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_spacing( p, curr, &ol_layout->spacing );
+                    AttrFlags.spacing = true;
                     break;
                 case   e_post_skip:
+                    if( AttrFlags.post_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ol_layout->post_skip );
+                    AttrFlags.post_skip = true;
                     break;
                 case   e_font:
+                    if( AttrFlags.font ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_font_number( p, curr, &ol_layout->font );
                     if( ol_layout->font >= wgml_font_cnt ) {
                         ol_layout->font = 0;
                     }
+                    AttrFlags.font = true;
                     break;
                 case   e_align:
+                    if( AttrFlags.align ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ol_layout->align );
+                    AttrFlags.align = true;
                     break;
                 case   e_number_style:
+                    if( AttrFlags.number_style ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_number_style( p, curr, &ol_layout->number_style );
+                    AttrFlags.number_style = true;
                     break;
                 case   e_number_font:
+                    if( AttrFlags.number_font ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_font_number( p, curr, &ol_layout->number_font );
                     if( ol_layout->number_font >= wgml_font_cnt ) {
                         ol_layout->number_font = 0;
                     }
+                    AttrFlags.number_font = true;
                     break;
                 default:
                     internal_err( __FILE__, __LINE__ );
-                    break;
                 }
                 break;                  // break out of for loop
             }
         }
-        cc = get_lay_sub_and_value( &l_args );  // get att with value
+        cc = get_attr_and_value();            // get att with value
     }
 
     /* Now integrate the OL LAYOUT into the linked list */
@@ -981,7 +1123,6 @@ void    lay_ol( const gmltag * entry )
 
 void    lay_sl( const gmltag * entry )
 {
-    att_args            l_args;
     char            *   p;
     condcode            cc;
     int                 k;
@@ -996,6 +1137,7 @@ void    lay_sl( const gmltag * entry )
         eat_lay_sub_tag();
         return;                         // process during first pass only
     }
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     if( ProcFlags.lay_xxx != el_sl ) {
         ProcFlags.lay_xxx = el_sl;
     }
@@ -1015,49 +1157,88 @@ void    lay_sl( const gmltag * entry )
 
     /* Get the SL LAYOUT settings */
 
-    cc = get_lay_sub_and_value( &l_args );  // get att with value
+    cc = get_attr_and_value();            // get att with value
     while( cc == pos ) {
         for( k = 0, curr = sl_att[k]; curr > 0; k++, curr = sl_att[k] ) {
 
-            if( !strnicmp( att_names[curr], l_args.start[0], l_args.len[0] ) ) {
-                p = l_args.start[1];
+            if( !strnicmp( att_names[curr], g_att_val.att_start, g_att_val.att_len ) ) {
+                p = g_att_val.val_start;
 
                 switch( curr ) {
                 case   e_level:
+                    if( AttrFlags.level ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_int8( p, curr, &sl_layout->level );
+                    AttrFlags.level = true;
                     break;
                 case   e_left_indent:
+                    if( AttrFlags.left_indent ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &sl_layout->left_indent );
+                    AttrFlags.left_indent = true;
                     break;
                 case   e_right_indent:
+                    if( AttrFlags.right_indent ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &sl_layout->right_indent );
+                    AttrFlags.right_indent = true;
                     break;
                 case   e_pre_skip:
+                    if( AttrFlags.pre_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &sl_layout->pre_skip );
+                    AttrFlags.pre_skip = true;
                     break;
                 case   e_skip:
+                    if( AttrFlags.skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &sl_layout->skip );
+                    AttrFlags.skip = true;
                     break;
                 case   e_spacing:
+                    if( AttrFlags.spacing ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_spacing( p, curr, &sl_layout->spacing );
+                    AttrFlags.spacing = true;
                     break;
                 case   e_post_skip:
+                    if( AttrFlags.post_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &sl_layout->post_skip );
+                    AttrFlags.post_skip = true;
                     break;
                 case   e_font:
+                    if( AttrFlags.font ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_font_number( p, curr, &sl_layout->font );
                     if( sl_layout->font >= wgml_font_cnt ) {
                         sl_layout->font = 0;
                     }
+                    AttrFlags.font = true;
                     break;
                 default:
                     internal_err( __FILE__, __LINE__ );
-                    break;
                 }
                 break;                  // break out of for loop
             }
         }
-        cc = get_lay_sub_and_value( &l_args );  // get att with value
+        cc = get_attr_and_value();            // get att with value
     }
 
     /* Now integrate the SL LAYOUT into the linked list */
@@ -1122,7 +1303,6 @@ void    lay_sl( const gmltag * entry )
 
 void    lay_ul( const gmltag * entry )
 {
-    att_args            l_args;
     char            *   p;
     condcode            cc;
     int                 k;
@@ -1137,6 +1317,7 @@ void    lay_ul( const gmltag * entry )
         eat_lay_sub_tag();
         return;                         // process during first pass only
     }
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     if( ProcFlags.lay_xxx != el_ul ) {
         ProcFlags.lay_xxx = el_ul;
     }
@@ -1160,64 +1341,123 @@ void    lay_ul( const gmltag * entry )
 
     /* Get the UL LAYOUT settings */
 
-    cc = get_lay_sub_and_value( &l_args );  // get att with value
+    cc = get_attr_and_value();            // get att with value
     while( cc == pos ) {
         for( k = 0, curr = ul_att[k]; curr > 0; k++, curr = ul_att[k] ) {
 
-            if( !strnicmp( att_names[curr], l_args.start[0], l_args.len[0] ) ) {
-                p = l_args.start[1];
+            if( !strnicmp( att_names[curr], g_att_val.att_start, g_att_val.att_len ) ) {
+                p = g_att_val.val_start;
 
                 switch( curr ) {
                 case   e_level:
+                    if( AttrFlags.level ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_int8( p, curr, &ul_layout->level );
+                    AttrFlags.level = true;
                     break;
                 case   e_left_indent:
+                    if( AttrFlags.left_indent ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ul_layout->left_indent );
+                    AttrFlags.left_indent = true;
                     break;
                 case   e_right_indent:
+                    if( AttrFlags.right_indent ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ul_layout->right_indent );
+                    AttrFlags.right_indent = true;
                     break;
                 case   e_pre_skip:
+                    if( AttrFlags.pre_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ul_layout->pre_skip );
+                    AttrFlags.pre_skip = true;
                     break;
                 case   e_skip:
+                    if( AttrFlags.skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ul_layout->skip );
+                    AttrFlags.skip = true;
                     break;
                 case   e_spacing:
+                    if( AttrFlags.spacing ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_spacing( p, curr, &ul_layout->spacing );
+                    AttrFlags.spacing = true;
                     break;
                 case   e_post_skip:
+                    if( AttrFlags.post_skip ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ul_layout->post_skip );
+                    AttrFlags.post_skip = true;
                     break;
                 case   e_font:
+                    if( AttrFlags.font ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_font_number( p, curr, &ul_layout->font );
                     if( ul_layout->font >= wgml_font_cnt ) {
                         ul_layout->font = 0;
                     }
+                    AttrFlags.font = true;
                     break;
                 case   e_align:
+                    if( AttrFlags.align ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_space_unit( p, curr, &ul_layout->align );
+                    AttrFlags.align = true;
                     break;
                 case   e_bullet:
+                    if( AttrFlags.bullet ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_char( p, curr, &ul_layout->bullet );
+                    AttrFlags.bullet = true;
                     break;
                 case   e_bullet_translate:
+                    if( AttrFlags.bullet_translate ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_yes_no( p, curr, &ul_layout->bullet_translate );
+                    AttrFlags.bullet_translate = true;
                     break;
                 case   e_bullet_font:
+                    if( AttrFlags.bullet_font ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     i_font_number( p, curr, &ul_layout->bullet_font );
                     if( ul_layout->bullet_font >= wgml_font_cnt ) {
                         ul_layout->bullet_font = 0;
                     }
+                    AttrFlags.bullet_font = true;
                     break;
                 default:
                     internal_err( __FILE__, __LINE__ );
-                    break;
                 }
                 break;                  // break out of for loop
             }
         }
-        cc = get_lay_sub_and_value( &l_args );  // get att with value
+        cc = get_attr_and_value();            // get att with value
     }
 
     /* Now integrate the UL LAYOUT into the linked list */

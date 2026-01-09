@@ -193,7 +193,8 @@ void gen_heading( char * h_text, char * id, hdsrc hn_lvl, hdsrc hds_lvl )
     if( page_width ) {
         t_page.max_width = t_page.page_width;
     }
-    update_headnumx( hn_lvl, hds_lvl );
+    if( hds_lvl < hds_abstract )
+        update_headnumx( hn_lvl, hds_lvl );
 
     if( hds_lvl == hds_appendix ) {
         prefixlen = strlen( layout_work.appendix.string ) + strlen( hd_nums[hn_lvl].hnumstr );
@@ -564,8 +565,9 @@ static void gml_hx_common( const gmltag * entry, hdsrc hn_lvl )
 
     hxstr[2] = '0' + hn_lvl;
 
-    scr_process_break();                    // commit any prior text
-    start_doc_sect();                       // in case not already done
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
+    scr_process_break();                            // commit any prior text
+    start_doc_sect();                               // in case not already done
 
     if( ProcFlags.dd_starting ) {
         t_element = alloc_doc_el( el_vspace );
@@ -582,9 +584,7 @@ static void gml_hx_common( const gmltag * entry, hdsrc hn_lvl )
         if( !((ProcFlags.doc_sect == doc_sect_body) ||
             (ProcFlags.doc_sect_nxt == doc_sect_body)) ) {
 
-            g_err( err_tag_wrong_sect, hxstr, ":BODY section" );
-            err_count++;
-            file_mac_info();
+            xx_err_cc( err_tag_wrong_sect, hxstr, ":BODY section" );
         } else {
             hd_level = hn_lvl;              // H0 always valid in BODY
         }
@@ -593,9 +593,7 @@ static void gml_hx_common( const gmltag * entry, hdsrc hn_lvl )
         if( !((ProcFlags.doc_sect >= doc_sect_body) ||
             (ProcFlags.doc_sect_nxt >= doc_sect_body)) ) {
 
-            g_err( err_tag_wrong_sect, hxstr, ":BODY :APPENDIX :BACKM sections" );
-            err_count++;
-            file_mac_info();
+            xx_err_cc( err_tag_wrong_sect, hxstr, ":BODY :APPENDIX :BACKM sections" );
         } else if( !((ProcFlags.doc_sect == doc_sect_body) ||
             (ProcFlags.doc_sect_nxt == doc_sect_body)) ) {  // APPENDIX or BACKM
             hd_level = hn_lvl;              // H1 valid at this point
@@ -615,6 +613,11 @@ static void gml_hx_common( const gmltag * entry, hdsrc hn_lvl )
     case  hds_h6:
         if( hd_level < hn_lvl - 1 ) {
             g_wng_hlevel( hn_lvl, hd_level + 1 );
+            /* Update numbers for the skipped headings. */
+            for( hds_lvl = hd_level + 1; hds_lvl < hn_lvl; ++hds_lvl ) {
+                hd_nums[hds_lvl].headn++;
+                update_headnumx( hds_lvl, hds_lvl);
+            }
             hd_level = hn_lvl;          // hn_lvl + 1 to H6 will be valid if none are skipped
         } else {
             hd_level = hn_lvl;          // hn_lvl valid at this point
@@ -624,9 +627,7 @@ static void gml_hx_common( const gmltag * entry, hdsrc hn_lvl )
         if( !((ProcFlags.doc_sect >= doc_sect_abstract) ||
             (ProcFlags.doc_sect_nxt >= doc_sect_abstract)) ) {
 
-            g_err( err_tag_wrong_sect, hxstr, ":ABSTRACT section or later" );
-            err_count++;
-            file_mac_info();
+            xx_err_cc( err_tag_wrong_sect, hxstr, ":ABSTRACT section or later" );
         }
         break;
     }
@@ -647,15 +648,31 @@ static void gml_hx_common( const gmltag * entry, hdsrc hn_lvl )
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
             if( !strnicmp( "id", p, 2 ) ) {
                 p += 2;
-                p = get_refid_value( p, id );
-                if( val_start == NULL ) {
+                p = get_id_value( p, id );
+                if( AttrFlags.id ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.id = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
                 id_seen = true;             // valid id attribute found
@@ -664,13 +681,27 @@ static void gml_hx_common( const gmltag * entry, hdsrc hn_lvl )
                 }
             } else if( !strnicmp( "stitle", p, 6 ) ) {
                 p += 6;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.stitle ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.stitle = true;
+                xx_warn_c( wng_unsupp_att, "stitle" );
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                g_warn( wng_unsupp_att, "stitle" );
-                wng_count++;
-                file_mac_info();
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
@@ -727,6 +758,11 @@ static void gml_hx_common( const gmltag * entry, hdsrc hn_lvl )
             } else if( layout_work.hx.hx_head[hds_lvl].hd_case == case_upper ) {
                 strupr( p );
             }
+        }
+        if( ProcFlags.overprint && ProcFlags.cc_cp_done
+                && (layout_work.hx.hx_head[hds_lvl].page_eject == ej_no)
+                && layout_work.hx.hx_head[hds_lvl].line_break ) {
+            ProcFlags.overprint = false;        // cancel overprint
         }
         gen_heading( p, id, hn_lvl, hds_lvl );
         scan_start = scan_stop + 1;
@@ -825,11 +861,26 @@ void gml_h6( const gmltag * entry )
 
 void out_head_page( ffh_entry * in_entry, ref_entry * in_ref, uint32_t in_pageno )
 {
-    if( pass == 1 ) {                                       // only on first pass
-        in_entry->pageno = in_pageno;
+    uint32_t    currno;
+
+    currno = in_pageno;                         // default value
+
+    /************************************************************************/
+    /*  at least one line was overprinted on a previous page, and this is   */
+    /*  first heading after that page                                       */
+    /*  the page number used in the TOC is reduced by 1 to match wgml 4.0   */
+    /************************************************************************/
+
+    if( ProcFlags.op_done ) {
+        currno--;
+        ProcFlags.op_done = false;              // always clear the flag
+    }
+
+    if( pass == 1 ) {                           // only on first pass
+        in_entry->pageno = currno;
     } else {
-        if( in_pageno != in_entry->pageno ) {    // page number changed
-            in_entry->pageno = in_pageno;
+        if( in_pageno != in_entry->pageno ) {   // page number changed
+            in_entry->pageno = currno;
             if( GlobalFlags.lastpass ) {
                 if( (in_ref != NULL) && (in_ref->id != NULL) && in_ref->id[0] ) {
                     hd_fwd_refs = init_fwd_ref( hd_fwd_refs, in_ref->id );

@@ -26,5 +26,5 @@ void main( void )
 	feraiseexcept( FE_DIVBYZERO );
 }
 .exmp end
-.class C99
+.class ISO C99
 .system

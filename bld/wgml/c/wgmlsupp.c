@@ -26,6 +26,7 @@
 *
 * Description:  Defines functions moved out of wgml.c so they can be linked
 *               into the research programs without including main() from wgml.c
+*               These should probably be moved to appropriate files at some point
 *                   free_inc_fp()
 *                   free_resources()
 *                   free_some_mem()
@@ -57,7 +58,8 @@
 void g_banner( void )
 {
     if( !(GlobalFlags.bannerprinted | GlobalFlags.quiet) ) {
-        out_msg( banner1w( "Script/GML", _WGML_VERSION_ ) CRLF );
+        out_msg( "WATCOM Script/GML V4.0 Copyright by WATCOM International Corp. 1985, 1993." CRLF );
+        out_msg( banner1( "Special Edition for Open Watcom", _WGML_VERSION_ ) CRLF );
         out_msg( banner2a() CRLF );
         out_msg( banner3 CRLF );
         out_msg( banner3a CRLF );
@@ -73,7 +75,7 @@ void g_banner( void )
 /*  increment include level                                                */
 /***************************************************************************/
 
-void    inc_inc_level( void )
+void inc_inc_level( void )
 {
     inc_level++;                        // start new level
     if( inc_level > max_inc_level ) {
@@ -96,7 +98,7 @@ void my_exit( int rc )
 /*  Try to close an opened include file                                    */
 /***************************************************************************/
 
-static  bool    free_inc_fp( void )
+static bool free_inc_fp( void )
 {
     inputcb *   ip;
     filecb  *   cb;
@@ -110,16 +112,12 @@ static  bool    free_inc_fp( void )
                     rc = fgetpos( cb->fp, &cb->pos );
                     if( rc != 0 ) {
                         strerror_s( buff2, buf_size, errno );
-                        g_err( err_file_io, buff2, cb->filename );
-                        err_count++;
-                        g_suicide();
+                        xx_simple_err_cc( err_file_io, buff2, cb->filename );
                     }
                     rc = fclose( cb->fp );
                     if( rc != 0 ) {
                         strerror_s( buff2, buf_size, errno );
-                        g_err( err_file_io, buff2, cb->filename );
-                        err_count++;
-                        g_suicide();
+                        xx_simple_err_cc( err_file_io, buff2, cb->filename );
                     }
                     cb->flags &= ~FF_open;
                     return( true );
@@ -155,16 +153,12 @@ static void reopen_inc_fp( filecb *cb )
             rc = fsetpos( cb->fp, &cb->pos );
             if( rc != 0 ) {
                 strerror_s( buff2, buf_size, errno );
-                g_err( err_file_io, buff2, cb->filename );
-                err_count++;
-                g_suicide();
+                xx_simple_err_cc( err_file_io, buff2, cb->filename );
             }
             cb->flags |= FF_open;
         } else {
             strerror_s( buff2, buf_size, erc2 );
-            g_err( err_file_io, buff2, cb->filename );
-            err_count++;
-            g_suicide();
+            xx_simple_err_cc( err_file_io, buff2, cb->filename );
         }
     }
     return;
@@ -174,12 +168,11 @@ static void reopen_inc_fp( filecb *cb )
 /*  Report resource exhaustion: may eventually try to correct the problem  */
 /***************************************************************************/
 
-bool    free_resources( errno_t in_errno )
+bool free_resources( errno_t in_errno )
 {
-    if( in_errno == ENOMEM ) g_err( err_no_memory );
-    else g_err( err_no_handles );
-    err_count++;
-    return( false );
+    if( in_errno == ENOMEM ) xx_simple_err( err_no_memory );
+    else xx_simple_err( err_no_handles );
+    return( false );        // required by compiler
 }
 
 
@@ -187,7 +180,7 @@ bool    free_resources( errno_t in_errno )
 /*  free some buffers                                                      */
 /***************************************************************************/
 
-void    free_some_mem( void )
+void free_some_mem( void )
 {
     doc_pane    *   sav_pane;
     int             i;
@@ -227,6 +220,9 @@ void    free_some_mem( void )
     }
     if( global_dict != NULL ) {
         free_dict( &global_dict );
+    }
+    if( sys_dict != NULL ) {
+        free_dict( &sys_dict );
     }
     if( macro_dict != NULL ) {
         free_macro_dict( &macro_dict );
@@ -348,45 +344,72 @@ void    free_some_mem( void )
 /***************************************************************************/
 /*  get line from current macro                                            */
 /***************************************************************************/
-static  void    get_macro_line( void )
+
+static void get_macro_line( void )
 {
     macrocb *   cb;
 
     if( input_cbs->fmflags & II_file ) {// current input is file not macro
-        g_err( err_logic_mac );
-        show_include_stack();
-        err_count++;
-        g_suicide();
+        xx_err( err_logic_mac );
     }
     cb = input_cbs->s.m;
 
     if( cb->macline == NULL ) {         // no more macrolines
-        if( !ProcFlags.concat && (input_cbs->prev->fmflags & II_eol) &&
+        if( !ProcFlags.concat && !ProcFlags.cont_char && (input_cbs->hidden_head == NULL) &&
                 ((input_cbs->prev->fmflags & II_file) ||
                  (input_cbs->prev->fmflags & II_macro)) ) {
             scr_process_break();
         }
         input_cbs->fmflags |= II_eof;
-        input_cbs->fmflags &= ~(II_sol | II_eol);
         cb->flags          |= FF_eof;
         *buff2              = '\0';
+        if( (input_cbs->prev->fmflags & II_macro) ) {
+            if( cb->ix_seen && !ProcFlags.ix_seen) {
+                ProcFlags.ix_seen = true;
+            }
+        }
     } else {
         cb->lineno++;
-        if( ProcFlags.utc ) { 
-            input_cbs->fmflags &= ~II_eol;
-        } else if( ProcFlags.ct ) {
-            input_cbs->fmflags &= ~II_sol;            
-        } else if( (input_cbs->fmflags & II_macro) && input_cbs->fm_symbol
-                && !input_cbs->sym_space ) {
-            input_cbs->fmflags &= ~(II_sol | II_eol);
-        } else {
-            input_cbs->fmflags |= (II_sol | II_eol);
-        }
+
         cb->flags          &= ~FF_eof;
         input_cbs->fmflags &= ~II_eof;
         strcpy_s( buff2, buf_size, cb->macline->value );
         cb->macline         = cb->macline->next;
+
+        if( input_cbs->fmflags & II_macro ) {   // not invoked by a user-defined tag
+            input_cbs->fm_hh = false;           // not from hidden_head
+            input_cbs->hh_tag = false;          // not tag
+        }
     }
+}
+
+
+/***************************************************************************/
+/*  check input_cbs->if_cb to see if blank line should be counted          */
+/*  return "true" if the line should be counted, "false" if not            */
+/*  this is a very specialized function                                    */
+/***************************************************************************/
+
+static bool check_if( void )
+{
+    bool    retval  = true;
+    ifflags flagset = input_cbs->if_cb->if_flags[input_cbs->if_cb->if_level];
+
+    if( input_cbs->if_cb->if_level > 0 ) {      // .if active
+        /* This is very specific and may need to be expanded */
+        if( input_cbs->if_cb->if_level == 1 ) { // topmost .if active
+            if( flagset.ifdo ) {                // in do begin/do end block
+                if( flagset.iftrue && flagset.ifelse ) {
+                    retval = false;             // do not process line
+                }
+                if( flagset.iffalse && !flagset.ifelse ) {
+                    retval = false;             // do not process line
+                }
+            }
+        }
+    }
+
+    return( retval );
 }
 
 
@@ -396,14 +419,25 @@ static  void    get_macro_line( void )
 /*                                                                         */
 /*  returns  false for EOF                                                 */
 /***************************************************************************/
-bool    get_line( bool display_line )
+
+bool get_line( bool display_line )
 {
-    filecb      *   cb;
     char        *   p;
+    filecb      *   cb;
     inp_line    *   pline;
 
     if( ProcFlags.reprocess_line ) {    // there was an unget
         ProcFlags.reprocess_line = false;   // only used for :LAYOUT
+        return( !(input_cbs->fmflags & II_eof) );
+    }
+    if( input_cbs->reprocess != NULL ) {
+        strcpy( buff2, input_cbs->reprocess );      // restore line to be reprocessed after IMBED/INCLUDE
+        mem_free( input_cbs->reprocess );
+        input_cbs->reprocess = NULL;
+        buff2_lg = strnlen_s( buff2, buf_size );
+        *(buff2 + buff2_lg) = '\0';
+        *(buff2 + buff2_lg + 1) = '\0';
+        ProcFlags.reprocess_line = false;
         return( !(input_cbs->fmflags & II_eof) );
     }
     if( input_cbs->hidden_head != NULL ) {  // line was previously split,
@@ -411,9 +445,10 @@ bool    get_line( bool display_line )
         pline = input_cbs->hidden_head;
         input_cbs->hidden_head = input_cbs->hidden_head->next;
 
-        input_cbs->fmflags &=  ~(II_sol | II_eol);  // clear current flags
         input_cbs->fmflags |= pline->fmflags;       // use flags from hidden_head
+        input_cbs->fm_hh = true;                    // not from hidden_head
         input_cbs->fm_symbol = pline->fm_symbol;
+        input_cbs->hh_tag = pline->hh_tag;
         input_cbs->sym_space = pline->sym_space;
 
         mem_free( pline );
@@ -432,25 +467,28 @@ bool    get_line( bool display_line )
             if( input_cbs->fmflags & II_tag_mac ) {
                 get_macro_line();       // input from macro line
             } else {
+                ProcFlags.utc = false;  // to catch end of user-defined tag
                 cb = input_cbs->s.f;    // input from file
                 if( !(cb->flags & FF_open) ) {
                     g_info( err_inf_reopen );
                     show_include_stack();
                     reopen_inc_fp( cb );
                 }
-                do {
+                while( 1 ) {                    // break when next line obtained or file ends
                     fgetpos( cb->fp, &cb->pos );// remember position for label
                     p = fgets( buff2, buf_size, cb->fp );
                     if( p != NULL ) {
                         if( cb->lineno >= cb->linemax ) {
                             input_cbs->fmflags |= II_eof;
-                            input_cbs->fmflags &= ~(II_sol | II_eol);
                             cb->flags |= FF_eof;
                             *buff2 = '\0';
                             break;
                         }
+                        ProcFlags.xmp_ut_sf = false;    // effect ends with physical input record
                         cb->lineno++;
-                        input_cbs->fmflags |= (II_sol | II_eol);
+                        if( cb->lineno < cb->linemin ) {
+                            continue;
+                        }
 
                         if( cb->flags & FF_crlf ) {// try to delete CRLF at end
                             p += strlen( p ) - 1;
@@ -458,29 +496,31 @@ bool    get_line( bool display_line )
                                 *p-- = '\0';
                             }
                         }
-#if 1
                         if( ProcFlags.start_section && !ProcFlags.concat &&
                             (*buff2 == '\0') ) {
-                            *buff2 = ' ';   // empty line gets 1 blank
-                            *(buff2 + 1) = '\0';// requires more testing TBD
+                            if( !ProcFlags.concat && !ProcFlags.skip_blank_line
+                                && check_if() ) {
+                                /* ensure an empty output line */
+                                g_blank_text_lines++;
+                                set_skip_vars( NULL, NULL, NULL, 1, g_curr_font );
+                            }
+                            continue;
                         }
-#endif
+                        break;
                     } else {
                         if( feof( cb->fp ) ) {
                             input_cbs->fmflags |= II_eof;
-                            input_cbs->fmflags &= ~(II_sol | II_eol);
                             cb->flags |= FF_eof;
                             *buff2 = '\0';
                             break;
                         } else {
                             strerror_s( buff2, buf_size, errno );
-                            g_err( err_file_io, buff2, cb->filename );
-
-                            err_count++;
-                            g_suicide();
+                            xx_simple_err_cc( err_file_io, buff2, cb->filename );
                         }
                     }
-                } while( cb->lineno < cb->linemin );
+                }
+                input_cbs->fm_hh = false;       // not from hidden_head
+                input_cbs->hh_tag = false;      // even if tag, not from hidden_head
             }
         }
     }
@@ -524,7 +564,7 @@ bool    get_line( bool display_line )
 /*  output the filenames + lines which were included                       */
 /***************************************************************************/
 
-void    show_include_stack( void )
+void show_include_stack( void )
 {
     inputcb *   ip;
     char        linestr[MAX_L_AS_STR];

@@ -310,6 +310,20 @@ static void initialize_directory_list( char const * in_path_list,
     return;
 }
 
+static void clear_directory_list( directory_list * in_list )
+{
+    /* Clear the existing list. */
+
+    if( in_list && in_list->count ) {
+        in_list->count = 0;
+        mem_free( in_list->directories );
+        in_list->directories = NULL;
+        return;
+    }
+
+    return;
+}
+
 /* Function try_open().
  * Compose full path / filename and try to open for reading.
  *
@@ -500,6 +514,26 @@ void ff_setup( void )
     env_var_buffer = NULL;
 
     return;
+}
+
+/* Function ff_set_incpath().
+ * The -I command line option overrides the GMLINC path.
+ */
+
+void ff_set_incpath( const char *path )
+{
+    clear_directory_list( &gml_inc_dirs );
+    initialize_directory_list( path, &gml_inc_dirs );
+}
+
+/* Function ff_set_libpath().
+ * The -L command line option overrides the GMLLIB path.
+ */
+
+void ff_set_libpath( const char *path )
+{
+    clear_directory_list( &gml_lib_dirs );
+    initialize_directory_list( path, &gml_lib_dirs );
 }
 
 /* Function ff_teardown().
@@ -715,7 +749,6 @@ int search_file_in_dirs( const char *filename, const char *defext, const char *a
         break;
     default:
         internal_err( __FILE__, __LINE__ );
-        return( 0 );
     }
 
     /* Search each directory for each filename. */
@@ -792,13 +825,13 @@ int search_file_in_dirs( const char *filename, const char *defext, const char *a
                     return( 0 );
                 }
 
-                if( alternate_file != NULL ) {
+                if( alternate_file && *alternate_file ) {
                     if( try_open( dir_ptr, alternate_file ) != 0 ) {
                         return( 1 );
                     }
                 }
 
-                if( default_file != NULL ) {
+                if( default_file && *default_file ) {
                     if( try_open( dir_ptr, default_file ) != 0 ) {
                         return( 1 );
                     }

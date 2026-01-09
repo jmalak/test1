@@ -1,0 +1,4 @@
+# Windows NT Alpha AXP specific imports
+# these do not exist in the x86 KERNEL32.LIB
+RtlLookupFunctionEntry
+RtlUnwindRfp

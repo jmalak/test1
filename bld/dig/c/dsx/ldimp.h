@@ -24,8 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  Read and relocate a PharLap REX module.
 *
 ****************************************************************************/
 
@@ -44,7 +43,7 @@ typedef struct {
 
 #define RELOC_BUFF_SIZE 64
 
-static imp_header *ReadInImp( int h )
+static imp_header *ReadInImp( int h, int *no_mem )
 {
     simple_header       hdr;
     unsigned long       size;
@@ -57,13 +56,20 @@ static imp_header *ReadInImp( int h )
     unsigned long       buff[RELOC_BUFF_SIZE];
     unsigned_8          *imp_start;
 
+    if( no_mem ) *no_mem = 0;
     if( DIGCliRead( h, &hdr, sizeof( hdr ) ) != sizeof( hdr ) ) return( NULL );
     if( hdr.signature != REX_SIGNATURE ) return( NULL );
     hdr_size = hdr.hdr_size * 16;
     size = (hdr.file_size * 0x200) - (-hdr.mod_size & 0x1ff) - hdr_size;
     bss_size = hdr.min_data * 4096;
     imp_start = DIGCliAlloc( size + bss_size );
-    if( imp_start == NULL ) return( NULL );
+    if( imp_start == NULL ) {
+        /* Allow caller to distinguish between out of memory condition
+         * and actual corrupted/invalid module.
+         */
+        if( no_mem ) *no_mem = 1;
+        return( NULL );
+    }
     DIGCliSeek( h, hdr_size, DIG_ORG );
     if( DIGCliRead( h, imp_start, size ) != size ) {
         DIGCliFree( imp_start );
@@ -87,8 +93,8 @@ static imp_header *ReadInImp( int h )
     }
 #ifdef __LINUX__
     /* On some platforms (such as AMD64 or x86 with NX bit), it is required 
-     * to map the code pages loaded from the BPD as executable, otherwise
-     * a segfault will occur when attempting to run any BPD code.
+     * to map the code pages loaded from the module as executable, otherwise
+     * a segfault will occur when attempting to run any code in the module.
      */
     mprotect((void*)((u_long)imp_start & ~4095), (size+4095) & ~4095, PROT_READ | PROT_WRITE | PROT_EXEC);
 #endif    

@@ -1,4 +1,4 @@
-.section *refid='acviewport' acviewport
+.section *refid='acvwprt' acviewport
 .ix 'acviewport'
 .ix 'Block' 'acviewport'
 .ix 'Application controlled window'

@@ -260,7 +260,11 @@ unsigned ReqProg_load( void )
             if( ptrace( PTRACE_TRACEME, 0, NULL, NULL ) < 0 ) {
                 exit( 1 );
             }
+#if defined(__WATCOMC__) && (__WATCOMC__ <= 1290)
             execve( exe_name, (const char **)args, (const char **)dbg_environ );
+#else
+            execve( exe_name, args, dbg_environ );
+#endif
             exit( 1 ); /* failsafe */
         }
         setpgid( 0, save_pgrp );

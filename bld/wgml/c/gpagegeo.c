@@ -84,7 +84,6 @@ void    init_page_geometry( void )
     }
     if( rm < rm_test ) {                    // wgml 4.0 limits value
         xx_err( err_right_margin_2_small ); // candidate Severe Error
-        g_suicide();                        // no recovery possible
     }
 
     g_page_left_org = lm + bin_device->x_start;
@@ -96,12 +95,10 @@ void    init_page_geometry( void )
     g_page_right_org = rm + bin_device->x_start;
     if( g_page_right_org > bin_device->page_width ) {   // output must appear on page
         xx_err( err_margins_inverted );                 // candidate Severe Error
-        g_suicide();                                    // no recovery possible
     }
 
     if( t_page.page_left >= g_page_right_org ) {    // margins cannot be inverted
         xx_err( err_margins_inverted );             // candidate Severe Error
-        g_suicide();                                // no recovery possible
     }
 
     g_net_page_width = rm - lm;
@@ -123,7 +120,6 @@ void    init_page_geometry( void )
     page_depth_org = conv_vert_unit( &layout_work.page.depth, 1, g_curr_font );
     if( bin_device->y_offset > page_depth_org ) {
         xx_err( err_page_depth_too_small ); // candidate Severe Error
-        g_suicide();                        // no recovery possible
     } else if( top_margin > 0 ) {           // strange but true
         g_page_depth = page_depth_org;      // &syspaged
     } else {
@@ -139,7 +135,6 @@ void    init_page_geometry( void )
         if( g_page_depth > bin_device->y_start ) {
             /* see Wiki for discussion, wgml 4.0 differs here */
             xx_err( err_page_depth_too_big );   // candidate Severe Error
-            g_suicide();                        // no recovery possible
         } else {
             t_page.bot_ban_top = t_page.panes_top - g_page_depth;// end of text area
         }
@@ -237,7 +232,6 @@ static void finish_lists( void )
         curr_level++;
         if( curr_level != dl_layout->level ) {
             list_level_err( "DL", curr_level );
-            dl_layout->level = curr_level;
         }
         dl_layout = dl_layout->next;
     }
@@ -252,7 +246,6 @@ static void finish_lists( void )
         curr_level++;
         if( curr_level != gl_layout->level ) {
             list_level_err( "GL", curr_level );
-            gl_layout->level = curr_level;
         }
         gl_layout = gl_layout->next;
     }
@@ -267,7 +260,6 @@ static void finish_lists( void )
         curr_level++;
         if( curr_level != ol_layout->level ) {
             list_level_err( "OL", curr_level );
-            ol_layout->level = curr_level;
         }
         ol_layout = ol_layout->next;
     }
@@ -282,7 +274,6 @@ static void finish_lists( void )
         curr_level++;
         if( curr_level != sl_layout->level ) {
             list_level_err( "SL", curr_level );
-            sl_layout->level = curr_level;
         }
         sl_layout = sl_layout->next;
     }
@@ -297,7 +288,6 @@ static void finish_lists( void )
         curr_level++;
         if( curr_level != ul_layout->level ) {
             list_level_err( "UL", curr_level );
-            ul_layout->level = curr_level;
         }
         ul_layout = ul_layout->next;
     }

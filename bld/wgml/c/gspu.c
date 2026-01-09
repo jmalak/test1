@@ -74,7 +74,7 @@ void    close_all_pu_files( void )
 static  errno_t open_pu_file( int n )
 {
     errno_t         erc = 0;
-    static  char    filename[20] = "SYSUSR0x.GML";
+    static  char    filename[20] = "sysusr0x.gml";
 
     if( n > 0 && n < 10 ) {
         if( workfile[n - 1] == NULL ) {   // not yet open
@@ -153,7 +153,6 @@ void    scr_pu( void )
         if( cc != notnum ) {            // number found
             if( (len > 1) || (cc !=pos)  || (*pa < '1') || (*pa > '9') ) {
                 numb_err();
-                return;
             }
             workn = *pa - '0';          // workfile specified
             pa++;

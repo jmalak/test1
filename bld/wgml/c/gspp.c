@@ -61,7 +61,7 @@ void scr_pp( void )
     /* BR is done before scr_pp() is called */
 
     /* SK */
-    g_skip = 1;
+    g_skip = bin_device->vertical_base_units / LPI; // same computation as used by SK 1 
     set_skip_vars( NULL, NULL, NULL, g_text_spacing, g_curr_font );
 
     /* CC 2 */

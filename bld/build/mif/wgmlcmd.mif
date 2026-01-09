@@ -49,10 +49,13 @@ GENDEVCMD = $(%OWDOSBOX) -noautoexec -c "mount c $(docs_dir)" -c "mount d ." -c 
 use_dosemu = dosbox
 # only DOSBOX use upper cased file name
 wgml_ucase=1
-!else
+!else ifdef %OWDOSEMU
 WGMLCMD = dosemu -dumb $(dosemu_wgml_batch)
 GENDEVCMD = dosemu -dumb $(dosemu_gendev_batch)
 use_dosemu = dosemu
+!else
+# use our own native WGML
+WGMLCMD = $(dev_dir)/wgml/linux386/wgml.exe $(wgml_cmdl_params)
 !endif
 
 #!else ifeq bld_os bsd

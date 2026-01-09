@@ -156,18 +156,7 @@ void    scr_label( void )
 
     SkipSpaces( scan_start );       // may be ...LABEL or ...<blanks>LABEL, skip over blanks
     if( *scan_start == '\0'  ) {    // no label?
-        scan_err = true;
-        err_count++;
-        g_err( err_missing_name, "" );
-        if( input_cbs->fmflags & II_tag_mac ) {
-            ulongtodec( input_cbs->s.m->lineno, linestr );
-            g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-        } else {
-            ulongtodec( input_cbs->s.f->lineno, linestr );
-            g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-        }
-        show_include_stack();
-        return;
+        xx_source_err_c( err_missing_name, "" );
     } else {
 
         gn.argstart      = scan_start;
@@ -183,34 +172,19 @@ void    scr_label( void )
 
             if( input_cbs->fmflags & II_tag_mac ) {
                 if( gn.result != input_cbs->s.m->lineno ) {
-                    scan_err = true;
-                    err_count++;
-                    g_err( err_label_line, gn.resultstr );
-                    ulongtodec( input_cbs->s.m->lineno, linestr );
-                    g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-                    show_include_stack();
-                    return;
+                    xx_source_err_c( err_label_line, gn.resultstr );
                 }
             } else {
                 if( gn.result != input_cbs->s.f->lineno ) {
-                    scan_err = true;
-                    err_count++;
-                    g_err( err_label_line, gn.resultstr );
-                    ulongtodec( input_cbs->s.f->lineno, linestr );
-                    g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                    show_include_stack();
-                    return;
+                    xx_source_err_c( err_label_line, gn.resultstr );
                 }
             }
 
             if( input_cbs->fmflags & II_tag_mac ) {
                   // numeric macro label no need to store
             } else {
-                wng_count++;
-                g_warn( wng_label_num );
                 ulongtodec( input_cbs->s.f->lineno, linestr );
-                g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                show_include_stack();
+                xx_warn_info_cc( wng_label_num, inf_file_line, linestr, input_cbs->s.f->filename );
             }
 
         } else {                        // no numeric label
@@ -229,12 +203,7 @@ void    scr_label( void )
                 }
                 *pt = '\0';
                 if( len >  MAC_NAME_LENGTH ) {
-                    err_count++;
-                    g_err( err_sym_long, token_buf );
-                    ulongtodec( input_cbs->s.f->lineno, linestr );
-                    g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                    show_include_stack();
-                    token_buf[MAC_NAME_LENGTH] = '\0';
+                    xx_source_err_c( err_sym_long, token_buf );
                 }
 
                 if( input_cbs->fmflags & II_tag_mac ) {
@@ -244,14 +213,7 @@ void    scr_label( void )
                         // nothing to do
                     } else {
                         if( cc == neg ) {   // name with different lineno
-                            scan_err = true;
-                            err_count++;
-                            g_err( err_label_dup, token_buf );
-                            ulongtodec( input_cbs->s.m->lineno, linestr );
-                            g_info( inf_mac_line, linestr,
-                                     input_cbs->s.m->mac->name );
-                            show_include_stack();
-                            return;
+                            xx_source_err_c( err_label_dup, token_buf );
                         } else {        // new label
                             lb              = mem_alloc( sizeof( labelcb ) );
                             lb->prev        = input_cbs->s.m->mac->label_cb;
@@ -267,14 +229,7 @@ void    scr_label( void )
                         // nothing to do
                     } else {
                         if( cc == neg ) {   // name with different lineno
-                            scan_err = true;
-                            err_count++;
-                            g_err( err_label_dup, token_buf );
-                            ulongtodec( input_cbs->s.f->lineno, linestr );
-                            g_info( inf_file_line, linestr,
-                                    input_cbs->s.f->filename );
-                            show_include_stack();
-                            return;
+                            xx_source_err_c( err_label_dup, token_buf );
                         } else {        // new label
 
                             lb              = mem_alloc( sizeof( labelcb ) );
@@ -287,18 +242,7 @@ void    scr_label( void )
                     }
                 }
             } else {
-                scan_err = true;
-                err_count++;
-                g_err( err_missing_name, "" );
-                if( input_cbs->fmflags & II_tag_mac ) {
-                    ulongtodec( input_cbs->s.m->lineno, linestr );
-                    g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-                } else {
-                    ulongtodec( input_cbs->s.f->lineno, linestr );
-                    g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                }
-                show_include_stack();
-                return;
+                xx_source_err_c( err_missing_name, "" );
             }
         }
 
@@ -306,7 +250,7 @@ void    scr_label( void )
             scan_start++;               // skip one blank
 
             if( *scan_start ) {         // rest of line is not empty
-                split_input( buff2, scan_start, input_cbs->fmflags & (II_sol | II_eol) );   // split and process next
+                split_input( buff2, scan_start, input_cbs->fmflags );   // split and process next
             }
         }
         scan_restart = scan_stop + 1;
@@ -365,25 +309,13 @@ void    scr_go( void )
     getnum_block    gn;
     labelcb     *   golb;
     int             k;
-    char            linestr[MAX_L_AS_STR];
 
     input_cbs->if_cb->if_level = 0;     // .go terminates
     ProcFlags.keep_ifstate = false;     // ... all .if controls
 
     cc = getarg();
     if( cc != pos ) {
-        scan_err = true;
-        err_count++;
-        g_err( err_missing_name, "" );
-        if( input_cbs->fmflags & II_tag_mac ) {
-            ulongtodec( input_cbs->s.m->lineno, linestr );
-            g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-        } else {
-            ulongtodec( input_cbs->s.f->lineno, linestr );
-            g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-        }
-        show_include_stack();
-        return;
+        xx_source_err_c( err_missing_name, "" );
     }
 
     gn.argstart      = tok_start;
@@ -405,18 +337,7 @@ void    scr_go( void )
         }
 
         if( gotargetno < 1 ) {
-            scan_err = true;
-            err_count++;
-            g_err( err_label_zero );
-            if( input_cbs->fmflags & II_tag_mac ) {
-                ulongtodec( input_cbs->s.m->lineno, linestr );
-                g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-            } else {
-                ulongtodec( input_cbs->s.f->lineno, linestr );
-                g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-            }
-            show_include_stack();
-            return;
+            xx_source_err( err_label_zero );
         }
         if( input_cbs->fmflags & II_tag_mac ) {
             if( gotargetno <= input_cbs->s.m->lineno ) {
@@ -428,17 +349,7 @@ void    scr_go( void )
 
         gotargetno = 0;                 // no target lineno known
         if( arg_flen >  MAC_NAME_LENGTH ) {
-            err_count++;
-            g_err( err_sym_long, tok_start );
-            if( input_cbs->fmflags & II_tag_mac ) {
-                ulongtodec( input_cbs->s.m->lineno, linestr );
-                g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-            } else {
-                ulongtodec( input_cbs->s.f->lineno, linestr );
-                g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-            }
-            show_include_stack();
-            arg_flen = MAC_NAME_LENGTH;
+            xx_source_err_c( err_sym_long, tok_start );
         }
 
         for( k = 0; k < MAC_NAME_LENGTH; k++ ) {// copy to work

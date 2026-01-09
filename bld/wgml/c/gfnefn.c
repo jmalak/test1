@@ -34,7 +34,6 @@
 #include "wgml.h"
 
 static  bool            concat_save;            // for ProcFlags.concat
-static  char            id[ID_LEN];             // FIG attribute used by eFIG
 static  group_type      sav_group_type;         // save prior group type
 static  ju_enum         justify_save;           // for ProcFlags.justify
 
@@ -51,38 +50,54 @@ static  ju_enum         justify_save;           // for ProcFlags.justify
 
 void gml_fn( const gmltag * entry )
 {
-    bool            id_seen = false;
     char            buffer[11];
+    char            id[ID_LEN];
     char        *   p;
     char        *   pa;
     ref_entry   *   cur_ref;
 
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     start_doc_sect();
     scr_process_break();
     scan_err = false;
 
     g_keep_nest( "Footnote" );          // catch nesting errors
 
-    p = scan_start;
-    SkipDot( p );                       // possible tag end
-
     fn_count++;                         // get current FN number
+    id[0] = '\0';                       // initialize to no id
+
+    p = scan_start;
     if( *p == '.' ) {
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
             if( !strnicmp( "id", p, 2 ) ) {
                 p += 2;
-                p = get_refid_value( p, id );
-                if( val_start == NULL ) {
+                p = get_id_value( p, id );
+                if( AttrFlags.id ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.id = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                id_seen = true;             // valid id attribute found
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
@@ -99,8 +114,6 @@ void gml_fn( const gmltag * entry )
     nest_cb->p_stack = copy_to_nest_stack();
 
     nest_cb->left_indent = conv_hor_unit( &layout_work.fn.line_indent, g_curr_font );
-    nest_cb->lm = t_page.cur_left;
-    nest_cb->rm = t_page.max_width;
     nest_cb->font = g_curr_font;
     nest_cb->c_tag = t_FN;
 
@@ -137,7 +150,7 @@ void gml_fn( const gmltag * entry )
         if( fn_list == NULL ) {         // first entry
             fn_list = fn_entry;
         }
-        if( id_seen ) {                 // add this entry to fn_ref_dict
+        if( id[0] != '\0' ) {           // add this entry to fn_ref_dict
             cur_ref = find_refid( fn_ref_dict, id );
             if( cur_ref == NULL ) {     // new entry
                 cur_ref = mem_alloc( sizeof( ref_entry ) );
@@ -166,7 +179,6 @@ void gml_fn( const gmltag * entry )
 
     format_num( fn_entry->number, buffer, sizeof( buffer ),
                                                         layout_work.fn.number_style );
-    input_cbs->fmflags &= ~II_eol;          // prefix is never EOL
     process_text( buffer, layout_work.fn.number_font ); // FN prefix
     t_page.cur_left = nest_cb->lm + conv_hor_unit( &layout_work.fn.align, g_curr_font );
     t_page.cur_width = t_page.cur_left;
@@ -175,7 +187,6 @@ void gml_fn( const gmltag * entry )
     if( !ProcFlags.reprocess_line && *p != '\0' ) {
         SkipDot( p );                       // possible tag end
         SkipSpaces( p );                    // skip preceding spaces
-        input_cbs->fmflags &= ~II_sol;      // number was SOL, so this is not
         ProcFlags.concat = true;            // concatenation on
         if( *p != '\0' ) {
             process_text( p, g_curr_font);  // if text follows

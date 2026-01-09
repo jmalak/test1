@@ -43,6 +43,7 @@ static int          OverlayLevel = 0;
 extern cmdentry     *Commands[];
 extern char         *PromptText[];
 extern bool         HaveDefFile;
+extern bool         FarCallOpt;
 
 extern void         Error( char * );
 extern void         OutPutPrompt( int );
@@ -688,6 +689,7 @@ static void DoOneObject( char *obj )
         memcpy( sect, "section", 8 );
         AddCommand( sect , OVERLAY_SLOT, TRUE );
         ++OverlayLevel;
+        FarCallOpt = TRUE;
     }
     /* If anything is left, add it to the list of object files. */
     if( *obj ) {

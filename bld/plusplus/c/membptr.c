@@ -24,8 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  Support for pointers to class members.
 *
 ****************************************************************************/
 
@@ -869,11 +868,12 @@ PTREE MembPtrExtend             // FAKE AN ADDRESS-OF NODE FOR BARE FUNCTION
     SYMBOL sym;                 // - symbol for function
 
     DbgVerify( CompFlags.extensions_enabled, "bad call of MembPtrExtend" );
+    DbgVerify( expr->op == PT_SYMBOL, "MembPtrExtend expecting a symbol" );
     expr->flags |= PTF_COLON_QUALED;
     expr->flags &= ~PTF_LVALUE;
-    expr = NodeUnaryCopy( CO_ADDR_OF, expr );
     sym = expr->u.symcg.symbol;
-    expr->type = MakeMemberPointerTo( SymClass(sym ), sym->sym_type );
+    expr = NodeUnaryCopy( CO_ADDR_OF, expr );
+    expr->type = MakeMemberPointerTo( SymClass( sym ), sym->sym_type );
     return expr;
 }
 

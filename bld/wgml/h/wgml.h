@@ -83,6 +83,7 @@ extern void         fb_vline( vline_element *in_vline );
 extern void         fb_absoluteaddress( void );
 extern void         fb_new_section( uint32_t v_start );
 extern void         fb_position( uint32_t h_start, uint32_t v_start );
+extern void         set_oc_pos( void );
 
 
 /* gargutil.c                           */
@@ -90,7 +91,7 @@ extern  condcode    getarg( void );
 extern  condcode    getqst( void );
 extern  bool        is_quote_char( char c );
 extern  bool        is_function_char( char c );
-extern  bool        is_lay_att_char( char c );
+extern  bool        is_att_char( char c );
 extern  bool        is_id_char( char c );
 extern  bool        is_macro_char( char c );
 extern  bool        is_space_tab_char( char c );
@@ -140,69 +141,6 @@ extern  void    set_section_banners( doc_section ds );
 extern  void    start_doc_sect( void );
 
 
-/* gerror.c                             */
-extern  void    out_msg( const char * fmt, ... );
-extern  void    out_msg_research( const char *msg, ... );
-extern  void    g_err( const msg_ids err, ... );
-extern  void    g_warn( const msg_ids err, ... );
-extern  void    g_info( const msg_ids err, ... );
-extern  void    g_info_lm( const msg_ids err, ... );
-extern  void    g_info_research( const msg_ids num, ... );
-extern  void    g_suicide( void );
-
-
-/* gerrorxx.c                           */
-extern  void    att_val_err( const char * attname );
-extern  void    auto_att_err( void );
-extern  void    ban_reg_err( msg_ids num, banner_lay_tag * in_ban1, banner_lay_tag * in_ban2, region_lay_tag * in_reg1, region_lay_tag * in_reg2 );
-extern  void    cw_err( void );
-extern  void    dc_opt_err( const msg_ids num, const char * pa );
-extern  void    dc_opt_warn( const char * pa );
-extern  void    dc_opt_warn_len( const char * pa, size_t len );
-extern  void    dup_id_err( const char * id, const char * context );
-extern  void    file_mac_info( void );
-extern  void    file_mac_info_nest( void );
-extern  void    fwd_id_warn( const char * id, const char * context );
-extern  void    internal_err( const char * file, int line );
-extern  void    list_level_err( const char * xl_tag, uint8_t xl_level );
-extern  void    nottag_err( void );
-extern  void    numb_err( void );
-extern  void    parm_extra_err( const char * cw, const char * pa );
-extern  void    parm_miss_err( const char * cw, const char * pa );
-extern  void    val_parse_err( const char * pa, bool tag );
-extern  void    tag_name_missing_err( void );
-extern  void    tag_text_err( const char * tagname );
-extern  void    tag_text_req_err( const char * tagname );
-extern  void    undef_id_warn( const char * id, const char * context );
-extern  void    undef_id_warn_info( const char * id, const char * context );
-extern  void    xx_err( const msg_ids errid );
-extern  void    xx_err_cc( const msg_ids errid, const char * arg1, const char * arg2 );
-extern  void    xx_line_err( const msg_ids errid, const char * pa );
-extern  void    xx_line_err_len( const msg_ids errid, const char * pa, size_t len );
-extern  void    xx_nest_err( const msg_ids errid );
-extern  void    xx_nest_err_cc( const msg_ids errid, const char * arg1, const char * arg2 );
-extern  void    xx_opt_err( const char * cw, const char * pa );
-extern  void    xx_opt_err_len( const char *cw, const char * pa, size_t len );
-extern  void    xx_simple_err( const msg_ids errid );
-extern  void    xx_simple_err_c( const msg_ids errid, const char * arg );
-extern  void    xx_simple_err_i( const msg_ids errid, int arg );
-extern  void    xx_simple_err_cc( const msg_ids errid, const char * arg1, const char * arg2 );
-extern  void    xx_simple_warn( const msg_ids errid );
-extern  void    xx_tag_err( const msg_ids errid, char const * cw );
-extern  void    xx_val_line_err( const msg_ids errid, char const * cw, const char * pa );
-extern  void    xx_warn( const msg_ids errid );
-extern  void    xx_warn_att( const msg_ids errid, const char * arg );
-extern  void    xx_warn_cc( const msg_ids errid, const char * arg1, const char * arg2 );
-extern  void    xx_line_warn( const msg_ids errid, const char * pa );
-extern  void    xx_val_line_warn( const msg_ids errid, const char * cw, const char * pa );
-extern  void    g_err_tag( const char * tagname );
-extern  void    g_err_tag_nest( const char * tagname );
-extern  void    g_err_tag_rsloc( locflags inloc, const char * pa );
-extern  void    g_err_tag_no( const char * tagname );
-extern  void    g_err_tag_prec( const char * tagname );
-extern  void    g_keep_nest( const char * cw_tag );
-extern  void    g_wng_hlevel( hdsrc hd_found, hdsrc hd_expected );
-
 /* getnum.c                             */
 extern  condcode    getnum( getnum_block * gn );
 
@@ -223,7 +161,7 @@ extern  void            init_entry_list( ix_h_blk * term );
 /* glayutil.c                           */
 extern  void        eat_lay_sub_tag( void );
 extern  void        free_layout( void );
-extern  condcode    get_lay_sub_and_value( struct att_args * l_args );
+extern  condcode    get_attr_and_value( void );
 extern  bool        i_case( char * p, lay_att curr, case_t * tm );
 extern  void        o_case( FILE * f, lay_att curr, const case_t * tm );
 extern  bool        i_char( char * p, lay_att curr, char * tm );
@@ -273,12 +211,12 @@ extern void         banner_defaults( void );
 
 
 /* gmacdict.c                           */
-extern  void        add_macro_entry( mac_entry * * dict, mac_entry * me );
-extern  void        init_macro_dict( mac_entry * * dict );
-extern  void        free_macro_dict( mac_entry * * dict );
-extern  void        free_macro_entry( mac_entry * * dict, mac_entry * me );
-extern  void        print_macro_dict( mac_entry * dict, bool with_mac_lines );
-extern  mac_entry * find_macro( mac_entry * dict, char const * name );
+extern  void        add_macro_entry( mac_dict * dict, mac_entry * me );
+extern  void        init_macro_dict( mac_dict * * dict );
+extern  void        free_macro_dict( mac_dict * * dict );
+extern  void        free_macro_entry( mac_dict * dict, mac_entry * me );
+extern  void        print_macro_dict( mac_dict * dict, bool with_mac_lines );
+extern  mac_entry * find_macro( mac_dict * dict, char const * name );
 
 
 /* gmemory.c                            */
@@ -340,6 +278,7 @@ extern  void            free_ref_dict( ref_entry * * dict );
 extern  void            print_ref_dict( ref_entry * dict, const char * type );
 extern  ref_entry   *   find_refid( ref_entry * dict, char const * id );
 extern  void            init_ref_entry( ref_entry * re, char * id );
+extern  char        *   get_id_value( char * p, char * refid );
 extern  char        *   get_refid_value( char * p, char * refid );
 
 /* gresrch.c                            */
@@ -360,6 +299,7 @@ extern  void    test_out_t_line( text_line  * a_line );
 
 
 /* gsbdbius.c                           */
+extern  void        scr_style_copy( script_style_info * first, script_style_info * second );
 extern  void        scr_style_end( void );
 extern  font_number scr_style_font( font_number in_font );
 
@@ -428,20 +368,21 @@ extern  void    close_all_pu_files( void );
 
 
 /* gsymvar.c                            */
-extern void     init_dict( symvar * * dict );
-extern void     free_dict( symvar * * dict );
-extern int      find_symvar( symvar * * dict, char * name, sub_index subscript, symsub * * symsubval );
-extern int      find_symvar_l( symvar * * dict, char * name, sub_index subscript, symsub * * symsubval );
-extern int      add_symvar( symvar * * dict, char * name, char * val, sub_index subscript, symbol_flags f );
-extern int      add_symvar_addr( symvar * * dict, char * name, char * val, sub_index subscript, symbol_flags f, symsub * * sub );
-extern void     print_sym_dict( symvar * dict );
-extern void     reset_auto_inc_dict( symvar * dict );
+extern void     init_dict( symdict * * dict );
+extern void     free_dict( symdict * * dict );
+extern int      find_symvar( symdict * dict, char * name, sub_index subscript, symsub * * symsubval );
+extern int      find_symvar_l( symdict * dict, char * name, sub_index subscript, symsub * * symsubval );
+extern int      add_symvar( symdict * dict, char * name, char * val, sub_index subscript, symbol_flags f );
+extern int      add_symvar_addr( symdict * dict, char * name, char * val, sub_index subscript, symbol_flags f, symsub * * sub );
+extern void     print_sym_dict( symdict * dict );
+extern void     reset_auto_inc_dict( symdict * dict );
 
 
 /* gsyssym.c                            */
 extern  void    add_to_sysdir( char * var_name, char char_val );
-extern  void    init_sys_dict( symvar * * dict );
+extern  void    init_sys_dict( symdict * * dict );
 extern  void    init_sysparm( char * cmdline, char * banner );
+extern  void    link_sym( symdict * dict, symvar * sym );
 
 
 /* gtagdict.c                           */
@@ -455,6 +396,7 @@ extern  void        print_tag_entry( gtentry * entry );
 extern  gtentry *   find_tag( gtentry * * dict, char const * name );
 
 /* gtxtpool.c                           */
+extern  void                add_single_text_chars_to_pool( text_chars * a_chars );
 extern  void                add_text_chars_to_pool( text_line * a_line );
 extern  text_chars      *   alloc_text_chars( const char *text, size_t cnt, font_number font );
 extern  void                add_text_line_to_pool( text_line * a_line );
@@ -496,8 +438,11 @@ extern  num_style       find_pgnum_style( void );
 extern  char        *   format_num( uint32_t n, char * r, size_t rsize, num_style ns );
 extern  void            free_ffh_list( ffh_entry * ffh_list );
 extern  void            free_fwd_refs( fwd_ref * fwd_refs );
+extern  void            g_keep_nest( const char * cw_tag );
 extern  char        *   get_att_start( char * p );
 extern  char        *   get_att_value( char * p );
+extern  char        *   get_attribute( char * p );
+extern  char        *   get_value( char * p );
 extern  font_number     get_font_number( char * p, size_t len );
 extern  char        *   get_tag_value( char * p );
 extern  ffh_entry   *   init_ffh_entry( ffh_entry * ffh_list );
@@ -509,6 +454,60 @@ extern  char        *   skip_to_quote( char * p, char quote );
 extern  int             ulongtohex( unsigned long value, char *buffer );
 extern  int             ulongtodec( unsigned long value, char *buffer );
 extern  int             slongtodec( long value, char *buffer );
+extern  bool            value_to_su( su * spaceunit, bool pos );
+
+
+/* messages.c                           */
+extern  void    out_msg( const char * fmt, ... );
+extern  void    out_msg_research( const char *msg, ... );
+extern  void    g_info( const msg_ids err, ... );
+extern  void    g_info_lm( const msg_ids err, ... );
+extern  void    g_info_research( const msg_ids num, ... );
+extern  void    file_mac_info( void );
+extern  void    file_mac_info_nest( void );
+extern  void    att_req_err( const char * tagname, const char * attname );
+extern  void    ban_reg_err( msg_ids num, banner_lay_tag * in_ban1, banner_lay_tag * in_ban2, region_lay_tag * in_reg1, region_lay_tag * in_reg2 );
+extern  void    internal_err( const char * file, int line );
+extern  void    list_level_err( const char * xl_tag, uint8_t xl_level );
+extern  void    main_file_err( const char * filename );
+extern  void    numb_err( void );
+extern  void    symbol_name_length_err( const char * symname );
+extern  void    val_parse_err( const char * pa, bool tag );
+extern  void    dup_id_err( const char * id, const char * context );
+extern  void    g_err_if_int( void );
+extern  void    g_err_tag( const char * tagname );
+extern  void    g_err_tag_mac( gtentry * ge );
+extern  void    g_err_tag_nest( const char * tagname );
+extern  void    g_err_tag_no( const char * tagname );
+extern  void    g_err_tag_prec( const char * tagname );
+extern  void    g_err_tag_rsloc( locflags inloc, const char * pa );
+extern  void    g_wng_hlevel( hdsrc hd_found, hdsrc hd_expected );
+extern  void    keep_nest_err( const char * arg1, const char * arg2 );
+extern  void    xx_err( const msg_ids errid );
+extern  void    xx_err_c( const msg_ids errid, char const * arg );
+extern  void    xx_err_cc( const msg_ids errid, const char * arg1, const char * arg2 );
+extern  void    xx_line_err_c( const msg_ids errid, const char * pa );
+extern  void    xx_line_err_ci( const msg_ids errid, const char * pa, size_t len );
+extern  void    xx_line_err_cc( const msg_ids errid, char const * cw, const char * pa );
+extern  void    xx_line_err_cci( const msg_ids errid, char const * cw, char const * pa, size_t len );
+extern  void    xx_nest_err( const msg_ids errid );
+extern  void    xx_nest_err_cc( const msg_ids errid, const char * arg1, const char * arg2 );
+extern  void    xx_simple_err( const msg_ids errid );
+extern  void    xx_simple_err_c( const msg_ids errid, const char * arg );
+extern  void    xx_simple_err_i( const msg_ids errid, int arg );
+extern  void    xx_simple_err_cc( const msg_ids errid, const char * arg1, const char * arg2 );
+extern  void    xx_source_err( const msg_ids errid );
+extern  void    xx_source_err_c( const msg_ids errid, const char * arg );
+extern  void    xx_warn( const msg_ids errid );
+extern  void    xx_warn_c( const msg_ids errid, const char * arg );
+extern  void    xx_warn_c_info( const msg_ids errid, const char * arg, const msg_ids warnid );
+extern  void    xx_warn_c_info_c( const msg_ids errid, const char * arg1, const msg_ids warnid, const char * arg2 );
+extern  void    xx_warn_cc( const msg_ids errid, const char * arg1, const char * arg2 );
+extern  void    xx_warn_info_cc( const msg_ids errid, const msg_ids warnid, const char * arg1, const char * arg2 );
+extern  void    xx_line_warn_c( const msg_ids errid, const char * pa );
+extern  void    xx_line_warn_cc( const msg_ids errid, const char * cw, const char * pa );
+extern  void    xx_simple_warn( const msg_ids errid );
+extern  void    xx_simple_warn_info_cc( const msg_ids errid, const char * arg1, const msg_ids warnid, const char * arg2 );
 
 
 /* outbuff.c                            */

@@ -47,17 +47,20 @@ static char *scr_single_func_e( char * in, char * end, char * * result )
     symsub          *   symsubval;
     int                 rc;
 
-    end   = end;
-
     pchar = scan_sym( in + 3 + (*(in + 3) == '&'), &symvar_entry, &var_ind, NULL, false );
 
-    if( symvar_entry.flags & local_var ) {  // lookup var in dict
-        rc = find_symvar_l( &input_cbs->local_dict, symvar_entry.name,
-                            var_ind, &symsubval );
+    if( in[3] == '&' ) {            // a string operand is never a symbol
+        if( symvar_entry.flags & local_var ) {  // lookup var in dict
+            rc = find_symvar_l( input_cbs->local_dict, symvar_entry.name,
+                                var_ind, &symsubval );
+        } else {
+            rc = find_symvar( global_dict, symvar_entry.name, var_ind,
+                              &symsubval );
+        }
     } else {
-        rc = find_symvar( &global_dict, symvar_entry.name, var_ind,
-                          &symsubval );
+        rc = 0;
     }
+
     if( rc == 2 ) {
         **result = '1';             // exists
     } else {
@@ -89,10 +92,10 @@ static char *scr_single_func_l( char * in, char * end, char * * result )
         pchar = scan_sym( in + 4, &symvar_entry, &var_ind, NULL, false );
 
         if( symvar_entry.flags & local_var ) {  // lookup var in dict
-            rc = find_symvar_l( &input_cbs->local_dict, symvar_entry.name,
+            rc = find_symvar_l( input_cbs->local_dict, symvar_entry.name,
                                 var_ind, &symsubval );
         } else {
-            rc = find_symvar( &global_dict, symvar_entry.name, var_ind,
+            rc = find_symvar( global_dict, symvar_entry.name, var_ind,
                               &symsubval );
         }
         if( rc == 2 ) {
@@ -142,10 +145,10 @@ static char *scr_single_func_sS( char * in, char * end, char * * result, char fu
         pchar = scan_sym( in + 4, &symvar_entry, &var_ind, NULL, false );
 
         if( symvar_entry.flags & local_var ) {  // lookup var in dict
-            rc = find_symvar_l( &input_cbs->local_dict, symvar_entry.name,
+            rc = find_symvar_l( input_cbs->local_dict, symvar_entry.name,
                                 var_ind, &symsubval );
         } else {
-            rc = find_symvar( &global_dict, symvar_entry.name, var_ind,
+            rc = find_symvar( global_dict, symvar_entry.name, var_ind,
                               &symsubval );
         }
         if( rc == 2 ) {
@@ -188,30 +191,28 @@ static char *scr_single_func_u( char * in, char * end, char * * result )
     symsub          *   symsubval;
     int                 rc;
     char            *   pval;
-
-    end   = end;
-
+    bool                sym_valid = false;
 
     if( *(in + 3) == '&' ) {            // symbol name
         pchar = scan_sym( in + 4, &symvar_entry, &var_ind, NULL, false );
 
         if( symvar_entry.flags & local_var ) {  // lookup var in dict
-            rc = find_symvar_l( &input_cbs->local_dict, symvar_entry.name,
+            rc = find_symvar_l( input_cbs->local_dict, symvar_entry.name,
                                 var_ind, &symsubval );
         } else {
-            rc = find_symvar( &global_dict, symvar_entry.name, var_ind,
+            rc = find_symvar( global_dict, symvar_entry.name, var_ind,
                               &symsubval );
         }
         if( rc == 2 ) {
             pval = symsubval->value;    // variable found
-        } else {
-            pval =  symvar_entry.name;  // not found use variable name
+            sym_valid = true;
+            while( *pval ) {
+                **result = my_toupper( *pval++ );
+                *result += 1;
+            }
         }
-        while( *pval ) {
-            **result = my_toupper( *pval++ );
-            *result += 1;
-        }
-    } else {                            // string
+    }
+    if( !sym_valid ) {                  // string or invalid symbol
         pchar = in + 3;
         while( !((*pchar == ' ') || (*pchar == '.') || (pchar == end)) ) {
             **result = my_toupper( *pchar++ );
@@ -246,10 +247,10 @@ static char *scr_single_func_w( char * in, char * end, char * * result )
         pchar = scan_sym( in + 4, &symvar_entry, &var_ind, NULL, false );
 
         if( symvar_entry.flags & local_var ) {  // lookup var in dict
-            rc = find_symvar_l( &input_cbs->local_dict, symvar_entry.name,
+            rc = find_symvar_l( input_cbs->local_dict, symvar_entry.name,
                                 var_ind, &symsubval );
         } else {
-            rc = find_symvar( &global_dict, symvar_entry.name, var_ind,
+            rc = find_symvar( global_dict, symvar_entry.name, var_ind,
                               &symsubval );
         }
         if( rc == 2 ) {
@@ -304,10 +305,10 @@ static char *scr_single_func_x( char * in, char * end, char * * result )
     accept = true;
     pchar = in + 3;
     if( *pchar != '&' ) {               // symbols/symbol values are not converted
-        if( (end - pchar + 1 ) % 2 ) {  // odd number of characters
+        if( (end - pchar ) % 2 ) {      // odd number of characters?
             accept = false;
         } else {
-            for( ; pchar <= end; pchar++ ) {    // check for non-hex-digit in input
+            for( ; pchar < end; pchar++ ) { // check for non-hex-digit in input
                 if( !my_isxdigit( *pchar ) ) {
                     accept = false;
                     break;
@@ -316,7 +317,7 @@ static char *scr_single_func_x( char * in, char * end, char * * result )
             pchar = in + 3;             // reset to start of input
         }
         if( accept ) {                  // input is acceptable
-            for( ; pchar < end; pchar++ ) { // check for non-hex-digit in input
+            for( ; pchar < end; pchar++ ) { // convert input from hex
 
                 c = 0;
                 if( my_isdigit( *pchar ) ) {
@@ -335,9 +336,14 @@ static char *scr_single_func_x( char * in, char * end, char * * result )
                 **result = c;
                 (*result)++;
             }
-            **result = '\0';
-            pchar++;                            // skip final 2nd hex digit
+            **result = '\0';                    // final digit already skipped
             SkipDot( pchar );                   // skip optional terminating dot
+        } else {
+            for( ; pchar < end; pchar++ )
+                *(*result)++ = *pchar;          // copy unrecognized input
+            SkipDot( pchar );                   // don't copy terminating dot
+            *(*result)++ = *pchar;              // copy possible whitespace
+            **result = '\0';
         }
     }
 
@@ -385,25 +391,30 @@ char *scr_single_funcs( char * in, char * end, char * * result )
     ProcFlags.unresolved = false;
     if( *(in + 2) == '\'' ) {
         switch( *(in + 1) ) {
-        case  'e' :                     // exist function
+        case 'e':                       // exist function
+        case 'E':
             pw = scr_single_func_e( in, end, result );
             break;
-        case  'l' :                     // length function
+        case 'l':                       // length function
+        case 'L':
             pw = scr_single_func_l( in, end, result );
             break;
-        case  's' :                     // subscript
+        case 's':                       // subscript
             pw = scr_single_func_sS( in, end, result, function_subscript );
             break;
-        case  'S' :                     // superscript
+        case 'S':                       // superscript
             pw = scr_single_func_sS( in, end, result, function_superscript );
             break;
-        case  'u' :                     // upper function
+        case 'u':                       // upper function
+        case 'U':
             pw = scr_single_func_u( in, end, result );
             break;
-        case  'w' :                     // width function
+        case 'w':                       // width function
+        case 'W':
             pw = scr_single_func_w( in, end, result );
             break;
-        case  'x' :                     // hex-to-char function
+        case 'x':                       // hex-to-char function
+        case 'X':
             pw = scr_single_func_x( in, end, result );
             break;
         default:

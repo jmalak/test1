@@ -5,6 +5,9 @@ host_cpu = i86
 # Build a 286 version; includes extended memory and XMS support
 is286 = 1
 
+# Interrupt code may run on someone else's stack
+extra_c_flags_int = -zu
+
 # Define overlay flags (-of is critical!)
 extra_c_flags_dos_i86 = -D__V__ -of
 

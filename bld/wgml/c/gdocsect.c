@@ -80,8 +80,7 @@ static void g_err_doc_sect( doc_section  ds )
 
     err_count++;
     scan_err = true;
-    g_err( err_doc_sect, sect[ds] );
-    file_mac_info();
+    xx_err_c( err_doc_sect, sect[ds] );
 }
 
 /***************************************************************************/
@@ -525,6 +524,48 @@ static void gen_all_refs( entry_list * entry, uint32_t level, bool has_sub )
 }
 
 /***************************************************************************/
+/*  set up the columns                                                     */
+/*                                                                         */
+/*  matches wgml 4.0 for 1 column                                          */
+/*  matches wgml 4.0 for 2 columns generally                               */
+/*  matches wgml 4.0 for 2 column INDEX                                    */
+/*  may or may not match wgml 4.0 for more than 2 columns                  */
+/*    particularly when script is used to create the columns               */
+/***************************************************************************/
+
+static void set_cols( doc_pane * a_pane )
+{
+    int         i;
+    uint32_t    col_count;
+    uint32_t    cur_col;
+    uint32_t    gutter;
+    uint32_t    width_avail;
+
+    col_count = a_pane->col_count;
+    if( col_count == 1 ) {
+        a_pane->col_width = t_page.page_width;
+        a_pane->cols[0].col_left = t_page.page_left;
+        t_page.max_width = t_page.page_width;
+    } else {
+        gutter = layout_work.defaults.def_gutter;
+        width_avail = t_page.page_width - (gutter * (col_count - 1));
+        a_pane->col_width = width_avail / col_count;
+        a_pane->cols[0].col_left = t_page.page_left;
+        for( i = 1; i < col_count; i++ ) {
+            cur_col = a_pane->cols[i - 1].col_left;
+            cur_col += a_pane->col_width;
+            cur_col += gutter;
+            a_pane->cols[i].col_left = cur_col;
+        }
+        if( ProcFlags.doc_sect_nxt == doc_sect_index ) {    // INDEX-specific
+            a_pane->col_width = 27.5 * tab_col;             // empirical, to match wgml 4.0
+        }
+        t_page.max_width = a_pane->col_width;
+    }
+    return;
+}
+
+/***************************************************************************/
 /*  output FIGLIST                                                         */
 /***************************************************************************/
 
@@ -544,6 +585,11 @@ static void gen_figlist( void )
     g_skip = 0;                     // ignore remaining skip value
     set_section_banners( doc_sect_figlist );
     reset_t_page();
+
+    /* Set FIGLIST columns */
+
+    t_page.panes->col_count = layout_work.figlist.columns;
+    set_cols( t_page.panes );       // will need to be updated if multiple panes activated
 
     /* Set FIGLIST margins and other values */
 
@@ -650,7 +696,6 @@ static void gen_index( void )
     if( !GlobalFlags.lastpass || (index_dict == NULL) ) return;
 
     in_trans_sav = ProcFlags.in_trans;
-    ProcFlags.in_trans = false;         // turn off input translation
 
     /* Set up for device/frame selected by the LAYOUT tag IXHEAD*/
 
@@ -718,8 +763,8 @@ static void gen_index( void )
 
     ixh_indent = indent[0] + conv_hor_unit( &layout_work.ixhead.indent, layout_work.ixhead.font );
     ixh1 = index_dict;
-    find_symvar( &sys_dict, "$ixj", no_subscript, &ixjval);
-    find_symvar( &sys_dict, "$ixref", no_subscript, &ixrefval);
+    find_symvar( sys_dict, "$ixj", no_subscript, &ixjval );
+    find_symvar( sys_dict, "$ixref", no_subscript, &ixrefval );
 
     t_page.cur_left += conv_hor_unit( &layout_work.index.left_adjust, layout_work.ixhead.font );
     t_page.cur_width = t_page.cur_left;
@@ -821,9 +866,11 @@ static void gen_index( void )
         ProcFlags.wrap_indent = true;
         wrap_indent = wrap[0];
         if( ixh1->prt_term == NULL ) {
+            ProcFlags.in_trans = false;         // turn off input translation
             process_text( ixh1->ix_term, layout_work.ix[0].font );
         } else {
-            if( ixh1->prt_term[0] != '\0' ) { // if not null string
+            if( ixh1->prt_term[0] != '\0' ) {   // if not null string
+                ProcFlags.in_trans = true;      // allow input translation
                 process_text( ixh1->prt_term, layout_work.ix[0].font );
             }
         }
@@ -834,10 +881,12 @@ static void gen_index( void )
                     (ixh1->entry->major_string != NULL) ||
                     (ixh1->entry->normal_pgnum != NULL) ||
                     (ixh1->entry->normal_string != NULL) ) {    // see_string alone doesn't need the index_delim
+                ProcFlags.in_trans = false;         // turn off input translation
                 process_text( layout_work.ix[0].index_delim, layout_work.ix[0].font );
             }
             gen_all_refs( ixh1->entry, 0, ixh1->lower != NULL );
         }
+        post_space = 0;
         scr_process_break();
 
         ixh2 = ixh1->lower;
@@ -858,9 +907,11 @@ static void gen_index( void )
             ProcFlags.wrap_indent = true;
             wrap_indent = wrap[1];
             if( ixh2->prt_term == NULL ) {
+                ProcFlags.in_trans = false;         // turn off input translation
                 process_text( ixh2->ix_term, layout_work.ix[1].font );
             } else {
                 if( ixh2->prt_term[0] != '\0' ) { // if not null string
+                    ProcFlags.in_trans = true;      // allow input translation
                     process_text( ixh2->prt_term, layout_work.ix[1].font );
                 }
             }
@@ -871,10 +922,12 @@ static void gen_index( void )
                         (ixh2->entry->major_string != NULL) ||
                         (ixh2->entry->normal_pgnum != NULL) ||
                         (ixh2->entry->normal_string != NULL) ) {    // see_string alone doesn't need the index_delim
+                    ProcFlags.in_trans = false;         // turn off input translation
                     process_text( layout_work.ix[1].index_delim, layout_work.ix[1].font );
                 }
                 gen_all_refs( ixh2->entry, 1, ixh2->lower != NULL );
             }
+            post_space = 0;
             scr_process_break();
 
             ixh3 = ixh2->lower;
@@ -895,9 +948,11 @@ static void gen_index( void )
                 ProcFlags.wrap_indent = true;
                 wrap_indent = wrap[2];
                 if( ixh3->prt_term == NULL ) {
+                    ProcFlags.in_trans = false;         // turn off input translation
                     process_text( ixh3->ix_term, layout_work.ix[2].font );
                 } else {
                     if( ixh3->prt_term[0] != '\0' ) { // if not null string
+                        ProcFlags.in_trans = true;      // allow input translation
                         process_text( ixh3->prt_term, layout_work.ix[2].font );
                     }
                 }
@@ -908,10 +963,12 @@ static void gen_index( void )
                             (ixh3->entry->major_string != NULL) ||
                             (ixh3->entry->normal_pgnum != NULL) ||
                             (ixh3->entry->normal_string != NULL) ) {    // see_string alone doesn't need the index_delim
+                        ProcFlags.in_trans = false;         // turn off input translation
                         process_text( layout_work.ix[2].index_delim, layout_work.ix[2].font );
                     }
                     gen_all_refs( ixh3->entry, 2, ixh3->lower != NULL  );
                 }
+                post_space = 0;
                 scr_process_break();
 
                 ixh3 = ixh3->next;
@@ -962,11 +1019,20 @@ static void gen_toc( void )
     set_section_banners( doc_sect_toc );
     reset_t_page();
 
+    /* Set TOC columns */
+
+    t_page.panes->col_count = layout_work.toc.columns;
+    set_cols( t_page.panes );       // will need to be updated if multiple panes activated
+
     /* Set TOC margins and other values */
 
     t_page.cur_left = 2 * conv_hor_unit( &layout_work.toc.left_adjust, g_curr_font );    // matches wgml 4.0
     t_page.max_width = t_page.page_width -
                    conv_hor_unit( &layout_work.toc.right_adjust, g_curr_font );
+    if( pass == 1 ) {                                       // to match wgml 4.0
+        t_page.max_width -= ((15 * box_col_width) / 2);     // adjust right margin 0.75i to the left
+        page = 1;                                           // restart page numbers
+    }
     size = conv_hor_unit( &layout_work.tocpgnum.size, g_curr_font );     // space from fill to right edge
 
     /* Initialize levels and indent values */
@@ -1054,7 +1120,7 @@ static void gen_toc( void )
             strcat_s( postfix, 12, buffer );        // append page number
             g_curr_font = layout_work.tocpgnum.font;
             process_text( postfix, g_curr_font );
-            figlist_toc_tabs( layout_work.figlist.fill_string, size, false );
+            figlist_toc_tabs( layout_work.toc.fill_string, size, false );
         }
         scr_process_break();                        // ensure line break
         levels[cur_level] = true;                   // first entry of level done
@@ -1114,48 +1180,6 @@ static void document_new_position( void )
         }
     }
     g_cur_v_start = top_pos; // reset so first line positioning is correct
-    return;
-}
-
-/***************************************************************************/
-/*  set up the columns                                                     */
-/*                                                                         */
-/*  matches wgml 4.0 for 1 column                                          */
-/*  matches wgml 4.0 for 2 columns generally                               */
-/*  matches wgml 4.0 for 2 column INDEX                                    */
-/*  may or may not match wgml 4.0 for more than 2 columns                  */
-/*    particularly when script is used to create the columns               */
-/***************************************************************************/
-
-static void set_cols( doc_pane * a_pane )
-{
-    int         i;
-    uint32_t    col_count;
-    uint32_t    cur_col;
-    uint32_t    gutter;
-    uint32_t    width_avail;
-
-    col_count = a_pane->col_count;
-    if( col_count == 1 ) {
-        a_pane->col_width = t_page.page_width;
-        a_pane->cols[0].col_left = t_page.page_left;
-        t_page.max_width = t_page.page_width;
-    } else {
-        gutter = layout_work.defaults.def_gutter;
-        width_avail = t_page.page_width - (gutter * (col_count - 1));
-        a_pane->col_width = width_avail / col_count;
-        a_pane->cols[0].col_left = t_page.page_left;
-        for( i = 1; i < col_count; i++ ) {
-            cur_col = a_pane->cols[i - 1].col_left;
-            cur_col += a_pane->col_width;
-            cur_col += gutter;
-            a_pane->cols[i].col_left = cur_col;
-        }
-        if( ProcFlags.doc_sect_nxt == doc_sect_index ) {    // INDEX-specific
-            a_pane->col_width = 27.5 * tab_col;             // empirical, to match wgml 4.0
-        }
-        t_page.max_width = a_pane->col_width;
-    }
     return;
 }
 
@@ -1450,12 +1474,10 @@ static void gml_doc_xxx( doc_section ds )
 extern void gml_abstract( const gmltag * entry )
 {
     if( ProcFlags.doc_sect_nxt == doc_sect_egdoc ) {
-        xx_line_err( err_eof_expected, tok_start );
-        return;
+        xx_line_err_c( err_eof_expected, tok_start );
     }
     if( !ProcFlags.frontm_seen ) {
-        xx_line_err( err_doc_sec_expected_1, tok_start );
-        return;
+        xx_line_err_c( err_doc_sec_expected_1, tok_start );
     }
     if( g_blank_text_lines > 0 ) {
         set_skip_vars( NULL, NULL, NULL, 1, 0 );    // set g_blank_units_lines
@@ -1561,8 +1583,7 @@ extern void gml_frontm( const gmltag * entry )
 extern void gml_index( const gmltag * entry )
 {
     if( ProcFlags.doc_sect_nxt == doc_sect_egdoc ) {
-        xx_line_err( err_eof_expected, tok_start );
-        return;
+        xx_line_err_c( err_eof_expected, tok_start );
     }
 
     if( ProcFlags.doc_sect_nxt == doc_sect_index ) {// duplicate :INDEX tag
@@ -1572,8 +1593,7 @@ extern void gml_index( const gmltag * entry )
 
     if( !((ProcFlags.doc_sect == doc_sect_backm) ||
           (ProcFlags.doc_sect_nxt == doc_sect_backm)) ) {
-        xx_line_err( err_doc_sec_expected_1, tok_start );
-        return;
+        xx_line_err_c( err_doc_sec_expected_1, tok_start );
     }
     if( !GlobalFlags.index ) {          // index option not active
         return;
@@ -1596,12 +1616,10 @@ extern void gml_index( const gmltag * entry )
 extern void gml_preface( const gmltag * entry )
 {
     if( ProcFlags.doc_sect_nxt == doc_sect_egdoc ) {
-        xx_line_err( err_eof_expected, tok_start );
-        return;
+        xx_line_err_c( err_eof_expected, tok_start );
     }
     if( !ProcFlags.frontm_seen ) {
-        xx_line_err( err_doc_sec_expected_1, tok_start );
-        return;
+        xx_line_err_c( err_doc_sec_expected_1, tok_start );
     }
     if( g_blank_text_lines > 0 ) {
         set_skip_vars( NULL, NULL, NULL, 1, 0 );    // set g_blank_units_lines
@@ -1619,18 +1637,16 @@ extern void gml_preface( const gmltag * entry )
 extern void gml_titlep( const gmltag * entry )
 {
     if( ProcFlags.doc_sect_nxt == doc_sect_egdoc ) {
-        xx_line_err( err_eof_expected, tok_start );
-        return;
+        xx_line_err_c( err_eof_expected, tok_start );
     }
     if( !ProcFlags.frontm_seen ) {
-        xx_line_err( err_doc_sec_expected_1, tok_start );
-        return;
+        xx_line_err_c( err_doc_sec_expected_1, tok_start );
     }
     scr_process_break();
     gml_doc_xxx( doc_sect_titlep );
 
-    add_symvar( &global_dict, "$stitle", "", no_subscript, 0 );// set nullstring
-    add_symvar( &global_dict, "$title", "", no_subscript, 0 );// set nullstring
+    add_symvar( global_dict, "$stitle", "", no_subscript, 0 );  // set null string
+    add_symvar( global_dict, "$title", "", no_subscript, 0 );   // set null string
 
     rs_loc = titlep_tag;
     if( input_cbs->fmflags & II_file ) {    // save line number
@@ -1695,25 +1711,25 @@ extern void gml_egdoc( const gmltag * entry )
             // output figure forward/undefined references
             for( curr = fig_fwd_refs; curr != NULL; curr = curr->next ) {
                 if( find_refid( fig_ref_dict, curr->id ) != NULL ) {
-                    fwd_id_warn( curr->id, "figure" );
+                    xx_simple_warn_info_cc( wng_id_xxx, curr->id, inf_id_forward, "figure" );
                 } else {
-                    undef_id_warn( curr->id, "Figure" );
+                    xx_simple_warn_info_cc( wng_id_xxx, curr->id, inf_id_unknown, "Figure" );
                 }
             }
             // output header forward/undefined references
             for( curr = hd_fwd_refs; curr != NULL; curr = curr->next ) {
                 if( find_refid( hd_ref_dict, curr->id ) != NULL ) {
-                    fwd_id_warn( curr->id, "heading" );
+                    xx_simple_warn_info_cc( wng_id_xxx, curr->id, inf_id_forward, "heading" );
                 } else {
-                    undef_id_warn( curr->id, "Heading" );
+                    xx_simple_warn_info_cc( wng_id_xxx, curr->id, inf_id_unknown, "Heading" );
                 }
             }
             // output footnote forward/undefined references
             for( curr = fn_fwd_refs; curr != NULL; curr = curr->next ) {
                 if( find_refid( fn_ref_dict, curr->id ) != NULL ) {
-                    fwd_id_warn( curr->id, "footnote" );
+                    xx_simple_warn_info_cc( wng_id_xxx, curr->id, inf_id_forward, "footnote" );
                 } else {
-                    undef_id_warn( curr->id, "Footnote" );
+                    xx_simple_warn_info_cc( wng_id_xxx, curr->id, inf_id_unknown, "Footnote" );
                 }
             }
             if( figlist_toc ) {
@@ -1722,11 +1738,11 @@ extern void gml_egdoc( const gmltag * entry )
         } else {                                    // last pass of at least 2
             // output figure undefined/page change references
             for( curr = fig_fwd_refs; curr != NULL; curr = curr->next ) {
-                fwd_id_warn( curr->id, "figure" );
+                xx_simple_warn_info_cc( wng_id_xxx, curr->id, inf_id_forward, "figure" );
             }
             // output header undefined/page change references
             for( curr = hd_fwd_refs; curr != NULL; curr = curr->next ) {
-                fwd_id_warn( curr->id, "heading" );
+                xx_simple_warn_info_cc( wng_id_xxx, curr->id, inf_id_forward, "heading" );
             }
             if( ProcFlags.new_pagenr ) {
                 xx_simple_warn( wng_pass_many );    // at least one more pass needed
@@ -1750,40 +1766,48 @@ extern void gml_egdoc( const gmltag * entry )
 extern void gml_gdoc( const gmltag * entry )
 {
     char        *   p;
+    char        *   pa;
 
     scan_err = false;
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     p = scan_start;
-    if( *p != '\0' )
-        p++;
-
-    SkipSpaces( p );                    // over WS to attribute
-    if( *p != '\0' &&
-        ! (strnicmp( "sec ", p, 4 ) &&  // look for "sec " or "sec="
-           strnicmp( "sec=", p, 4 )) ) {
-        char        quote;
-        char    *   valstart;
-
-        p += 3;
-        SkipSpaces( p );
-        if( *p == '=' ) {
-            p++;
-            SkipSpaces( p );
-        }
-        if( *p == '"' || *p == '\'' ) {
-            quote = *p;
-            ++p;
-        } else {
-            quote = ' ';
-        }
-        valstart = p;
-        while( *p != '\0' && *p != quote ) {
-            ++p;
-        }
-        *p = '\0';
-
-        add_symvar( &global_dict, "$sec", valstart, no_subscript, 0 );
+    if( *p == '.' ) {
+        add_symvar( global_dict, "$sec", "", no_subscript, 0 ); // set null string
     } else {
-        add_symvar( &global_dict, "$sec", "", no_subscript, 0 );// set nullstring
+        for( ;; ) {
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
+            if( ProcFlags.reprocess_line ) {
+                break;
+            }
+            if( !strnicmp( "sec", p, 3 ) ) {
+                p += 3;
+                p = get_value( p );
+                if( AttrFlags.sec ) {
+                    xx_line_err_c( err_tag_not_text, p );
+                }
+                AttrFlags.sec = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
+                    add_symvar( global_dict, "$sec", "", no_subscript, 0 ); // set null string
+                    break;
+                } else {
+                    add_symvar( global_dict, "$sec", p, no_subscript, 0 );
+                }
+            } else {    // no match = end-of-tag in wgml 4.0
+                xx_line_err_c( err_tag_not_text, p );
+            }
+        }
+    }
+
+    SkipDot( p );
+    if( (*p != '\0') ) {
+        xx_line_err_c( err_tag_not_text, p );
     }
 
     gml_doc_xxx( doc_sect_gdoc );

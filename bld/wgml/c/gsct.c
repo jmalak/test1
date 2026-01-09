@@ -78,19 +78,37 @@ void    scr_ct( void )
     p = scan_start;                     // next char after .ct
     if( is_space_tab_char( *p ) && (*p != '\0') && is_space_tab_char( *(p + 1) ) ) {
         ProcFlags.fsp = true;           // keep post_space
+        if( post_space == 0 ) {         // ensure it has a non-zero value
+            post_space = wgml_fonts[g_curr_font].spc_width;
+        }
     }
     if( *p != '\0' ) {                  // line operand specified
-        SkipSpaces( p );
+        if( ProcFlags.concat ) {
+            SkipSpaces( p );
+        } else {
+            p++;                        // over blank after control word
+        }
         if( *p != '\0' ) {
-            if( !ProcFlags.fsp ) {      // preserved forced space
-                post_space = 0;
+            if( !ProcFlags.fsp ) {                  // not forced space
+                if( is_ip_tag( nest_cb->c_tag ) ) { // in inline phrase
+                    if( is_ip_tag( nest_cb->prev->c_tag ) ) { // in 2nd inline phrase
+                        /* placeholder */
+                    } else if( !ProcFlags.inl_text ) {
+                        /* placeholder */
+                    } else {
+                        post_space = 0;
+                    }
+                } else {
+                    post_space = 0;
+                }
             }
             ProcFlags.ct = true;
             if( (*p == SCR_char) ||     // script control word follows
                 (*p == GML_char) ) {    // GML tag follows
-                split_input( scan_start, p, input_cbs->fmflags & II_eol ); // fixes problem with macro
+                split_input( scan_start, p, input_cbs->fmflags );   // fixes problem with macro
                 input_cbs->hidden_head->fm_symbol = input_cbs->fm_symbol;
                 input_cbs->hidden_head->sym_space = input_cbs->sym_space;
+                input_cbs->hidden_head->hh_tag = input_cbs->hh_tag;
             } else {
                 process_text( p, g_curr_font ); // text follows
             }

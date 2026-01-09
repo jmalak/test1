@@ -1,0 +1,25 @@
+ 
+-          1 Heading level 1
++          _________________
++          1 Heading level 1
+-
+           1.1.1 Heading level 3
++          _____________________
++          1.1.1 Heading level 3
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+0          Heading level 1                                            1

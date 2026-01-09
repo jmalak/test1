@@ -31,9 +31,7 @@
 *
 ****************************************************************************/
 
-
 #include "wgml.h"
-
 
 static  bf_place        place;                  // FIG attribute used by eFIG
 static  bool            concat_save;            // for ProcFlags.concat
@@ -45,10 +43,10 @@ static  char            id[ID_LEN];             // FIG attribute used by eFIG
 static  def_frame       frame;                  // FIG attribute used by eFIG
 static  group_type      sav_group_type;         // save prior group type
 static  ju_enum         justify_save;           // for ProcFlags.justify
+static  text_space      spacing_save;           // for spacing
 static  uint32_t        depth           = 0;    // FIG attribute used by eFIG
 static  uint32_t        left_inset;             // offset from frame to contents
 static  uint32_t        right_inset;            // offset from frame to contents
-static  text_space      spacing_save;           // for spacing
 static  uint32_t        width           = 0;    // FIG attribute used by eFIG
 
 /***************************************************************************/
@@ -402,14 +400,13 @@ static void insert_frame_line( void )
 
 void gml_fig( const gmltag * entry )
 {
-    bool            id_seen     = false;
-    bool            width_seen  = false;
     char        *   p;
     char        *   pa;
     ref_entry   *   cur_ref     = NULL;
     su              cur_su;
     uint32_t        max_width;
 
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     start_doc_sect();
     scr_process_break();
     scan_err = false;
@@ -419,11 +416,13 @@ void gml_fig( const gmltag * entry )
     }
     g_keep_nest( "Figure" );            // catch nesting errors
 
+    ProcFlags.block_starting = true;    // to catch empty blocks
+
     figcap_done = false;                // reset for this FIG
     id[0] = '\0';
     page_width = false;
-    p = scan_start;
     depth = 0;                          // default value; depth is space reserved for some other item
+    width = 0;                          // initialize
     frame.type = layout_work.fig.default_frame.type;
     if( frame.type == char_frame ) {
         strcpy_s( frame.string, str_size, layout_work.fig.default_frame.string );
@@ -434,22 +433,39 @@ void gml_fig( const gmltag * entry )
     spacing_save = g_text_spacing;
     g_text_spacing = layout_work.fig.spacing;
 
+    p = scan_start;
     if( *p == '.' ) {
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
             if( !strnicmp( "depth", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.depth ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.depth = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                if( att_val_to_su( &cur_su, true ) ) {
+                if( value_to_su( &cur_su, true ) ) {
                     break;
                 }
                 depth = conv_vert_unit( &cur_su, g_text_spacing, g_curr_font );
@@ -458,21 +474,37 @@ void gml_fig( const gmltag * entry )
                 }
             } else if( !strnicmp( "frame", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.frame ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.frame = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                if( !strnicmp( "none", val_start, 4 ) ) {
+                if( !strnicmp( "none", g_att_val.val_start, 4 ) ) {
                     frame.type = none;
-                } else if( !strnicmp( "box", val_start, 3 ) ) {
+                } else if( !strnicmp( "box", g_att_val.val_start, 3 ) ) {
                     frame.type = box_frame;
-                } else if( !strnicmp( "rule", val_start, 4 ) ) {
+                } else if( !strnicmp( "rule", g_att_val.val_start, 4 ) ) {
                     frame.type = rule_frame;
                 } else {
                     frame.type = char_frame;
                 }
                 if( frame.type == char_frame ) {
-                    memcpy_s( frame.string, str_size, val_start, val_len );
+                    memcpy_s( frame.string, str_size, g_att_val.val_start, val_len );
                     if( val_len < str_size ) {
                         frame.string[val_len] = '\0';
                     } else {
@@ -489,58 +521,111 @@ void gml_fig( const gmltag * entry )
                 }
             } else if( !strnicmp( "id", p, 2 ) ) {
                 p += 2;
-                p = get_refid_value( p, id );
-                if( val_start == NULL ) {
+                p = get_id_value( p, id );
+                if( AttrFlags.id ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.id = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                id_seen = true;             // valid id attribute found
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else if( !strnicmp( "place", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.place ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.place = true;
+                if( g_att_val.val_quoted ) {
+                    xx_line_err_c( err_inv_att_val, g_att_val.val_start - 1 );
+                }
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                if( !strnicmp( "bottom", val_start, 5 ) ) {
+                if( !strnicmp( "bottom", g_att_val.val_start, 5 ) ) {
                     place = bottom_place;
-                } else if( !strnicmp( "inline", val_start, 6 ) ) {
+                } else if( !strnicmp( "inline", g_att_val.val_start, 6 ) ) {
                     place = inline_place;
-                } else if( !strnicmp( "top", val_start, 3 ) ) {
+                } else if( !strnicmp( "top", g_att_val.val_start, 3 ) ) {
                     place = top_place;
                 } else {
-                    xx_line_err( err_inv_att_val, val_start );
+                    xx_line_err_c( err_inv_att_val, g_att_val.val_start );
                 }
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else if( !strnicmp( "width", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.width ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.width = true;
+                if( g_att_val.val_quoted ) {
+                    xx_line_err_c( err_inv_att_val, g_att_val.val_start - 1 );
+                }
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                if( !strnicmp( "page", val_start, 4 ) ) {
+                if( !strnicmp( "page", g_att_val.val_start, 4 ) ) {
                     // this will be used to set t_page_width and width below
                     page_width = true;
-                } else if( !strnicmp( "column", val_start, 6 ) ) {
+                } else if( !strnicmp( "column", g_att_val.val_start, 6 ) ) {
                     // default value is the correct value to use
                 } else {    // value actually specifies the width
-                    pa = val_start;
-                    if( att_val_to_su( &cur_su, true ) ) {
+                    pa = g_att_val.val_start;
+                    if( value_to_su( &cur_su, true ) ) {
                         break;
                     }
                     width = conv_hor_unit( &cur_su, g_curr_font );
                     if( width == 0 ) {
-                        xx_line_err( err_inv_width_fig_1, val_start );
+                        xx_line_err_c( err_inv_width_fig_1, g_att_val.val_start );
                     }
-                    width_seen = true;
                 }
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else {    // no match = end-of-tag in wgml 4.0
+                ProcFlags.tag_end_found = true;
                 p = pa; // restore spaces before text
                 break;
             }
@@ -567,8 +652,6 @@ void gml_fig( const gmltag * entry )
     nest_cb->p_stack = copy_to_nest_stack();
     nest_cb->left_indent = conv_hor_unit( &layout_work.fig.left_adjust, g_curr_font );
     nest_cb->right_indent = conv_hor_unit( &layout_work.fig.right_adjust, g_curr_font );
-    nest_cb->lm = t_page.cur_left;
-    nest_cb->rm = t_page.max_width;
     nest_cb->font = g_curr_font;
     nest_cb->c_tag = t_FIG;
 
@@ -592,7 +675,7 @@ void gml_fig( const gmltag * entry )
         if( fig_list == NULL ) {        // first entry
             fig_list = fig_entry;
         }
-        if( id_seen ) {                 // add this entry to fig_ref_dict
+        if( id[0] != '\0' ) {           // add this entry to fig_ref_dict
             cur_ref = find_refid( fig_ref_dict, id );
             if( cur_ref == NULL ) {             // new entry
                 cur_ref = (ref_entry *) mem_alloc( sizeof( ref_entry ) ) ;
@@ -635,15 +718,15 @@ void gml_fig( const gmltag * entry )
         max_width = t_page.page_width;
     }
 
-    if( width_seen ) {                  // width entered will be used
+    if( width > 0 ) {                   // width entered will be used
         if( width > max_width ) {
-            xx_line_err( err_inv_width_fig_3, val_start );
+            xx_line_err_c( err_inv_width_fig_3, g_att_val.val_start );
         }
     } else {
         width = max_width;              // t_page.last_pane->col_width will be used
     }
 
-    if( width_seen ) {                  // wgml 4.0 makes this distinction
+    if( width > 0 ) {                   // wgml 4.0 makes this distinction
         width -= nest_cb->right_indent;
     } else {
         width -= (nest_cb->left_indent + nest_cb->right_indent);
@@ -671,17 +754,17 @@ void gml_fig( const gmltag * entry )
 
     if( width > t_page.last_pane->col_width ) {
         if( (t_page.last_pane->col_count > 1) && (place != top_place) ) {
-            xx_line_err( err_inv_width_fig_2, val_start );
+            xx_line_err_c( err_inv_width_fig_2, g_att_val.val_start );
         } else if( t_page.last_pane->col_count == 1 ) {
-            xx_line_err( err_inv_width_fig_3, val_start );
+            xx_line_err_c( err_inv_width_fig_3, g_att_val.val_start );
         }
     }
 
     if( (t_page.cur_left >= t_page.max_width) || (t_page.cur_left >= g_page_right_org) ) {
         if( frame.type == none ) {
-            xx_line_err( err_inv_margins_1, val_start );
+            xx_line_err_c( err_inv_margins_1, g_att_val.val_start );
         } else {
-            xx_line_err( err_inv_margins_2, val_start );
+            xx_line_err_c( err_inv_margins_2, g_att_val.val_start );
         }
     }
 
@@ -693,11 +776,10 @@ void gml_fig( const gmltag * entry )
 
 
     if( t_page.max_width < right_inset ) {
-        t_page.max_width = 0;               // negative right margin not allowed
         if( frame.type == none ) {
-            xx_line_err( err_inv_margins_1, val_start );
+            xx_line_err_c( err_inv_margins_1, g_att_val.val_start );
         } else {
-            xx_line_err( err_inv_margins_2, val_start );
+            xx_line_err_c( err_inv_margins_2, g_att_val.val_start );
         }
     } else {
         t_page.max_width -= right_inset;
@@ -705,7 +787,6 @@ void gml_fig( const gmltag * entry )
 
     t_page.cur_width = t_page.cur_left;
     ProcFlags.keep_left_margin = true;      // keep special indent
-    ProcFlags.ix_in_block = true;
 
     if( !ProcFlags.reprocess_line && *p != '\0' ) {
         SkipDot( p );                       // possible tag end
@@ -755,6 +836,11 @@ void gml_efig( const gmltag * entry )
     t_page.max_width += right_inset;
     ProcFlags.concat = false;
     set_skip_vars( NULL, NULL, &layout_work.fig.post_skip, g_text_spacing, layout_work.fig.font );
+    if( ProcFlags.block_starting ) {    // block is empty
+        g_subs_skip += g_post_skip;
+        g_post_skip = 0;
+        ProcFlags.block_starting = false;
+    }
 
     raw_p_skip = g_post_skip;           // save for future use
 
@@ -1072,7 +1158,15 @@ void gml_efig( const gmltag * entry )
 
     scan_err = false;
     if( *p != '\0' ) {
-        do_force_pc( p );
+        if( !input_cbs->hidden_head->ip_start && (*(p + 1) == '\0') && (*p == CONT_char) ) { // text is continuation character only
+            if( &layout_work.fig.post_skip != NULL ) {
+                g_post_skip = conv_vert_unit( &layout_work.fig.post_skip, g_text_spacing, layout_work.fig.font );
+            } else {
+                g_post_skip = 0;
+            }
+        } else {
+            do_force_pc( p );
+        }
     } else {
         ProcFlags.force_pc = true;
     }
@@ -1115,10 +1209,9 @@ void gml_figcap( const gmltag * entry )
     p = scan_start;
 
     g_curr_font = layout_work.figcap.string_font;
-    set_skip_vars( &layout_work.figcap.pre_lines, NULL, NULL, g_text_spacing, g_curr_font );
+    set_skip_vars( NULL, &layout_work.figcap.pre_lines, NULL, g_text_spacing, g_curr_font );
 
     ProcFlags.concat = true;            // even if was false on entry
-    input_cbs->fmflags &= ~II_eol;      // prefix is never EOL
     if( pass == 1 ) {                   // only on the first pass
 
         /* Only FIGs with captions are numbered */
@@ -1148,7 +1241,7 @@ void gml_figcap( const gmltag * entry )
 
     if( ProcFlags.wh_device ) {             // Insert a marker
         marker = process_word( NULL, 0, g_curr_font, false );
-        marker->type = tx_figcap;           // mark as from prefix string
+        marker->type |= tx_figcap;           // mark as from prefix string
         marker->x_address = t_page.cur_width;
         t_line->last->next = marker;
         marker->prev = t_line->last;
@@ -1158,25 +1251,21 @@ void gml_figcap( const gmltag * entry )
 
     /* Output the caption text, if any */
 
-    if( ProcFlags.ps_device ) {             // set left margin for caption text
-        t_page.cur_width += wgml_fonts[g_curr_font].spc_width;
-    }
+    ProcFlags.ct = true;                    // emulate CT
+    g_curr_font = layout_work.figcap.font;
+    t_page.cur_width += wgml_fonts[g_curr_font].spc_width;
     t_page.cur_left = t_page.cur_width;
 
-    g_curr_font = layout_work.figcap.font;
     if( *p != '\0' ) {
         SkipDot( p );                       // possible tag end
         SkipSpaces( p );                    // skip preceding spaces
-        post_space = 0;                     // g_curr_left should be enough
-        input_cbs->fmflags &= ~II_sol;      // prefix was SOL, so this is not
+        post_space = 0;                     // no additional space
         if( pass == 1 ) {                   // only on first pass
             current = strlen( p );
-            fig_entry->text = (char *) mem_alloc( current + 1);
+            fig_entry->text = (char *) mem_alloc( current + 1 );
             strcpy_s( fig_entry->text, current + 1, p );
         }
-        ProcFlags.in_figcap = true;
-        process_text( p, g_curr_font );     // if text follows
-        ProcFlags.in_figcap = false;
+        process_text( fig_entry->text, g_curr_font );   // if text follows
     } else {
         ProcFlags.need_text = true;
     }
@@ -1210,7 +1299,6 @@ void gml_figdesc( const gmltag * entry )
     if( figcap_done ) {                         // FIGCAP was present
         post_space = 0;
         ProcFlags.ct = true;                    // emulate CT
-        input_cbs->fmflags &= ~II_eol;          // ":" is never EOL
         process_text( ":", g_curr_font);        // uses FIGCAP font
         g_curr_font = layout_work.figdesc.font; // change to FIGDESC font
     } else {                                    // FIGCAP not present

@@ -55,10 +55,10 @@ char parse_char( const char *p, size_t len )
                 c = c * 16 + my_toupper( p[1] ) - 'A' + 10;
             }
         } else {
-            xx_line_err_len( err_cw_not_char, p, len );
+            xx_line_err_ci( err_cw_not_char, p, len );
         }
     } else {
-        xx_line_err_len( err_cw_not_char, p, len );
+        xx_line_err_ci( err_cw_not_char, p, len );
     }
 
     return( c );
@@ -264,10 +264,10 @@ condcode getqst( void )
 }
 
 /*
- * Test character as valid for an LAYOUT attribute name
+ * Test character as valid for a predefined attribute name
  */
 
-bool is_lay_att_char( char c )
+bool is_att_char( char c )
 {
     bool    test;
 

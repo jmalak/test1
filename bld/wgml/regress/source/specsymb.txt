@@ -1,0 +1,22 @@
+           This is a GML tag:  :GDOC.  The &amp.  symbol is quite
+           handy:  Without it, putting '&' and ':' characters in the
+           document would be hard.
+           ::&&:&
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-                                                                     1

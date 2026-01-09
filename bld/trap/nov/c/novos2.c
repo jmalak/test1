@@ -24,8 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  Novell IPX/SPX interface for OS/2.
 *
 ****************************************************************************/
 
@@ -230,6 +229,19 @@ ULONG           SendSem = 0;
 #define IPXRelinquishControl()  DosSleep( 1 )
 
 
+static void PostAListen( int i )
+{
+    WORD        rc;
+
+putstring( "Posting RecECB[i]\r\n" );
+    _INITECB( RecECB[i], RecHead[i], 2, SPX )
+    RecECB[i].hsem = (HSEM) &RecvSem;
+    RecECB[i].fragList[1].fragAddress = &Buffer[i];
+    RecECB[i].fragList[1].fragSize = sizeof( Buffer[i] );
+    rc = SpxListenForConnectionPacket( Connection, &RecECB[i] );
+    putrc( "SPXListenForConnectionPacket", rc );
+}
+
 static unsigned DoRemoteGet( char *rec, unsigned len )
 {
     int         i;
@@ -325,19 +337,6 @@ unsigned RemotePut( char *snd, unsigned len )
         return( REQUEST_FAILED );
     }
     return( len );
-}
-
-static void PostAListen( int i )
-{
-    WORD        rc;
-
-putstring( "Posting RecECB[i]\r\n" );
-    _INITECB( RecECB[i], RecHead[i], 2, SPX )
-    RecECB[i].hsem = (HSEM) &RecvSem;
-    RecECB[i].fragList[1].fragAddress = &Buffer[i];
-    RecECB[i].fragList[1].fragSize = sizeof( Buffer[i] );
-    rc = SpxListenForConnectionPacket( Connection, &RecECB[i] );
-    putrc( "SPXListenForConnectionPacket", rc );
 }
 
 static void PostListens()

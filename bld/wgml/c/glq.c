@@ -57,12 +57,8 @@ void gml_lq( const gmltag * entry )
 
     nest_cb->c_tag = t_LQ;
 
-    nest_cb->left_indent = conv_hor_unit( &layout_work.lq.left_indent, g_curr_font )
-                             + nest_cb->prev->align;
+    nest_cb->left_indent = conv_hor_unit( &layout_work.lq.left_indent, g_curr_font );
     nest_cb->right_indent = -1 * conv_hor_unit( &layout_work.lq.right_indent, g_curr_font );
-
-    nest_cb->lm = t_page.cur_left;
-    nest_cb->rm = t_page.max_width;
 
     nest_cb->font = g_curr_font;
     g_curr_font = layout_work.lq.font;

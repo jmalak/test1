@@ -101,10 +101,9 @@ void    lay_default( const gmltag * entry )
 {
     char        *   p;
     condcode        cc;
+    int             cvterr;
     int             k;
     lay_att         curr;
-    att_args        l_args;
-    int             cvterr;
 
     p = scan_start;
     cvterr = false;
@@ -114,65 +113,95 @@ void    lay_default( const gmltag * entry )
         eat_lay_sub_tag();
         return;                         // process during first pass only
     }
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     if( ProcFlags.lay_xxx != el_default ) {
         ProcFlags.lay_xxx = el_default;
     }
-    cc = get_lay_sub_and_value( &l_args );  // get attr with value
+    cc = get_attr_and_value();            // get att with value
     while( cc == pos ) {
         cvterr = -1;
         for( k = 0, curr = default_att[k]; curr > 0; k++, curr = default_att[k] ) {
 
-            if( !strnicmp( att_names[curr], l_args.start[0], l_args.len[0] ) ) {
-                p = l_args.start[1];
+            if( !strnicmp( att_names[curr], g_att_val.att_start, g_att_val.att_len ) ) {
+                p = g_att_val.val_start;
 
                 switch( curr ) {
                 case   e_spacing:
+                    if( AttrFlags.spacing ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_spacing( p, curr, &layout_work.defaults.spacing );
+                    AttrFlags.spacing = true;
                     break;
                 case   e_columns:
+                    if( AttrFlags.columns ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_int8( p, curr, &layout_work.defaults.columns );
+                    AttrFlags.columns = true;
                     break;
                 case   e_font:
+                    if( AttrFlags.font ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_font_number( p, curr, &layout_work.defaults.font );
                     if( layout_work.defaults.font >= wgml_font_cnt ) {
                         layout_work.defaults.font = 0;
                     }
+                    AttrFlags.font = true;
                     break;
                 case   e_justify:
+                    if( AttrFlags.justify ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_yes_no( p, curr, &layout_work.defaults.justify );
+                    AttrFlags.justify = true;
                     break;
                 case   e_input_esc:
+                    if( AttrFlags.input_esc ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_char( p, curr, &layout_work.defaults.input_esc );
                     in_esc = layout_work.defaults.input_esc;
                     if( in_esc != ' ' ) {
                         ProcFlags.in_trans = true;
                     }
+                    AttrFlags.input_esc = true;
                     break;
                 case   e_gutter:
+                    if( AttrFlags.gutter ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_space_unit( p, curr, &layout_work.defaults.gutter );
+                    AttrFlags.gutter = true;
                     break;
                 case   e_binding:
+                    if( AttrFlags.binding ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len);
+                    }
                     cvterr = i_space_unit( p, curr, &layout_work.defaults.binding );
+                    AttrFlags.binding = true;
                     break;
                 default:
-                    out_msg( "WGML logic error.\n");
-                    cvterr = true;
-                    break;
+                    internal_err( __FILE__, __LINE__ );
                 }
                 if( cvterr ) {          // there was an error
-                    err_count++;
-                    g_err( err_att_val_inv );
-                    file_mac_info();
+                    xx_err( err_att_val_inv );
                 }
                 break;                  // break out of for loop
             }
         }
         if( cvterr < 0 ) {
-            err_count++;
-            g_err( err_att_name_inv );
-            file_mac_info();
+            xx_err( err_att_name_inv );
         }
-        cc = get_lay_sub_and_value( &l_args );  // get attr with value
+        cc = get_attr_and_value();            // get att with value
     }
     scan_start = scan_stop + 1;
     return;

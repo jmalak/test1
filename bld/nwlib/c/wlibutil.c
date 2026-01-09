@@ -176,18 +176,18 @@ char *MakeBakName( void )
 
 char *MakeTmpName( char *buffer )
 {
-    char name[ 9 ];
-    long initial = time( NULL ) % 1000L;
-    long count   = ( initial + 1L ) % 1000L;
+    char            name[ 9 ];
+    unsigned long   initial = time( NULL ) % 1000L;
+    unsigned long   count   = ( initial + 1L ) % 1000L;
 
     _splitpath( Options.input_name, drive, dir, fname, fext );
 
     /*
-     * For whatever it's worth, we'll only check 9999 files before
+     * For whatever it's worth, we'll only check 999 files before
      * quitting ;-)
      */
     for( ; count != initial; count = ( count + 1L ) % 1000L ) {
-        sprintf( name, "_wlib%03ld", count );
+        sprintf( name, "_wlib%03lu", count );
         _makepath( buffer, drive, dir, name, "$$$" );
 
         if( access( buffer, 0 ) != 0 ) {

@@ -1,4 +1,5 @@
 # This file produced by MS2WLINK
+option farcalls
 system dos
 begin
 section

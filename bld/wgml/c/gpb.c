@@ -40,26 +40,33 @@
 /*  when used after P, PB, PC, or LP: passess g_post_skip on to next       */
 /*    document element                                                     */
 /*  otherwise, uses the g_post_skip as a pre_skip                          */
+/*                                                                         */
+/*  NOTE: this works when concatenation is ON, at least at present         */
+/*        it also works when PB follows P and conatenation is OFF          */
+/*        but fails otherwise when concatenation is OFF                    */
 /***************************************************************************/
 
 extern  void    gml_pb( const gmltag * entry )
 {
-    bool        in_para = ProcFlags.para_has_text;
+    bool        has_text;   // will be true if following P, PB, PC, or LP
     char    *   p;
 
     scan_err = false;
     p = scan_start;
 
     start_doc_sect();                   // if not already done
+    if( ProcFlags.concat ) {
+        ProcFlags.para_starting = false;// avoid set_skip_vars in scr_process_break()
+    }
+    has_text = ProcFlags.para_has_text; // save value
     scr_process_break();                // clears ProcFlags.para_has_text
 
-    if( in_para ) {
-        ProcFlags.skips_valid = true;   // keep existing skips inside paragraph
-        ProcFlags.para_has_text = true; // reset flag, still in paragraph
-    } else {
-        ProcFlags.skips_valid = false;  // convert g_post_skip to g_subs_skip
+    if( ProcFlags.concat ) {
+        if( has_text ) {
+            ProcFlags.skips_valid = true;       // keep existing skips inside paragraph
+        }
+        ProcFlags.para_has_text = has_text; // reset flag
     }
-    ProcFlags.ix_in_block = true;
 
     SkipDot( p );                       // over '.'
     post_space = 0;

@@ -639,6 +639,11 @@ all : $($(what_to_build)) .SYMBOLIC
 winsock2.h: winsock.mh
     $(ws2splice)
 
+!ifeq host_cpu axp
+kernel32.lbc: kernel32.def kernel32.$(host_cpu)
+    $(awk) -v cpu=$(host_cpu) -f $(root_dir)/def2lbc.awk $< > $@
+!endif
+
 vfw32.lbc: $(vfw32_lbcs) vfwuuid.obj
     @%create $@
     @for %i in ($(vfw32_lbcs)) do @%append $@ @ %i

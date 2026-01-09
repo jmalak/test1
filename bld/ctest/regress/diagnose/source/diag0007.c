@@ -56,6 +56,7 @@ int main( int argc, char **argv )
 
     while( --argc );
     unsigned uu;                                // OK here
+la_belle:                                       // OK but not accepted up to OW 1.9
 
     switch( argc )
         int i;                                  // no declaration here
@@ -63,7 +64,7 @@ int main( int argc, char **argv )
     switch( argc ) {
     default:
         ++argc;
-	int yy = 4;                             // OK here
+	int yy = 4;                                 // OK here
 	--yy;
     case 3:
         int zz = 3;                             // no declaration here

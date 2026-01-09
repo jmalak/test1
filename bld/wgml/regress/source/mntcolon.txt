@@ -1,0 +1,22 @@
+           What follows is a note.
+0          :         That's a binary ":" operator in the debugger.
++          :
+0          This is normal text again.
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+0                                                                     1

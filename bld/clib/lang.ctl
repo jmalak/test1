@@ -109,6 +109,8 @@ cdsay .
 
     <CPCMD> handleio/library/winnt.386/mf_r/binmode.obj     <RELROOT>/lib386/nt/binmode.obj
     <CPCMD> startup/library/winnt.386/mf_r/commode.obj      <RELROOT>/lib386/nt/commode.obj
+    <CPCMD> startup/library/winnt.386/mf_r/mainnt31.obj     <RELROOT>/lib386/nt/maint31r.obj
+    <CPCMD> startup/library/winnt.386/mf_s/mainnt31.obj     <RELROOT>/lib386/nt/maint31s.obj
 
     # run-time DLL version
     <CPCMD> rtdll/winnt.386/mf_r/clb*.lib                   <RELROOT>/lib386/nt/

@@ -110,9 +110,13 @@ static void OutNum( unsigned i )
 
     ptr = numbuff+10;
     *--ptr = '\0';
-    while( i != 0 ) {
-        *--ptr = "0123456789abcdef"[ i & 0x0f ];
-        i >>= 4;
+    if( i ) {
+        while( i != 0 ) {
+            *--ptr = "0123456789abcdef"[ i & 0x0f ];
+            i >>= 4;
+        }
+    } else {
+        *--ptr = '0';
     }
     Out( ptr );
 }
@@ -120,14 +124,19 @@ static void OutNum( unsigned i )
 
 static void OutBuff( TRACEBUF far *buf )
 {
-    Out( "pid   = " ); OutNum( buf->pid ); Out( "\r\n" );
-    Out( "tid   = " ); OutNum( buf->tid ); Out( "\r\n" );
-    Out( "cmd   = " ); OutNum( buf->cmd ); Out( "\r\n" );
-    Out( "value = " ); OutNum( buf->value ); Out( "\r\n" );
-    Out( "offv  = " ); OutNum( buf->offv ); Out( "\r\n" );
-    Out( "segv  = " ); OutNum( buf->segv ); Out( "\r\n" );
-    Out( "mte   = " ); OutNum( buf->mte ); Out( "\r\n" );
+    Out( "pid   = " ); OutNum( buf->pid ); OutNL();
+    Out( "tid   = " ); OutNum( buf->tid ); OutNL();
+    Out( "cmd   = " ); OutNum( buf->cmd ); OutNL();
+    Out( "value = " ); OutNum( buf->value ); OutNL();
+    Out( "offv  = " ); OutNum( buf->offv ); OutNL();
+    Out( "segv  = " ); OutNum( buf->segv ); OutNL();
+    Out( "mte   = " ); OutNum( buf->mte ); OutNL();
 }
+#else
+#define Out( a )
+#define OutNL( a )
+#define OutNum( a )
+#define OutBuff( a )
 #endif
 
 
@@ -151,6 +160,8 @@ static USHORT WriteBuffer( char far *data, USHORT segv,
 {
     USHORT  length;
 
+    Out( "WriteBuffer: " ); OutNum( size ); Out( " bytes at " );
+    OutNum( segv ); Out( ":" ); OutNum( offv ); Out( " / " ); OutNum( *data ); OutNL();
     length = size;
     if( Pid != 0 ) {
         while( length != 0 ) {
@@ -177,6 +188,7 @@ static USHORT WriteBuffer( char far *data, USHORT segv,
                 data++;
                 Buff.offv = offv;
                 Buff.segv = segv;
+                Out( "Writing " ); OutNum( Buff.value ); OutNL();
                 DosPTrace( &Buff );
                 if( Buff.cmd != PT_RET_SUCCESS ) break;
                 length -= 2;
@@ -220,6 +232,7 @@ static void RecordModHandle( USHORT value )
 {
     SEL         sel;
 
+    Out( "RecordModHandle: " ); OutNum( value ); OutNL();
     if( ModHandles == NULL ) {
         DosAllocSeg( sizeof( USHORT ), (PSEL)&sel, 0 );
         ModHandles = MK_FP( sel, 0 );
@@ -237,8 +250,12 @@ static void ExecuteCode( TRACEBUF far *buff )
     for( ;; ) {
         buff->cmd = PT_CMD_GO;
         buff->value = 0;
+        Out( "About to ExecuteCode" ); OutNL();
         DosPTrace( buff ); // go here
-        if( buff->cmd != PT_RET_LIB_LOADED ) break;
+        Out( "ret = " ); OutNum( buff->cmd ); Out( " CS:IP=" );
+        OutNum( buff->u.r.CS ); Out( ":" ); OutNum( buff->u.r.IP ); OutNL();
+        if( buff->cmd != PT_RET_LIB_LOADED )
+            break;
         RecordModHandle( buff->value );
     }
 }
@@ -294,16 +311,37 @@ static long TaskExecute( void (*rtn)() )
 {
     TRACEBUF    buff;
 
+    Out( "TaskExecute" ); OutNL();
     if( CanExecTask ) {
+
+        OutBuff( &Buff );
+
+        /* Just after receiving a DLL load notification, it may be unsafe to
+         * run code in the debuggee. It is not understood why, but attempting
+         * to do so upsets the debuggee, causing crashes later on.
+         */
+        if( Buff.cmd == PT_RET_LIB_LOADED ) {
+            Out( "Library just loaded, skipping TaskExecute" ); OutNL();
+            return( -1 );
+        }
+
         buff = Buff;
+        Out( "eCS:" ); OutNum( buff.u.r.CS ); Out( " IP:" ); OutNum( buff.u.r.IP );
+        Out( " SS:" ); OutNum( buff.u.r.SS ); Out( " SP:" ); OutNum( buff.u.r.SP );
+        OutNL();
         buff.u.r.CS = FP_SEG( rtn );
         buff.u.r.IP = FP_OFF( rtn );
         buff.u.r.SS = FP_SEG( stack );
         buff.u.r.SP = FP_OFF( stack ) + sizeof( stack );
+        Out( "xCS:" ); OutNum( buff.u.r.CS ); Out( " IP:" ); OutNum( buff.u.r.IP );
+        Out( " SS:" ); OutNum( buff.u.r.SS ); Out( " SP:" ); OutNum( buff.u.r.SP );
+        OutNL();
         WriteRegs( &buff );
         ExecuteCode( &buff );
+        Out( "DX:AX = " ); OutNum( buff.u.r.DX ); Out( ":" ); OutNum( buff.u.r.AX ); OutNL();
         return( ( (unsigned long)buff.u.r.DX << 16 ) + buff.u.r.AX );
     } else {
+        Out( "can't TaskExecute" ); OutNL();
         return( -1 );
     }
 }
@@ -317,6 +355,7 @@ long TaskOpenFile( char far *name, int mode, int flags ) {
     Buff.u.r.AX = FP_OFF( UtilBuff );
     Buff.u.r.BX = mode;
     Buff.u.r.CX = flags;
+    Out( "TaskOpenFile" ); OutNL();
     return( TaskExecute( DoOpen ) );
 }
 
@@ -324,6 +363,7 @@ long TaskOpenFile( char far *name, int mode, int flags ) {
 long TaskCloseFile( HFILE hdl )
 {
     Buff.u.r.AX = hdl;
+    Out( "TaskCloseFile" ); OutNL();
     return( TaskExecute( DoClose ) );
 }
 
@@ -331,6 +371,7 @@ HFILE TaskDupFile( HFILE old, HFILE new )
 {
     Buff.u.r.AX = old;
     Buff.u.r.DX = new;
+    Out( "TaskDupFile" ); OutNL();
     return( TaskExecute( DoDupFile ) );
 }
 
@@ -345,13 +386,14 @@ unsigned ReqGet_sys_config()
     TRACEBUF    buff;
     char        tmp[108];
 
+    Out( "Req_get_sys_config" ); OutNL();
     ret = GetOutPtr(0);
     ret->sys.os = OS_OS2;
     DosGetVersion( &version );
     ret->sys.osmajor = version >> 8;
     ret->sys.osminor = version & 0xff;
     ret->sys.cpu = X86CPUType();
-    DosDevConfig( &npx, 3, 0 );
+    DosDevConfig( &npx, 3 /*DEVINFO_COPROCESSOR*/, 0 );
     if( npx ) {
         if( ret->sys.cpu >= X86_486 ) {
             ret->sys.fpu = ret->sys.cpu & X86_CPU_MASK;
@@ -361,19 +403,33 @@ unsigned ReqGet_sys_config()
     } else {
         ret->sys.fpu = X86_NO;
     }
-    emu = TaskExecute( &DoGetMSW );
-    if( emu != -1 && (emu & 0x04) ) { /* if EM bit is on in the MSW */
-        ret->sys.fpu = X86_EMU;
-    }
-    WriteRegs( &Buff );
-    if( ret->sys.fpu != X86_NO ) {
-        buff.cmd = PT_CMD_READ_8087;
-        buff.segv = FP_SEG( tmp );
-        buff.offv = FP_OFF( tmp );
-        buff.tid = 1;
-        buff.pid = Pid;
-        DosPTrace( &buff );
-        if( buff.cmd != PT_RET_SUCCESS ) ret->sys.fpu = X86_NO;
+
+    /* This code gets called by the debugger before there's any
+     * debuggee loaded. At that point it is not safe to call
+     * DosPTrace at all.
+     */
+    if( Pid ) {
+        /* Executing code inside the debuggee is intrusive and not always
+         * possible. Unfortunately there is no obvious way to get at the
+         * debuggee's MSW.
+         * The debuggee's emulation status can dynamically change in
+         * response to the DosSetVec API registering or unregistering
+         * a handler for vector 7.
+         */
+        emu = TaskExecute( &DoGetMSW );
+        if( emu != -1 && (emu & 0x04) ) { /* if EM bit is on in the MSW */
+            ret->sys.fpu = X86_EMU;
+        }
+        WriteRegs( &Buff );
+        if( ret->sys.fpu != X86_NO ) {
+            buff.cmd = PT_CMD_READ_8087;
+            buff.segv = FP_SEG( tmp );
+            buff.offv = FP_OFF( tmp );
+            buff.tid = 1;
+            buff.pid = Pid;
+            DosPTrace( &buff );
+            if( buff.cmd != PT_RET_SUCCESS ) ret->sys.fpu = X86_NO;
+        }
     }
     DosGetHugeShift( &shift );
     ret->sys.huge_shift = shift;
@@ -493,7 +549,7 @@ unsigned ReqWrite_mem()
 
     len = GetTotalSize() - sizeof(*acc);
 
-    ret->len = WriteBuffer( GetInPtr(sizeof(*ret)),
+    ret->len = WriteBuffer( GetInPtr(sizeof(*acc)),
                             acc->mem_addr.segment, acc->mem_addr.offset, len );
     return( sizeof( *ret ) );
 }
@@ -562,6 +618,7 @@ unsigned ReqRead_fpu()
     Buff.offv = FP_OFF( ret );
     save = Buff.tid;
     Buff.tid = 1;   /*NYI: OS/2 V1.2 gets upset trying to read other tids */
+    OutBuff( &Buff );
     DosPTrace( &Buff );
     Buff.tid = save;
     if( Buff.cmd == PT_RET_NO_NPX_YET ) return( 0 );
@@ -748,12 +805,24 @@ static bool CausePgmToLoadThisDLL( USHORT startCS, USHORT startIP )
     USHORT      len;
     loadstack_t far *loadstack;
     USHORT      dll_name_len;
+    USHORT      version;
     char        this_dll[BUFF_SIZE];
 
     /* save a chunk of the program's code */
     if( DosGetModName( ThisDLLModHandle, BUFF_SIZE, this_dll ) != 0 ) {
         return( FALSE );
     }
+
+    /* OS/2 1.0 only accepts the 1-8 character module name, tacks
+     * the .DLL extension on it and expects to find it along LIBPATH.
+     * There is no way to load a DLL from a given path. So we just
+     * pass the short module name and hope for the best.
+     */
+    DosGetVersion( &version );
+    if( version == 0xA00 ) /* Is this OS/2 1.0? */
+        strcpy( this_dll, "std16" );
+
+    Out( "CausePgmToLoadThisDLL loading " ); Out( this_dll ); OutNL();
     codesize = (char *)EndLoadThisDLL - (char *)LoadThisDLL;
     if( codesize > LOAD_THIS_DLL_SIZE ) return( FALSE );
     len = ReadBuffer( savecode, startCS, startIP, codesize );
@@ -783,11 +852,13 @@ static bool CausePgmToLoadThisDLL( USHORT startCS, USHORT startIP )
     /* execute LoadThisDLL on behalf of the program */
 
     WriteRegs( &Buff );
+    Out( "CausePgmToLoadThisDLL about to ExecuteCode" ); OutNL();
     ExecuteCode( &Buff );
     if( Buff.cmd != PT_RET_BREAK ) {
         WriteBuffer( savecode, startCS, startIP, codesize );
         return( FALSE );
     } else {
+        Out( "CausePgmToLoadThisDLL AX:" ); OutNum( Buff.u.r.AX ); OutNL();
         WriteBuffer( savecode, startCS, startIP, codesize );
         return( TRUE );
     }
@@ -830,6 +901,7 @@ unsigned ReqProg_load()
     char                exe_name[255];
     USHORT              startCS, startIP;
     USHORT              exe_type;
+    USHORT              version;
     prog_load_ret       *ret;
     char                appname[200];
 
@@ -851,6 +923,8 @@ unsigned ReqProg_load()
         CanExecTask = FALSE;
         exe_type = EXE_IS_FULLSCREEN;
     }
+    Out( "GetExeInfo (" ); Out( UtilBuff ); Out( ")says start CS:IP=" );
+    OutNum( startCS ); Out( ":" ); OutNum( startIP ); OutNL();
     start.Length = 50;
     start.Related = 1;
     start.FgBg = !Remote;
@@ -873,7 +947,20 @@ unsigned ReqProg_load()
         start.SessionType = SessionType; /* set by TaskInit */
     }
 
+    /* The STARTDATA.Length field may be 50 when Presentation Manager is
+     * running. Without PM, Length can be set to 30 (includes environment
+     * and inheritance options). On OS/2 1.0, Length must be 24 (includes
+     * TermQ but no environment etc.).
+     * NB: On OS/2 1.0, we have no control about the new session's initial
+     * drive/directory. It is often not the same as that of the debugger.
+     * We could perhaps run DosChDir inside the debuggee to fix that.
+     */
+    DosGetVersion( &version );
+    if( version == 0xA00 ) /* Is this OS/2 1.0? */
+        start.Length = offsetof( NEWSTARTDATA, Environment );
+
     ret->err = DosStartSession( (PSTARTDATA)&start, &SID, &Pid );
+    Out( "DosStartSession returned " ); OutNum( ret->err ); Out( " Pid:" ); OutNum( Pid ); OutNL();
     switch( ret->err ) {
     case ERROR_SMG_START_IN_BACKGROUND:
         /* this one's OK */
@@ -910,6 +997,7 @@ unsigned ReqProg_load()
                 save.tid = 1;
                 ReadRegs( &save );
                 if( !CausePgmToLoadThisDLL( startCS, startIP ) ) {
+                    Out( "CausePgmToLoadThisDLL failed" ); OutNL();
                     CanExecTask = FALSE;
                 }
                 WriteRegs( &save );
@@ -1174,6 +1262,7 @@ unsigned ReqFile_write_console()
             Buff.u.r.AX = FP_OFF( UtilBuff );
             Buff.u.r.DX = FP_SEG( UtilBuff );
             Buff.u.r.BX = curr;
+            Out( "DoWritePgmScrn" ); OutNL();
             TaskExecute( DoWritePgmScrn );
             ptr += curr;
             len -= curr;
@@ -1374,10 +1463,16 @@ trap_version TRAPENTRY TrapInit( char *parm, char *err, unsigned_8 remote )
     Screen = DEBUG_SCREEN;
 
     DosGetVersion( &os2ver );
+    // TODO: This check is wrong and always has been. OS/2 1.2
+    // returns 0xA14. However, the trap file seems to work fine
+    // on OS/2 1.1 and now mostly works on 1.0 as well, so for the
+    // time being the incorrect check is left in place.
     if( os2ver < 0x114 ) {
+        Out( "OS/2 too old; os2ver=" ); OutNum( os2ver ); OutNL();
         strcpy( err, TRP_OS2_not_1p2 );
         return( ver );
     }
+    Out( "OS/2 version OK; os2ver=" ); OutNum( os2ver ); OutNL();
     if( DosGetInfoSeg( &gi, &li ) != 0  ) {
         strcpy( err, TRP_OS2_no_info );
         return( ver );

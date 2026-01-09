@@ -1,0 +1,24 @@
+           orig orig my&subst_suff myorig_suff
+           &subst_to_OBJ &langsuff_to_obj &langsuffx_to_obj
+           C_to_OBJ thisCtoo
+           other&subst#suf# otherorig!suf!
+           another&substitute anotherorig?itute
+           aorig,itute aorig/itute aorig\itute
+           ".orig"
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-                                                                     1

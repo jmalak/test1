@@ -46,6 +46,10 @@
 /* blank line is displayed.   The text  of the line displayed is modified */
 /* by the .TR (Translate) characters currently in effect.                 */
 /*                                                                        */
+/* NOTES: in wgml 4.0, input translation (.TI) is not used with .TY       */
+/*        in wgml 4.0, output translation (.TR) is not used with .TY      */
+/*        in wgml 4.0, initial blank spaces are not output                */
+/*                                                                        */
 /* EXAMPLES                                                               */
 /* (1) The .TY  control is useful  immediately preceding a  .TE (Terminal */
 /*     Input) or .RV (Read Variable)  control word,  as a prompt for what */
@@ -63,10 +67,8 @@ void    scr_ty( void )
     char    *   p;
 
     p = scan_start;
-    SkipSpaces( p );            // wgml 4.0 ignores leading blanks, let's do the same
-    if( *p != '\0' ) {          
-        out_msg( "%s\n", p );   // only if text exists; no output translation in wgml 4.0
-    }
+    SkipSpaces( p );
+    out_msg( "%s\n", p );
     scan_restart = scan_stop + 1;
     return;
 }

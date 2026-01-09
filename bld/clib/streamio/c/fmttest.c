@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <float.h>
 #include <math.h>
+#include <errno.h>
 
 #ifdef __SW_BW
     #include <wdefwin.h>
@@ -78,6 +79,7 @@ int Test_string_to_float( void )
 /******************************/
 {
     double  x, y;
+    float   f;
     char    *eptr;
 
 
@@ -178,6 +180,51 @@ int Test_string_to_float( void )
 
     x = strtod( "-1.0e99999", NULL );
     VERIFY( isinf( x ) && signbit( x ) );
+
+    /* Currently strtold() is functionally identical to strtod().
+     * This test will fail if long double is not the same as double,
+     * and then the tests will need to be redone.
+     */
+    x = strtold( "1.8e+318", NULL );
+    VERIFY( isinf( x ) && !signbit( x ) );
+
+    /* Test strtof(); while strtof() may internally call strtod(), it
+     * must correctly flag errors resulting from smaller range of float.
+     */
+    errno = 0;
+    f = strtof( "3.402823466e+38", NULL );  /* FLT_MAX */
+    VERIFY( !isinf( f ) && !signbit( f ) && !errno );
+
+    /* -(FLT_MAX + 1000) still fits into a float after rounding. */
+    errno = 0;
+    f = strtof( "-3.402823566e+38", NULL );
+    VERIFY( !isinf( f ) && signbit( f ) && !errno );
+
+    /* -(FLT_MAX + 10000) no longer fits into a float */
+    errno = 0;
+    f = strtof( "-3.402824466e+38", NULL );
+    VERIFY( isinf( f ) && signbit( f ) && (errno == ERANGE) );
+
+    /* Too big even for double. */
+    errno = 0;
+    f = strtof( "1.0e309", NULL );
+    VERIFY( isinf( f ) && !signbit( f ) && (errno == ERANGE) );
+
+    /* FLT_MIN must fit */
+    errno = 0;
+    f = strtof( "1.175494351e-38", NULL );
+    VERIFY( isnormal( f ) && !signbit( f ) && !errno );
+
+    /* This fits into a double but not float. */
+    errno = 0;
+    f = strtof( "1.175494351e-50", NULL );
+    VERIFY( (fpclassify( f ) == FP_ZERO) && !signbit( f ) && (errno == ERANGE) );
+
+    /* Likewise -DBL_MIN will fit into a double but triggers ERANGE here. */
+    /* NB: This won't be -0 so not testing sign bit. */
+    errno = 0;
+    f = strtof( "-2.2250738585072014e-308", NULL );
+    VERIFY( (fpclassify( f ) == FP_ZERO) /*&& signbit( f )*/ && (errno == ERANGE) );
 
     return( 1 );
 }
@@ -306,7 +353,7 @@ int Test_print_float( void )
     VERIFY( sprintf( buf, "%05.2E", _NAN ) == 5 );
     VERIFY( !strcmp( buf, "  NAN" ) );
 
-    /* Currently %F is a far pointer modified in some libs, to
+    /* Currently %F is a far pointer modifier in some libs, to
      * be changed later. Most libs are ISO C compliant in this regard.
      */
 #if !defined( __DOS__ ) && !defined( _M_IX86 )

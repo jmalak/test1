@@ -22,6 +22,8 @@ cdsay .
     <CPCMD> <PROJDIR>/dos386/whelp.exe    <RELROOT>/binw/whelp.exe
   [ IFDEF (os_os2 "") <2*> ]
     <CPCMD> <PROJDIR>/os2386/whelp.exe    <RELROOT>/binp/whelp.exe
+  [ IFDEF (os_nt "") <2*> ]
+    <CPCMD> <PROJDIR>/nt386/whelp.exe     <RELROOT>/binnt/whelp.exe
   [ IFDEF (os_linux "") <2*> ]
     <CPCMD> <PROJDIR>/linux386/whelp.exe  <RELROOT>/binl/whelp
 

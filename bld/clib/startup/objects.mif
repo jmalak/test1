@@ -217,6 +217,7 @@
 !inject main5o32.obj                                                    o32
 !inject main3wnt.obj                     nt nta ntp
 !inject main5wnt.obj                     nt nta ntp
+!inject mainnt31.obj                     nt
 !inject wildargv.obj d16 d32             nt nta ntp                 o16 o32
 !inject wildwarg.obj                     nt nta ntp                     o32
 !inject wmndwnt.obj                      nt nta ntp
@@ -284,5 +285,6 @@ libentry_postopts =-zld
 maino16_postopts  =-os
 maino32_postopts  =-os
 seterrno_postopts =-os
+mainnt31_postopts =-os -zld
 
 no_truncate_object_code=1

@@ -1,7 +1,7 @@
 /* tstsrtnt1.c (Tests Startup NT 1)  */
 /*
  * Code to verify the movement of thread data heap allocation
- * for DLL's from __NTInit to _LibMain (where it really belong).
+ * for DLLs from __NTInit to _LibMain (where it really belongs).
  *
  */
 
@@ -25,7 +25,7 @@ void threadfunc_dll( void* private_data )
     static int counter = 0;
 
     ++counter;
-    printf( "DLL threadfunc entered %2d time. This time during %s\n",
+    printf( "DLL threadfunc entered %2d times. This time during %s\n",
             counter, private_data);
 }
 
@@ -41,29 +41,29 @@ void do_start_threads(const char* const szMsg)
 
 static const char* const rgMsgs[4] =
 {
-    "DLL_PROCESS_ATTACH\n",
-    "DLL_PROCESS_DETACH\n",
-    "DLL_THREAD_ATTACH\n",
-    "DLL_THREAD_DETACH\n"
+    "DLL_PROCESS_ATTACH",
+    "DLL_PROCESS_DETACH",
+    "DLL_THREAD_ATTACH",
+    "DLL_THREAD_DETACH"
 };
 
 int __stdcall DllMain( HANDLE hdll, DWORD reason, LPVOID reserved )
 {
     switch( reason ) {
     case DLL_PROCESS_ATTACH:
-        printf(rgMsgs[0]);
+        printf("Thread ID %08X: %s\n", GetCurrentThreadId(), rgMsgs[0]);
         break;
 
     case DLL_PROCESS_DETACH:
-        printf(rgMsgs[1]);
+        printf("Thread ID %08X: %s\n", GetCurrentThreadId(), rgMsgs[1]);
         break;
 
     case DLL_THREAD_ATTACH:
-        printf(rgMsgs[2]);
+        printf("Thread ID %08X: %s\n", GetCurrentThreadId(), rgMsgs[2]);
         break;
 
     case DLL_THREAD_DETACH:
-        printf(rgMsgs[3]);
+        printf("Thread ID %08X: %s\n", GetCurrentThreadId(), rgMsgs[3]);
         break;
     }
     return( TRUE );
@@ -86,7 +86,7 @@ void QA_func1( void );
 // check that threading works at all in the exe
 void exe_threadfunc( void* private_data )
 {
-    static counter = 0;
+    static int counter = 0;
     ++counter;
 
     printf( ".exe threadfunc entered %2d times.\n", counter );

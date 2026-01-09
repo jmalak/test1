@@ -62,13 +62,20 @@ cdsay .
     <CPCMD> <DEVDIR>/trap/lcl/os2v2/splice/wdsplice.dll             <RELROOT>/binp/dll/
     <CPCMD> <DEVDIR>/trap/nmp/nmpbind/nmpbind.exe                   <RELROOT>/binp/
     <CPCMD> <DEVDIR>/trap/par/os2v2.pio/wdio.dll                    <RELROOT>/binp/dll/
-#os2
+# 16-bit OS/2 components
 #    <CPCMD> <DEVDIR>/trap/nov/os2.trp/nov.dll                      <RELROOT>/binp/dll/
 #    <CPCMD> <DEVDIR>/trap/nov/os2.srv/novserv1.exe                 <RELROOT>/binp/
-#    <CPCMD> <DEVDIR>/bin/binp/dll/???.dll                          <RELROOT>/binp/dll/
-#    <CPCMD> <DEVDIR>/bin/binp/dll/std??.dll                        <RELROOT>/binp/dll/
-#    <CPCMD> <DEVDIR>/bin/binp/dll/???serv.exe                      <RELROOT>/binp/dll/
-#    <CPCMD> <DEVDIR>/bin/binp/???serv1.exe                         <RELROOT>/binp/
+    <CPCMD> <DEVDIR>/trap/lcl/os2/std16/std16.dll                   <RELROOT>/binp/dll/
+    <CPCMD> <DEVDIR>/trap/lcl/os2/std32/std32.dll                   <RELROOT>/binp/dll/
+    <CPCMD> <DEVDIR>/trap/lcl/os2/os2v2hlp/os2v2hlp.exe             <RELROOT>/binp/dll/
+    <CPCMD> <DEVDIR>/trap/net/os2.trp/net.dll                       <RELROOT>/binp/dll/
+    <CPCMD> <DEVDIR>/trap/net/os2.srv/netserv1.exe                  <RELROOT>/binp/
+    <CPCMD> <DEVDIR>/trap/nmp/os2.trp/nmp.dll                       <RELROOT>/binp/dll/
+    <CPCMD> <DEVDIR>/trap/nmp/os2.srv/nmpserv1.exe                  <RELROOT>/binp/
+    <CPCMD> <DEVDIR>/trap/par/os2.trp/par.dll                       <RELROOT>/binp/dll/
+    <CPCMD> <DEVDIR>/trap/par/os2.srv/parserv1.exe                  <RELROOT>/binp/
+    <CPCMD> <DEVDIR>/trap/ser/os2.trp/ser.dll                       <RELROOT>/binp/dll/
+    <CPCMD> <DEVDIR>/trap/ser/os2.srv/serserv1.exe                  <RELROOT>/binp/
 
   [ IFDEF (os_win "") <2*> ]
     <CPCMD> <DEVDIR>/trap/lcl/win/std/std.dll                       <RELROOT>/binw/

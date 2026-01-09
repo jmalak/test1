@@ -27,5 +27,5 @@ void main( void )
     fesetround( FE_UPWARD );
 }
 .exmp end
-.class C99
+.class ISO C99
 .system

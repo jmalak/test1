@@ -259,6 +259,11 @@ static cop_device * get_cop_device( char const * in_name )
     cop_device      *   out_device  = NULL;
     cop_file_type       file_type;
 
+    /* Bail if no name was supplied. */
+    if( !in_name ) {
+        return( out_device );
+    }
+
     /* Acquire the file, if it exists. */
 
     if( !search_file_in_dirs( in_name, "", "", ds_bin_lib ) ) {
@@ -735,7 +740,6 @@ void cop_setup( void )
 
     if( bin_device == NULL ) {
         xx_simple_err_cc( err_block_not_found, "DEVICE", dev_name );
-        g_suicide();    /* Not safe to continue further. */
     }
 
     /* The value of horizontal_base_units cannot be "0". */
@@ -759,7 +763,6 @@ void cop_setup( void )
 
     if( bin_driver == NULL ) {
         xx_simple_err_cc( err_block_not_found, "DRIVER", bin_device->driver_name );
-        g_suicide();    /* Not safe to continue further. */
     }
 
     /* Attribute x_positive in PAGEADDRESS cannot be "no", since horizontal
@@ -1334,8 +1337,7 @@ void cop_ti_table( const char *p )
                         ProcFlags.in_trans = false;
                         in_esc = ' ';
                     } else if( len > 1 ) {  // hex digits are not allowed here
-                        xx_line_err_len( err_char_only, pa, len );
-                        return;
+                        xx_line_err_ci( err_char_only, pa, len );
                     } else {
                         ProcFlags.in_trans = true;
                         in_esc = *pa;
@@ -1346,17 +1348,14 @@ void cop_ti_table( const char *p )
                     SkipNonSpaces( p );     // set char start
                     len = p - pa;
                     if( len > 0 ) {         // additional text not allowed
-                        xx_line_err_len( err_char_only, pa, len );
-                        return;
+                        xx_line_err_ci( err_char_only, pa, len );
                     }
                     return;     // done if was ".ti set"
                 } else {
-                    xx_opt_err_len( cwcurr, pa, len );
-                    return;
+                    xx_line_err_cci( err_xx_opt, cwcurr, pa, len );
                 }
             } else {
-                xx_opt_err_len( cwcurr, pa, len );
-                return;
+                xx_line_err_cci( err_xx_opt, cwcurr, pa, len );
             }
         }
 

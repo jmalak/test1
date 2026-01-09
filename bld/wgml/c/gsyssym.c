@@ -24,9 +24,9 @@
 *
 *  ========================================================================
 *
-* Description:  Implements predefined system variables SYSxxx and others
-*               most are readonly and some are calculated when accessed
-*                     incomplete                               TBD
+* Description:  Implements predefined system variables SYSxxx and more.
+*               Most are read-only and some are calculated on access.
+*
 ****************************************************************************/
 
 
@@ -43,36 +43,36 @@
 /*  declare dictionary entries for system variables                        */
 /***************************************************************************/
 
-#define picka( var, next, flag )    pickk( var, next, flag )
-#define pickc( var, next, flag )    pickk( var, next, flag )
-#define pickl( var, next, flag )    pickk( var, next, flag )
-#define pickk( var, next, flag ) static symvar sys( var );
+#define picka( var, flag )      pickk( var, flag )
+#define pickc( var, flag )      pickk( var, flag )
+#define pickl( var, flag )      pickk( var, flag )
+#define pickk( var, flag ) static symvar sys( var );
 #include "gsyssym.h"
 
-#define picka( var, next, flag )    pickk( var, next, flag )
-#define pickc( var, next, flag )    pickk( var, next, flag )
-#define pickl( var, next, flag )    pickk( var, next, flag )
-#define pickk( var, next, flag ) static symsub sys0( var );
+#define picka( var, flag )      pickk( var, flag )
+#define pickc( var, flag )      pickk( var, flag )
+#define pickl( var, flag )      pickk( var, flag )
+#define pickk( var, flag ) static symsub sys0( var );
 #include "gsyssym.h"
 
 /***************************************************************************/
 /*  declare the access functions for system variables                      */
 /***************************************************************************/
 
-#define picka( var, next, flag )
-#define pickc( var, next, flag )    pickl( var, next, flag )
-#define pickk( var, next, flag )    pickl( var, next, flag )
-#define pickl( var, next, flag ) static void sysf( var )( symvar * entry );
+#define picka( var, flag )
+#define pickc( var, flag )      pickl( var, flag )
+#define pickk( var, flag )      pickl( var, flag )
+#define pickl( var, flag ) static void sysf( var )( symvar * entry );
 #include "gsyssym.h"
 
 /***************************************************************************/
 /*  define char strings to hold the values of some system variables        */
 /***************************************************************************/
 
-#define picka( var, next, flag )
-#define pickk( var, next, flag )
-#define pickc( var, next, flag ) static char syss( var )[2];             // for single char values as string
-#define pickl( var, next, flag ) static char syss( var )[MAX_L_AS_STR];  // for long as string and sysbxchar
+#define picka( var, flag )
+#define pickk( var, flag )
+#define pickc( var, flag ) static char syss( var )[2];              // for single char values as string
+#define pickl( var, flag ) static char syss( var )[MAX_L_AS_STR];   // for long as string and sysbxchar
 #include "gsyssym.h"
 
 /***************************************************************************/
@@ -85,21 +85,21 @@
 /*                                  or 2 predefined values  ON OFF         */
 /***************************************************************************/
 
-#define pickc( var, next, flag )    pickl( var, next, flag )
+#define pickc( var, flag )      pickl( var, flag )
 
-#define pickl( var, next, flag )        \
+#define pickl( var, flag )              \
         static symvar sys( var ) = {    \
-            &sys( next ), "$" #var, 0L, 0L, NULL, &sys0( var ), sysf( var ), flag }; \
+            NULL, "$" #var, 0L, 0L, NULL, &sys0( var ), sysf( var ), flag }; \
         static symsub sys0( var ) = { NULL, &sys( var ), no_subscript, syss( var ) };
 
-#define picka( var, next, flag )        \
+#define picka( var, flag )              \
         static symvar sys( var ) = {    \
-            &sys( next ), "$" #var, 0L, 0L, NULL, &sys0( var ), NULL, flag }; \
+            NULL, "$" #var, 0L, 0L, NULL, &sys0( var ), NULL, flag }; \
         static symsub sys0( var ) = { NULL, &sys( var ), no_subscript, NULL };
 
-#define pickk( var, next, flag )        \
+#define pickk( var, flag )              \
         static symvar sys( var ) = {    \
-            &sys( next ), "$" #var, 0L, 0L, NULL, &sys0( var ), sysf( var ), flag }; \
+            NULL, "$" #var, 0L, 0L, NULL, &sys0( var ), sysf( var ), flag }; \
         static symsub sys0( var ) = { NULL, &sys( var ), no_subscript, NULL };
 #include "gsyssym.h"
 
@@ -132,7 +132,7 @@ void    add_to_sysdir( char * name, char char_val )
 {
     symsub  *   dictval;
 
-    find_symvar( &sys_dict, name, no_subscript, &dictval);
+    find_symvar( sys_dict, name, no_subscript, &dictval);
     *(dictval->value) = char_val;
 }
 
@@ -145,9 +145,7 @@ static void var_wng( char * varname, symvar * e )
 {
     if( !ProcFlags.no_var_impl_err ) {  // for full dict print no err msg
         e->varfunc = NULL;              // deactivate after first warning
-        wng_count++;
-        g_warn( err_var_not_impl, varname );
-        file_mac_info();
+        xx_warn_c( err_var_not_impl, varname );
     }
     return;
 }
@@ -265,7 +263,7 @@ static void syscofun( symvar * e )      // .co status
 
 static void syscontfun( symvar * e )
 {
-    var_wng( e->name, e );
+    e->sub_0->value = syscontstr;
     return;
 }
 
@@ -805,9 +803,8 @@ static void sysquietfun( symvar * e )
 }
 
 static void sysrbfun( symvar * e )      // required blank
-{                                       // can't get any functionality TBD
-    *sysrbstr = sysrb0.value[0];
-//    var_wng( e->name, e );
+{                                       
+    e->sub_0->value = sysrbstr;
     return;
 }
 
@@ -998,7 +995,7 @@ static void systisetfun( symvar * e )   // dummy routine not needed
 
 
 /***************************************************************************/
-/*  init_date_time  init several date / time system variables              */
+/*  init_date_time  init several date / time global variables              */
 /***************************************************************************/
 
 static  void    init_date_time( void )
@@ -1025,7 +1022,7 @@ static  void    init_date_time( void )
         }
     }
     sysdate0.value = dateval;
-    add_symvar( &global_dict, "date", dateval, no_subscript, 0 );
+    add_symvar( global_dict, "date", dateval, no_subscript, 0 );
 
     strftime( dayofmval, sizeof( dayofmval ), "%e", &tmbuf );
     sysdayofm0.value = dayofmval;
@@ -1060,24 +1057,24 @@ static  void    init_date_time( void )
     systime0.value = timeval;
     syssecond0.value = &timeval[6];
 
-    add_symvar( &global_dict, "time", timeval, no_subscript, 0 );
+    add_symvar( global_dict, "time", timeval, no_subscript, 0 );
 
 }
 
 /***************************************************************************/
-/*  init_predefined_symbols                                                */
+/*  init_predefined_symbols     global symbols, not system                 */
 /***************************************************************************/
 
 static  void    init_predefined_symbols( void )
 {
     char    wkstring[MAX_L_AS_STR];
 
-    add_symvar( &global_dict, "amp", "&", no_subscript,
+    add_symvar( global_dict, "amp", "&", no_subscript,
                 is_AMP+predefined );
 
     wkstring[1] = '\0';
     wkstring[0] = GML_CHAR_DEFAULT;
-    add_symvar( &global_dict, "gml", wkstring, no_subscript,
+    add_symvar( global_dict, "gml", wkstring, no_subscript,
                 predefined );
 
 }
@@ -1119,14 +1116,18 @@ void    init_sysparm( char * cmdline, char * banner )
 /*                 change very often                                       */
 /***************************************************************************/
 
-void    init_sys_dict( symvar * * dict )
+void    init_sys_dict( symdict * * dict )
 {
+    init_dict( dict );
 
-    *dict           = &sysad;           // fill the dictionary ptr
-    sysyear.next    = NULL;             // end of chain
+#define picka( var, flag )    pickl( var, flag )
+#define pickc( var, flag )    pickl( var, flag )
+#define pickk( var, flag )    pickl( var, flag )
+#define pickl( var, flag )    link_sym( *dict, &sys( var ) );
+#include "gsyssym.h"
 
-    init_date_time();
-    init_predefined_symbols();
+    init_date_time();                   // set up predefned global
+    init_predefined_symbols();          // variables
 
 
     /***********************************************************************/
@@ -1236,7 +1237,7 @@ void    init_sys_dict( symvar * * dict )
     *(syspsstr + 1) = 0;
 //  *syspwstr =
     sysquiet0.value = str[ju_off];
-    *sysrbstr    = ' ';
+    *sysrbstr       = ' ';
     *(sysrbstr + 1) = 0;
 //  *sysrecnostr =
 //  *sysretstr  =

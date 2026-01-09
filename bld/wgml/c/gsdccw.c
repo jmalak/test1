@@ -25,7 +25,7 @@
 *  ========================================================================
 *
 * Description: implement .dc define character
-*                            only CW, GML and TB options implemented
+*                            only CONT, CW, GML, STOP, and TB options implemented
 *                        .cw script control word separator
 *  comments are from script-tso.txt
 ****************************************************************************/
@@ -44,9 +44,8 @@
 /*      |       |                                                  |       */
 /*      읕컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴켸       */
 /*                                                                         */
-/* ! only CW, GML and (STOP) are used in OW documentation and only these   */
-/* ! are implemented                                                       */
-/*                                                                         */
+/* ! only CW, GML and (STOP) are used in OW documentation                  */
+/* ! LI and TB were implemented for use in testing                         */
 /*                                                                         */
 /* "Option" specifies  which special  character or  characters are  to be  */
 /* defined.  Any operands that follow specify the values of those charac-  */
@@ -290,8 +289,7 @@ void    scr_cw( void )
     SkipNonSpaces( p );                 // end of word
     len = p - pa;
     if( len > 2 ) {
-        xx_line_err( err_inv_cw_sep, pa );
-        return;
+        xx_line_err_c( err_inv_cw_sep, pa );
     } else if( len > 0 ) {             // 1 char or 2 hex characters
         CW_sep_char = parse_char( pa, len );
     } else {
@@ -306,126 +304,212 @@ void    scr_cw( void )
 /*  scr_dc    implement .dc define character control word                  */
 /*              only some options are implemented                    TBD   */
 /*              the STOP option is accepted, but ignored                   */
+/*                this matches how wgml 4.0 treat it when WSCRIPT is used  */
 /***************************************************************************/
 
 void    scr_dc( void )
 {
-    char        *   pa;
-    char        *   p;
-    char            c;
-    int             len;
-    int             k;
-    char    string[2] = { 0, 0 };
-    int             opt;
-    static const char   options[5] [5] = { "cw", "gml", "tb", "stop" };
-                                        // please add new options at end
-    int const   max_opt = sizeof( options) / sizeof( options[0] );
+    char        c;      // character provided (or 0x00)
+    char    *   o_p;    // option start point
+    char    *   p;
+    char    *   v_p;    // value start point
+    char        string[2] = { 0, 0 };
+    int         o_len;  // option length
+    int         v_len;  // value length
 
     p = scan_start;
     SkipSpaces( p );                    // next word start = option
-    pa = p;
+    o_p = p;
     SkipNonSpaces( p );                 // end of word
-    len = p - pa;
-    opt = 0;
-    if( len > 0 ) {
-        for( k = 0; k < max_opt; k++ ) {
-            if( !strnicmp( pa, options[k], len ) ) {
-                opt = k + 1;
-                break;
-            }
-        }
-    }
-    if( opt == 0 ) {                    // omitted / unknown / not implemented
-        dc_opt_warn_len( pa, len );
-        return;
-    }
+    o_len = p - o_p;
     SkipSpaces( p );                    // next word start = option value
-    pa = p;
+    v_p = p;
     SkipNonSpaces( p );                 // end of word
-    len = p - pa;
-    c = '\0';
-    if( len == 1 ) {
-        c = *pa;
-    }
-    switch( opt ) {
-    case 1 :                            // CW option
-        if( len > 2 ) {
-            if( len == 3 ) {
-                if( strnicmp( pa, "OFF", len ) ) {
-                    xx_line_err_len( err_dc_not_off, pa, len );   // only OFF is valid
-                    return;
+    v_len = p - v_p;
+
+    /* Process options first by length and then by option name */
+
+    if( o_len == 0 ) {                  // no option entered
+        xx_line_err_cc( err_parm_missing, "DC", o_p );
+    } else if( o_len == 1 ) {           // option malformed
+        xx_line_err_cc( err_parm_invalid, o_p, o_p );
+    } else if( o_len == 2 ) {           // BS CW LB LI PS RB TB TI 
+        if( !strnicmp( o_p, "BS", 2 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "CW", 2 ) ) {
+            if( v_len == 0 ) {
+                c = ';';                    // default is ;
+            } else if( v_len == 1 ) {
+                c = *v_p;
+            } else if( v_len > 2 ) {
+                if( v_len == 3 ) {
+                    if( strnicmp( v_p, "OFF", 3 ) ) {
+                        xx_line_err_ci( err_dc_not_off, v_p, v_len );  // only OFF is valid
+                    }
+                    c = '\0';                   // OFF is 0
+                } else {
+                    xx_line_err_ci( err_dc_not_off, v_p, v_len );      // only OFF is valid
                 }
             } else {
-                xx_line_err_len( err_dc_not_off, pa, len );   // only OFF is valid
-                return;
+                c = parse_char( v_p, v_len );
             }
-        } else {
-            c = parse_char( pa, len );
-        }
-        scan_restart = pa + len;
-        CW_sep_char = c;
-        add_to_sysdir( "$cw", CW_sep_char );
-        break;
-    case 2 :                            // GML option
-        if( len > 2 ) {
-            if( len == 3 ) {
-                if( strnicmp( pa, "OFF", len ) ) {
-                    xx_line_err_len( err_dc_not_off, pa, len );   // only OFF is valid
-                    return;
+            scan_restart = v_p + v_len;
+            CW_sep_char = c;
+            add_to_sysdir( "$cw", CW_sep_char );
+        } else if( !strnicmp( o_p, "LB", 2 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "LI", 2 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "PS", 2 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "RB", 2 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+        } else if( !strnicmp( o_p, "TB", 2 ) ) {
+            if( v_len == 0 ) {
+                c = 0x09;                       // default is 0x09
+            } else if( v_len == 1 ) {
+                c = *v_p;
+            } else if( v_len > 2 ) {
+                if( v_len == 3 ) {
+                    if( strnicmp( v_p, "OFF", 3 ) ) {
+                        xx_line_err_ci( err_dc_not_off, v_p, v_len );  // only OFF is valid
+                    }
+                    c = 0x09;                   // OFF is 0x09
+                } else {
+                    xx_line_err_ci( err_dc_not_off, v_p, v_len );      // only OFF is valid
                 }
-                c = ' ';                    // OFF is blank
             } else {
-                xx_line_err_len( err_dc_not_off, pa, len );   // only OFF is valid
-                return;
-            }
-        } else {
-            c = parse_char( pa, len );
-        }
-        scan_restart = pa + len;
-        GML_char = c;
-        string[0] = c;
-        add_symvar( &global_dict, "gml", string, no_subscript, predefined );
-        add_to_sysdir( "$gml", GML_char );
-        break;
-    case 3 :                            // TB option
-        if( len > 2 ) {
-            if( len == 3 ) {
-                if( strnicmp( pa, "OFF", len ) ) {
-                    xx_line_err_len( err_dc_not_off, pa, len );  // only OFF is valid
-                    return;
+                if( *v_p != '\0' ) {
+                    c = parse_char( v_p, v_len );
                 }
-                c = 0x09;               // OFF is 0x09
-            } else {
-                xx_line_err_len( err_dc_not_off, pa, len );  // only OFF is valid
-                return;
             }
+            scan_restart = v_p + v_len;
+            tab_char = c;
+            string[0] = c;
+            add_to_sysdir( "$tb", tab_char );
+            add_to_sysdir( "$tab", tab_char );
+        } else if( !strnicmp( o_p, "TI", 2 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
         } else {
-            c = parse_char( pa, len );
+            xx_line_err_cc( err_parm_invalid, o_p, o_p );  // option invalid
         }
-        scan_restart = pa + len;
-        tab_char = c;
-        string[0] = c;
-        add_to_sysdir( "$tb", tab_char );
-        add_to_sysdir( "$tab", tab_char );
-        break;
-    case 4 :                            // STOP option
+    } else if( o_len == 3 ) {           // GML IXB IXI IXJ MCS PIX SUB SUP 
+        if( !strnicmp( o_p, "GML", 3 ) ) {
+            if( v_len == 0 ) {
+                c = ' ';                        // default is blank
+            } else if( v_len == 1 ) {
+                c = *v_p;
+            } else if( v_len > 2 ) {
+                if( v_len == 3 ) {
+                    if( strnicmp( v_p, "OFF", v_len ) ) {
+                        xx_line_err_ci( err_dc_not_off, v_p, v_len );  // only OFF is valid
+                    }
+                    c = ' ';                    // OFF is blank
+                } else {
+                    xx_line_err_ci( err_dc_not_off, v_p, v_len );      // only OFF is valid
+                }
+            } else {
+                if( *v_p != '\0' ) {
+                    c = parse_char( v_p, v_len );
+                }
+            }
+            scan_restart = v_p + v_len;
+            GML_char = c;
+            string[0] = c;
+            add_symvar( global_dict, "gml", string, no_subscript, predefined );
+            add_to_sysdir( "$gml", GML_char );
+        } else if( !strnicmp( o_p, "IXB", 3 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "IXI", 3 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "IXJ", 3 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "MCS", 3 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "PIX", 3 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "SUB", 3 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "SUP", 3 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else {
+            xx_line_err_cc( err_parm_invalid, o_p, o_p );  // option invalid
+        }
+    } else if( o_len == 4 ) {           // CONT HYPH HYTR LINB PUNC STOP WORD
+        if( !strnicmp( o_p, "CONT", 4 ) ) {
+            if( v_len == 0 ) {
+                c = ' ';                        // default is blank
+            } else if( v_len == 1 ) {
+                c = *v_p;
+            } else if( v_len > 2 ) {
+                if( v_len == 3 ) {
+                    if( strnicmp( v_p, "OFF", 3 ) ) {
+                        xx_line_err_ci( err_dc_not_off, v_p, v_len );  // only OFF is valid
+                    }
+                    c = ' ';                    // OFF is blank
+                } else {
+                    xx_line_err_ci( err_dc_not_off, v_p, v_len );      // only OFF is valid
+                }
+            } else {
+                if( *v_p != '\0' ) {
+                    c = parse_char( v_p, v_len );
+                }
+            }
+            scan_restart = v_p + v_len;
+            CONT_char = c;
+            add_to_sysdir( "$cont", CONT_char );
+        } else if( !strnicmp( o_p, "HYPH", 4 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "HYTR", 4 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "LINB", 4 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "PUNC", 4 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "STOP", 4 ) ) {
 
-        /***************************************************************************/
-        /*  when the documentation refers to "script", this may be quite literal:  */
-        /*  setting STOP to OFF has no effect when WSCRIPT is specificed           */
-        /*  whether ".dc stop" with a list of characters has any effect is unknown */
-        /*  so doing nothing is the appropriate implementation, at least for now   */
-        /*                                                                         */
-        /*  the only use is ".dc stop off" found in                                */
-        /*        docs\doc\whelp\whelp.gml line 765                                */
-        /***************************************************************************/
+            /***************************************************************************/
+            /*  when the documentation refers to "script", this may be quite literal:  */
+            /*  setting STOP to OFF has no effect when WSCRIPT is specificed           */
+            /*  whether ".dc stop" with a list of characters has any effect is unknown */
+            /*  so doing nothing is the appropriate implementation, at least for now   */
+            /*                                                                         */
+            /*  the only use is ".dc stop off" found in                                */
+            /*        docs\doc\whelp\whelp.gml line 765                                */
+            /***************************************************************************/
 
-        scan_restart = pa + len;
-        break;
-
-    default:                            // unknown / unimplemented option
-        dc_opt_warn_len( pa, len );
-        break;
+            scan_restart = v_p + v_len;
+        } else if( !strnicmp( o_p, "WORD", 4 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else {
+            xx_line_err_cc( err_parm_invalid, o_p, o_p );  // option invalid
+        }
+    } else if( o_len == 5 ) {           // XTEXT
+        if( !strnicmp( o_p, "XTEXT", 5 ) ) {
+            xx_line_warn_cc( wng_dc_opt, o_p, o_p );
+            scan_restart = v_p + v_len;
+        } else {
+            xx_line_err_cc( err_parm_invalid, o_p, o_p );  // option invalid
+        }
+    } else {
+        xx_line_err_cc( err_parm_invalid, o_p, o_p );      // option invalid
     }
     return;
 }

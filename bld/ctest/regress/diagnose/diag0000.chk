@@ -112,15 +112,16 @@ source\diag0007.c(55): Error! E1009: Expecting 'while' but found 'unsigned'
 source\diag0007.c(55): Error! E1009: Expecting '(' but found 'u'
 source\diag0007.c(55): Error! E1063: Missing operand
 source\diag0007.c(55): Error! E1009: Expecting ')' but found ';'
-source\diag0007.c(61): Error! E1189: Unexpected declaration
-source\diag0007.c(69): Error! E1189: Unexpected declaration
+source\diag0007.c(62): Error! E1189: Unexpected declaration
+source\diag0007.c(70): Error! E1189: Unexpected declaration
 source\diag0007.c(45): Warning! W202: Symbol 'j' has been defined, but not referenced
-source\diag0007.c(61): Warning! W202: Symbol 'i' has been defined, but not referenced
+source\diag0007.c(62): Warning! W202: Symbol 'i' has been defined, but not referenced
 source\diag0007.c(52): Warning! W202: Symbol 'g' has been defined, but not referenced
 source\diag0007.c(47): Warning! W202: Symbol 'f' has been defined, but not referenced
 source\diag0007.c(58): Warning! W202: Symbol 'uu' has been defined, but not referenced
-source\diag0007.c(71): Error! E1018: Label 'la_bel' not defined in function
-source\diag0007.c(72): Error! E1099: Statement must be inside function. Probable cause: missing {
+source\diag0007.c(72): Warning! W118: Label 'la_belle' has been defined but not referenced
+source\diag0007.c(72): Error! E1018: Label 'la_bel' not defined in function
+source\diag0007.c(73): Error! E1099: Statement must be inside function. Probable cause: missing {
 source\diag0008.c(2): Error! E1100: Definition of macro '__DATE__' not identical to previous definition
 source\diag0008.c(3): Error! E1100: Definition of macro '__FILE__' not identical to previous definition
 source\diag0008.c(4): Error! E1100: Definition of macro '__LINE__' not identical to previous definition

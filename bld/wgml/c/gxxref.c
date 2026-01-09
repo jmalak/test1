@@ -70,9 +70,7 @@ static char * get_ref_attributes( void )
                 } else if( !strnicmp( "no", val_start, 2 ) ) {
                     ref_page = false;
                 } else {
-                    xx_line_err( err_inv_att_val, val_start );
-                    scan_start = scan_stop + 1;
-                    return( p );
+                    xx_line_err_c( err_inv_att_val, val_start );
                 }
                 if( ProcFlags.tag_end_found ) {
                     break;
@@ -188,7 +186,7 @@ void gml_figref( const gmltag * entry )
             if( passes == 1 ) {
                 fig_fwd_refs = init_fwd_ref( fig_fwd_refs, refid );
             } else {
-                undef_id_warn_info( refid, "figure" );
+                xx_warn_c_info_c( wng_id_xxx, refid, inf_id_unknown, "figure" );
             }
         }
     }
@@ -257,8 +255,15 @@ void gml_hdref( const gmltag * entry )
         } else {
             do_page = ((page + 1 ) != cur_re->u.ffh.entry->pageno);
         }
+        if( cur_re->u.ffh.entry->pageno == 0 ) {    // first pass on same page as HDREF
+            do_page = false;
+        }
     } else {
-        do_page = true;
+        if( pass == 1 ) {                           // first pass not on same page as HDREF
+            do_page = false;
+        } else {
+            do_page = true;
+        }
     }
 
     dp_len = strlen( def_page );
@@ -295,6 +300,14 @@ void gml_hdref( const gmltag * entry )
         add_dt_space();
         ProcFlags.dd_macro = false;
     }
+
+    if( post_space == 0 ) {
+        post_space = wgml_fonts[g_curr_font].spc_width;
+        if( !ProcFlags.dd_space && !ProcFlags.as_text_line &&
+                is_stop_char( t_line->last->text[t_line->last->count - 1] ) ) {
+            post_space += wgml_fonts[g_curr_font].spc_width;
+        }
+    }
    
     process_text( ref_text, g_curr_font );
     mem_free( ref_text );
@@ -314,7 +327,7 @@ void gml_hdref( const gmltag * entry )
             if( passes == 1 ) {
                 hd_fwd_refs = init_fwd_ref( hd_fwd_refs, refid );
             } else {
-                undef_id_warn_info( refid, "heading" );
+                xx_warn_c_info_c( wng_id_xxx, refid, inf_id_unknown, "heading" );
             }
         }
     }
@@ -355,7 +368,6 @@ void gml_fnref( const gmltag * entry )
     } else {
         format_num( cur_re->u.ffh.entry->number, buffer, sizeof( buffer ),
                     layout_work.fnref.number_style );
-        input_cbs->fmflags &= ~II_eol;
         process_text( buffer, layout_work.fnref.font );
     }
 
@@ -372,7 +384,7 @@ void gml_fnref( const gmltag * entry )
             if( passes == 1 ) {
                 fn_fwd_refs = init_fwd_ref( fn_fwd_refs, refid );
             } else {
-                undef_id_warn_info( refid, "footnote" );
+                xx_warn_c_info_c( wng_id_xxx, refid, inf_id_unknown, "footnote" );
             }
         }
     }

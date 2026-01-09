@@ -188,6 +188,7 @@ static  void    add_file_cb_entry( void )
     try_file_name = NULL;
 
     nip = mem_alloc( sizeof( inputcb ) );
+    nip->reprocess   = NULL;
     nip->hidden_head = NULL;
     nip->hidden_tail = NULL;
     nip->if_cb       = mem_alloc( sizeof( ifcb ) );
@@ -197,6 +198,7 @@ static  void    add_file_cb_entry( void )
     nip->fmflags     = II_file;
     nip->s.f         = new;
     nip->fm_symbol   = false;
+    nip->hh_tag      = false;
     nip->sym_space   = false;
     init_dict( &nip->local_dict );
 
@@ -238,11 +240,10 @@ static  void    del_input_cb_entry( void )
     free_dict( &wk->local_dict );
     if( wk->if_cb != NULL ) {
 //      if( wk->if_cb->if_level > 0 ) {
-//          char linestr[MAX_L_AS_STR];
+//          char    linestr[MAX_L_AS_STR];
+//
 //          ulongtodec( wk->if_cb->if_level, linestr );
-//          g_err( err_if_level, linestr );
-//          show_include_stack();
-//          err_count++;
+//          xx_err_c( err_if_level, linestr );
 //      }
         mem_free( wk->if_cb );
     }
@@ -315,7 +316,7 @@ static void remove_indentation( void )
             }
         } else if( (*p == SCR_char) && (*(p + 1) == GML_char) ) {
             p++;                                    // skip SCR_char
-        } else if( ProcFlags.CW_force_sep && (*p != GML_char) ) {
+        } else if( !ProcFlags.CW_force_sep && (*p != GML_char) ) {
             ProcFlags.indented_text = true;         // .  text
         }
         if( p != buff2 ) {                          // skipped indent now copy buffer
@@ -380,19 +381,16 @@ static bool test_macro_xxxx( char const * beginend )
 
 
 /***************************************************************************/
-/*  test for comment     .cm :cmt                                          */
+/*  test for full-line comments     .* :cmt                                */
 /*  returns true if  comment found                                         */
-/*   .* comment returns false                                              */
+/*   .cm comment returns false                                             */
 /***************************************************************************/
 
 static  bool    test_comment( void )
 {
-
-    if( *buff2 == SCR_char ) {          // test for .*  .cm
-        if( (*(buff2 + 1) == '*') ||
-            ((my_tolower( *(buff2 + 1) ) == 'c') &&
-             (my_tolower( *(buff2 + 2) ) == 'm') &&
-             (*(buff2+3) == ' ')) ) {
+    if( buff2[0] == SCR_char ) {        // test for .*
+        // todo: This logic is imperfect, does not detect ..* .'* and similar
+        if( buff2[1] == '*' ) {
            return( true );
         }
     } else {                            // test for :cmt
@@ -443,32 +441,29 @@ static  void    proc_input( char * filename )
             ProcFlags.newLevelFile = 0; // start a new include FILE level
 
             /***************************************************************/
+            /*  if line is to be reprocessed, store it in hidden_head      */
+            /***************************************************************/
+
+            if( ProcFlags.reprocess_line ) {
+                input_cbs->reprocess = mem_alloc( buff2_lg + 1 );
+                strcpy_s( input_cbs->reprocess, buff2_lg + 1, buff2 );
+                ProcFlags.reprocess_line = false;
+            }
+
+            /***************************************************************/
             /*  split off attribute  (f:xxxx)                              */
             /***************************************************************/
             split_attr_file( token_buf, attrwork, sizeof( attrwork ) );
 
             if( attrwork[0] ) {
-                g_warn( wng_fileattr_ignored, attrwork, token_buf );
-                wng_count++;
+                xx_warn_cc( wng_fileattr_ignored, attrwork, token_buf );
             }
             if( search_file_in_dirs( token_buf, def_ext, alt_ext, ds_doc_spec ) ) {
-
                 if( inc_level >= MAX_INC_DEPTH ) {
-                    g_err( err_max_input_nesting, token_buf );
-                    err_count++;
-                    show_include_stack();
-                    continue;           // don't start new include level
+                    xx_err_c( err_max_input_nesting, token_buf );
                 }
             } else {
-                g_err( err_input_file_not_found, token_buf );
-                err_count++;
-                if( inc_level > 0 ) {
-                    show_include_stack();
-                    continue;           // don't start new include level
-                } else {                // master file included from cmdline
-                    g_info( inf_included, "cmdline" );
-                    break;              // no input file leave loop
-                }
+                main_file_err( token_buf );
             }
             inc_inc_level();            // record max include level
             add_file_cb_entry();
@@ -525,20 +520,16 @@ static  void    proc_input( char * filename )
                     char    linestr[MAX_L_AS_STR];
 
                     ProcFlags.goto_active = false;
-                    err_count++;
                     if( input_cbs->fmflags & II_tag_mac ) {
                         if( gotargetno > 0 ) {
                             ulongtodec( gotargetno, linestr );
-                            g_err( err_goto, linestr,
-                                   input_cbs->s.m->mac->name );
+                            xx_err_cc( err_goto, linestr, input_cbs->s.m->mac->name );
                         } else {
-                            g_err( err_goto, gotarget,
-                                   input_cbs->s.m->mac->name );
+                            xx_err_cc( err_goto, gotarget, input_cbs->s.m->mac->name );
                         }
                     } else {
-                        g_err( err_goto, gotarget, input_cbs->s.f->filename );
+                        xx_err_cc( err_goto, gotarget, input_cbs->s.f->filename );
                     }
-                    show_include_stack();
                 }
                 break;                  // EOF
             }
@@ -632,6 +623,7 @@ static  void    proc_input( char * filename )
         }
 
         if( inc_level == 1 ) {          // EOF for master file end
+            scr_process_break();        // flush any final text from this pass
             last_page_out();            // forces final page(s) out
 
             /***************************************************************/
@@ -830,8 +822,8 @@ int main( int argc, char * argv[] )
         symsub  * passnoval;
         symsub  * passofval;
 
-        rc = find_symvar( &sys_dict, "$passof", no_subscript, &passofval );
-        rc = find_symvar( &sys_dict, "$passno", no_subscript, &passnoval );
+        rc = find_symvar( sys_dict, "$passof", no_subscript, &passofval );
+        rc = find_symvar( sys_dict, "$passno", no_subscript, &passnoval );
         ulongtodec( passes, passofval->value );  // fill no of passes
 
         set_default_extension( master_fname );  // make this extension first choice
@@ -857,8 +849,10 @@ int main( int argc, char * argv[] )
             init_pass();
             ulongtodec( pass, passnoval->value );    // fill current passno
 
-            g_info_lm( INF_PASS_1, passnoval->value, passofval->value,
-                    GlobalFlags.research ? "research" : "normal" );
+            if( passes > 1 ) {
+                g_info_lm( INF_PASS_1, passnoval->value, passofval->value,
+                        GlobalFlags.research ? "research" : "normal" );
+            }
 //          if( GlobalFlags.research ) {
 //              mem_prt_curr_usage();
 //          }
@@ -875,8 +869,10 @@ int main( int argc, char * argv[] )
                 print_sym_dict( global_dict );
             }
             msg_indent = 0;
-            g_info_lm( INF_PASS_2, passnoval->value, passofval->value,
-                    GlobalFlags.research ? "research" : "normal" );
+            if( passes > 1 ) {
+                g_info_lm( INF_PASS_2, passnoval->value, passofval->value,
+                        GlobalFlags.research ? "research" : "normal" );
+            }
 
 //          if( GlobalFlags.research && (pass < passes) ) {
 //              mem_prt_curr_usage();
@@ -891,9 +887,8 @@ int main( int argc, char * argv[] )
         fb_finish();                    // :FINISH block processing.
 
     } else {
-        g_err( err_missing_mainfilename );
-        err_count++;
         usage();
+        xx_simple_err( err_missing_mainfilename );
     }
 
     g_info_lm( inf_fmt_end );

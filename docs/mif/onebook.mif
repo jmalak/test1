@@ -4,10 +4,14 @@ proj_name = docs
 RENCMD=mv
 LOWERC=$#
 to_os_path=\=/
+to_os_psep=;=:
+to_os_lpar=(=\(
 !else
 RENCMD=ren
 LOWERC=ren
 to_os_path=/=\
+to_os_psep=:=;
+to_os_lpar=
 !endif
 
 docs_dir = $(%OWROOT)/docs
@@ -19,7 +23,12 @@ src_dir = $(%OWROOT)/bld
 !include ../mif/depends.mif
 !include ../mif/books.mif
 
+!ifdef __UNIX__
+# Unfortunately *nix shells treat parentheses specially
+wgml_cmdl_params = $(book_src) \( file $(wgml_optfile)
+!else
 wgml_cmdl_params = $(book_src) ( file $(wgml_optfile)
+!endif
 
 !ifdef wgml_ucase
 wgml_tmpfile=TMP.PTF
@@ -337,7 +346,7 @@ $(hbook).ipf $(hbook).h : $(book_objs) $(proj_objs)
 $(hbook).ps : $(book_objs) $(book_objs_ps) $(proj_objs)
     @set OWGMLINC=tmp;$(book_incs);$(whelp_incs);$(gml_incs)
     %make prepare_wgml_opts
-    -$(WGMLCMD:$(to_os_path))
+    -$(WGMLCMD:$(to_os_path)$(to_os_lpar))
     @if exist $@ @%erase $@
     @$(RENCMD) $(wgml_tmpfile) $@
 
@@ -420,8 +429,14 @@ prepare_wgml_opts : .PROCEDURE
 #-------------------------------------------------------
 # set up environment variables used by wgml utility
 #-------------------------------------------------------
+    @echo OWGMLINC=$(%OWGMLINC)
+!ifdef use_dosemu
     @set GMLLIB=$(gml_lib:/=\)
     @set GMLINC=$(%OWGMLINC:/=\)
+!else    
+    @set GMLLIB=$(gml_lib:$(to_os_psep))
+    @set GMLINC=$(%OWGMLINC:$(to_os_psep))
+!endif    
 !ifeq use_dosemu dosbox
     @set GMLLIB=$(%GMLLIB:..\=c:\)
     @set GMLINC=$(%GMLINC:..\..\bld\=e:\)
@@ -576,13 +591,13 @@ compile_gml_to_xxx : .PROCEDURE
     @if not exist $*.kw @%create $*.kw
     @set OWGMLINC=.;$(whelp_incs);$(gml_lib);$(hlp_incs);$(book_incs);$(gml_incs);
     @%make prepare_wgml_opts
-    -$(WGMLCMD:$(to_os_path))
+    -$(WGMLCMD:$(to_os_path)$(to_os_lpar))
     @if exist $*.ptf @%erase $*.ptf
     @$(RENCMD) $(wgml_tmpfile) $*.ptf
     @%make prepare_whpcvt_opts
     whpcvt -@ $(whpcvt_optfile) $*.ptf
     @%create $(wgml_sysfile_02)
-    -$(WGMLCMD:$(to_os_path))
+    -$(WGMLCMD:$(to_os_path)$(to_os_lpar))
     @if exist $*.ptf @%erase $*.ptf
     @$(RENCMD) $(wgml_tmpfile) $*.ptf
     @if exist $*.mix @%erase $*.mix

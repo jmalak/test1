@@ -173,8 +173,13 @@ void scr_ix( void )
 
     static char     cwcurr[4] = {" ix"};// control word string for errmsg
 
+    if( input_cbs->fmflags & II_tag_mac ) {   // ensure next line is valid 
+        input_cbs->s.m->ix_seen = true;     // records use of control word, even if indexing is off
+    }
+
     if( !GlobalFlags.index ) {
         ProcFlags.index_tag_cw_seen = true;
+        scan_restart = scan_stop + 1;
         return;                         // no need to process .ix
     }
 
@@ -184,7 +189,7 @@ void scr_ix( void )
     cwcurr[0] = SCR_char;
     lvl = 0;                            // index level
 
-    find_symvar( &sys_dict, "$pix", no_subscript, &dictval);
+    find_symvar( sys_dict, "$pix", no_subscript, &dictval);
     pix_char = *(dictval->value);
     wkpage = page + 1;                  // predicted number of current page
 
@@ -198,7 +203,7 @@ void scr_ix( void )
 
         /* Position adjusted to avoid buffer overflow */
 
-        parm_miss_err( cwcurr, scan_start - 1 );
+        xx_line_err_cc( err_parm_missing, cwcurr, scan_start - 1 );
         return;
     }
 
@@ -231,14 +236,14 @@ void scr_ix( void )
 
                 /* Structures are ignored, issue warning */
 
-                xx_warn_att( wng_unsupp_cw_opt, "structure" );
+                xx_warn_c( wng_unsupp_cw_opt, "structure" );
 
                 if( (gn.result < 1) || (gn.result > 9) ) { // out of range
-                    xx_line_err( err_struct_range, tok_start );
+                    xx_line_err_c( err_struct_range, tok_start );
                 }
                 cc = getarg();                  // get next operand
                 if( cc == omit || cc == quotes0 ) { // no operands
-                    parm_miss_err( cwcurr, tok_start );
+                    xx_line_err_cc( err_parm_missing, cwcurr, tok_start );
                 }
             }
         } else {
@@ -252,13 +257,13 @@ void scr_ix( void )
                 /* Only DUMP/PURGE allowed in this position */
 
                 if( cc == omit || cc == quotes0 ) { // no operands
-                    parm_miss_err( cwcurr, tok_start );
+                    xx_line_err_cc( err_parm_missing, cwcurr, tok_start );
                 } else if( (arg_flen == 4) && !stricmp( tok_start, "DUMP") ) {
-                    xx_warn_att( wng_unsupp_cw_opt, "DUMP" );
+                    xx_warn_c( wng_unsupp_cw_opt, "DUMP" );
                 } else if( (arg_flen == 5) && !stricmp( tok_start, "PURGE") ) {
-                    xx_warn_att( wng_unsupp_cw_opt, "PURGE" );
+                    xx_warn_c( wng_unsupp_cw_opt, "PURGE" );
                 } else {
-                    xx_line_err( err_bad_dp_value, tok_start );
+                    xx_line_err_c( err_bad_dp_value, tok_start );
                 }
                 cc = getarg();                  // get next operand
             }
@@ -309,10 +314,10 @@ void scr_ix( void )
     }
 
     if( (cc == pos) || (cc == quotes) ) {       // extra data on line
-        xx_line_err( err_extra_data, tok_start );
+        xx_line_err_c( err_extra_data, tok_start );
     }
 
-    ProcFlags.post_ix = true;
+    ProcFlags.post_ix = true;           // records use of control word only if indexing is on
 
     if( !GlobalFlags.lastpass ) {
         return;

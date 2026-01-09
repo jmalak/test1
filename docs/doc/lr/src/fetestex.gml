@@ -36,5 +36,5 @@ void main( void )
         printf( "Divide by zero occurred\n" );
 }
 .exmp end
-.class C99
+.class ISO C99
 .system

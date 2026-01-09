@@ -24,7 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  Implements symbolic variables (tables and access routines)
+* Description:  Implements symbolic variables (tables and access routines).
 *
 ****************************************************************************/
 
@@ -33,13 +33,132 @@
 
 
 /***************************************************************************/
-/*  init_dict      initialize dictionary pointer                           */
+/* Practice shows that WGML uses two fundamentally different kinds of      */
+/* symbol dictionaries.                                                    */
+/*  Local dictionaries used for macros and tags tend to contain only a     */
+/* small handful of symbols, sometimes even no symbols at all. Local       */
+/* dictionaries typically see only a small number of lookups, often        */
+/* just 1-2, and almost never more than 20.                                */
+/*  The global dictionary, on the other hand, might contain well over      */
+/* a hundred symbols, and needs to satisfy many thousands of lookups,      */
+/* even several hundred thousand lookups for complex documents.            */
+/*  This disparate usage pattern implies that the global dictionary must   */
+/* use a hash table for any kind of satisfactory performance; but for the  */
+/* local dictionaries, trivial linked lists may still be the best option.  */
+/* The short lifetimes and infrequent access pattern seen with the local   */
+/* dictionaries make the additonal setup and teardown overhead             */
+/* unlikely to be amortized.                                               */
+/*  Even for larger dictionaries, a hash table reduces the number of       */
+/* string comparisons to well under twice the number of lookups (i.e.      */
+/* there are perhaps 1.5 string comparisons per lookup). Without hash      */
+/* tables, there can easily be 100 string comparisons per lookup for the   */
+/* global dictionary.                                                      */
 /***************************************************************************/
 
-void    init_dict( symvar * * dict )
-{
 
-    *dict = NULL;
+/***************************************************************************/
+/*  Private symbol dictionary type                                         */
+/***************************************************************************/
+typedef struct sym_dcp {
+    symvar          *   first;          // first symbol in chain
+    symvar      *   *   htbl;           // hash table
+    long                lookups;        // lookup counter
+    long                symbols;        // symbol counter
+    long                compares;       // strcmp counter
+    bool                local;          // local/global flag
+} sym_dcp;
+
+#define SYM_HASH_SIZE       241
+
+static unsigned hashpjw( const char *s )
+{
+    unsigned    h;
+    char        c;
+
+    h = *s++;
+    if( h != 0 ) {
+        c = *s++;
+        if( c != '\0' ) {
+            h = ( h << 4 ) + c;
+            for( ;; ) {
+                h &= 0x0fff;
+                c = *s++;
+                if( c == '\0' )
+                    break;
+                h = ( h << 4 ) + c;
+                h = ( h ^ (h >> 12) ) & 0x0fff;
+                c = *s++;
+                if( c == '\0' )
+                    break;
+                h = ( h << 4 ) + c;
+                h = h ^ (h >> 12);
+            }
+        }
+    }
+    return( h );
+}
+
+static int sym_hash( const char *name )
+{
+    unsigned    hash;
+
+    hash = hashpjw( name );
+    hash %= SYM_HASH_SIZE;
+    return( hash );
+}
+
+
+/***************************************************************************/
+/*  init_dict      initialize symbol dictionary                            */
+/***************************************************************************/
+
+void    init_dict( symdict * * dict_parm )
+{
+    sym_dcp *   dict;
+
+    dict = mem_alloc( sizeof( sym_dcp ) );
+    dict->first    = NULL;
+    dict->htbl     = NULL;
+    dict->lookups  = 0;
+    dict->symbols  = 0;
+    dict->compares = 0;
+    dict->local    = true;
+    *dict_parm = dict;
+
+    if( dict == global_dict || dict == sys_dict ) {
+        dict->htbl = mem_alloc( sizeof( void * ) * SYM_HASH_SIZE );
+        memset( dict->htbl, 0, sizeof( void * ) * SYM_HASH_SIZE );
+        dict->local = false;
+    }
+
+    return;
+}
+
+
+static void free_sym_chain( symvar * wk )
+{
+    symvar  *   wkn;
+    symsub  *   ws;
+    symsub  *   wsn;
+
+    while( wk != NULL ) {
+        if( !(wk->flags & no_free) ) {
+            ws = wk->subscripts;
+            while( ws != NULL ) {
+                mem_free( ws->value );
+                wsn = ws->next;
+                mem_free( ws );
+                ws = wsn;
+            }
+            mem_free( wk->sub_0->value );
+            mem_free( wk->sub_0 );
+            wkn = wk->next;
+            mem_free( wk );
+            wk = wkn;
+        } else {
+            wk = wk->next;      // skip entire symbol
+        }
+    }
     return;
 }
 
@@ -47,29 +166,30 @@ void    init_dict( symvar * * dict )
 /*  free_dict   free all symbol dictionary entries                         */
 /***************************************************************************/
 
-void    free_dict( symvar * * dict )
+void    free_dict( symdict * * dict_parm )
 {
-    symvar  *   wk;
-    symvar  *   wkn;
-    symsub  *   ws;
-    symsub  *   wsn;
+    sym_dcp *   dict;
+    int         i;
 
-    wk = *dict;
-    while( wk != NULL ) {
-        ws = wk->subscripts;
-        while( ws != NULL ) {
-            mem_free( ws->value );
-            wsn = ws->next;
-            mem_free( ws );
-            ws = wsn;
-        }
-        mem_free( wk->sub_0->value );
-        mem_free( wk->sub_0 );
-        wkn = wk->next;
-        mem_free( wk );
-        wk = wkn;
+    dict = *dict_parm;
+
+#if 0
+    if( dict->compares > 1000 || dict->symbols > 25 || dict->lookups > 200 ) {
+        printf( "dict %p, symbols:%6ld, lookups:%8ld, compares: %12ld\n",
+                dict, dict->symbols, dict->lookups, dict->compares );
     }
-    *dict = NULL;
+#endif
+
+    if( dict->local ) {
+        free_sym_chain( dict->first );
+    } else {
+        for( i = 0; i < SYM_HASH_SIZE; ++i ) {
+            free_sym_chain( dict->htbl[i] );
+        }
+        mem_free( dict->htbl );
+    }
+    mem_free( dict );
+    *dict_parm = NULL;
     return;
 }
 
@@ -143,22 +263,33 @@ static void print_sym_entry( symvar * wk, int * symcnt, int * symsubcnt )
 /*                                                                         */
 /***************************************************************************/
 
-int find_symvar( symvar * * dict, char * name, sub_index sub, symsub * * symsubval )
+int find_symvar( symdict * dict_parm, char * name, sub_index sub, symsub * * symsubval )
 {
     symvar  *   wk;
     symsub  *   ws;
+    sym_dcp *   dict = dict_parm;
     int         rc = 0;
 
-    if( (*name == '$') && (dict != &sys_dict) ) {// for sysxxx try system dict first
-        rc = find_symvar( &sys_dict, name, sub, symsubval );// recursion
+    if( (*name == '$') && (dict != sys_dict) ) {// for sysxxx try system dict first
+        rc = find_symvar( sys_dict, name, sub, symsubval );// recursion
         if( rc ) {
             return( rc );               // found predefined systemvariable
         }
     }
-    wk = *dict;
+    if( dict->local ) {
+        wk = dict->first;
+    } else {
+        int     hash;
+
+        hash = sym_hash( name );
+        wk = dict->htbl[hash];
+    }
+
     *symsubval = NULL;
+    dict->lookups++;
 
     while( wk != NULL) {
+        dict->compares++;
         if( !strcmp( wk->name, name ) ) {
             if( wk->flags & deleted ) {
                 break;                  // symbol name is deleted
@@ -207,12 +338,13 @@ int find_symvar( symvar * * dict, char * name, sub_index sub, symsub * * symsubv
 /*          unless the symbol looks like an auto symbol (all numeric)      */
 /***************************************************************************/
 
-int find_symvar_l( symvar * * dict, char * name, sub_index sub, symsub * * symsubval )
+int find_symvar_l( symdict * dict_parm, char * name, sub_index sub, symsub * * symsubval )
 {
     char    *   p;
     inputcb *   incbs;
     int         rc;
-    symvar  *   wk;
+    symdict *   wk;
+    sym_dcp *   dict = dict_parm;
 
     rc = find_symvar( dict, name, sub, symsubval );
     if( rc || (strlen( name ) == 1) && (*name == *MAC_STAR_NAME) ) {
@@ -224,14 +356,14 @@ int find_symvar_l( symvar * * dict, char * name, sub_index sub, symsub * * symsu
         p++;
     }
 
-    if( *p && (dict == &input_cbs->local_dict) ) { // not auto symbol and current dict is local dict
+    if( *p && (dict == input_cbs->local_dict) ) {   // not auto symbol and current dict is local dict
 
         /* search upwards thru all local dicts through first file local dict encountered */
 
         for( incbs = input_cbs->prev; incbs != NULL; incbs = incbs->prev ) {
             if( incbs->local_dict != NULL ) {
                 wk = incbs->local_dict;
-                rc = find_symvar( &wk, name, sub, symsubval );
+                rc = find_symvar( wk, name, sub, symsubval );
                 if( rc ) {
                     break;              // found variable
                 }
@@ -249,22 +381,33 @@ int find_symvar_l( symvar * * dict, char * name, sub_index sub, symsub * * symsu
 /*  finds deleted variables too internal routine                           */
 /***************************************************************************/
 
-static  int find_symvar_del( symvar * * dict, char * name, sub_index sub,
+static  int find_symvar_del( symdict * dict_parm, char * name, sub_index sub,
                              symsub * * symsubval, symvar * * delentry )
 {
     symvar  *   wk;
     symsub  *   ws;
+    sym_dcp *   dict = dict_parm;
     int         rc = 0;
 
-    if( (*name == '$') && (dict != &sys_dict) ) {// for sysxxx try system dict first
-        rc = find_symvar_del( &sys_dict, name, sub, symsubval, delentry );  // recursion
+    if( (*name == '$') && (dict != sys_dict) ) {// for sysxxx try system dict first
+        rc = find_symvar_del( sys_dict, name, sub, symsubval, delentry );   // recursion
         if( rc ) {
             return( rc );               // found predefined systemvariable
         }
     }
     *symsubval = NULL;
-    wk = *dict;
+
+    if( dict->local ) {
+        wk = dict->first;
+    } else {
+        int     hash;
+
+        hash = sym_hash( name );
+        wk = dict->htbl[hash];
+    }
+
     while( wk != NULL) {
+        dict->compares++;
         if( !strcmp( wk->name, name ) ) {
             if( wk->flags & deleted ) {
                 *delentry = wk;
@@ -295,7 +438,11 @@ static  int find_symvar_del( symvar * * dict, char * name, sub_index sub,
                 }
             }
         } else {
-            rc = 2;                     // not subscripted -> all found
+            if( sub == 0 ) {
+                rc = 2;                     // no subscripting -> all found
+            } else {
+                rc = 1;                     // name found but not subscript
+            }
         }
     }
     return( rc );
@@ -305,19 +452,15 @@ static  int find_symvar_del( symvar * * dict, char * name, sub_index sub,
 /*  check subscript for allowed range                                      */
 /***************************************************************************/
 
-static  bool    check_subscript( sub_index sub )
+static bool check_subscript( sub_index sub )
 {
-
     if( sub != no_subscript ) {
         if( (sub < min_subscript) || (sub > max_subscript) ) {
             // SC--076 Subscript index must be between -1000000 and 1000000
             char    linestr[MAX_L_AS_STR];
 
             slongtodec( sub, linestr );
-            g_err( ERR_SUB_OUT_OF_RANGE, linestr );
-            show_include_stack();
-            err_count++;
-            return( false );
+            xx_line_err_c( err_sub_out_of_range, linestr );
         }
     }
     return( true );
@@ -399,10 +542,34 @@ static bool add_symvar_sub( symvar * var, char * val, sub_index sub, symsub * * 
 }
 
 /***************************************************************************/
+/*  link_sym    add existing symbol to dictionary                          */
+/***************************************************************************/
+
+void link_sym( symdict * dict_parm, symvar * sym )
+{
+    sym_dcp *   dict = dict_parm;
+
+    if( dict->local ) {
+        sym->next   = dict->first;
+        dict->first = sym;
+    } else {
+        int     hash;
+
+        hash = sym_hash( sym->name );
+        sym->next = dict->htbl[hash];
+        dict->htbl[hash] = sym;
+    }
+
+    dict->symbols++;
+    return;
+}
+
+
+/***************************************************************************/
 /*  add_symsym  add symbol base entry and prepare subscript 0 entry        */
 /***************************************************************************/
 
-static void add_symsym( symvar * * dict, char * name, symbol_flags f, symvar * * n )
+static void add_symsym( symdict * dict_parm, char * name, symbol_flags f, symvar * * n )
 {
     symvar  *   new;
     symsub  *   newsub;
@@ -431,13 +598,13 @@ static void add_symsym( symvar * * dict, char * name, symbol_flags f, symvar * *
     newsub->base      = new;
     newsub->subscript = 0;
     newsub->value     = mem_alloc( 12 + 1 );// for min subscript as string
-                                        // -1000000
+                                            // -1000000
     *(newsub->value)  = '0';
     *(newsub->value + 1) = '\0';
 
     *n = new;
-    new->next = *dict;
-    *dict = new;
+    link_sym( dict_parm, new );
+
     return;
 }
 
@@ -447,7 +614,7 @@ static void add_symsym( symvar * * dict, char * name, symbol_flags f, symvar * *
 /*  with    returning ptr to symsub entry                                  */
 /***************************************************************************/
 
-int add_symvar_addr( symvar * * dict, char * name, char * val,
+int add_symvar_addr( symdict * dict, char * name, char * val,
                      sub_index subscript, symbol_flags f, symsub * * sub )
 {
     symvar  *   new = NULL;
@@ -520,11 +687,7 @@ int add_symvar_addr( symvar * * dict, char * name, char * val,
             }
             break;
         default:
-            g_err( err_logic_err, __FILE__ );
-            show_include_stack();
-            err_count++;
-            g_suicide();
-            break;
+            xx_line_err_c( err_logic_err, __FILE__ );
         }
     }
     return( rc );
@@ -536,26 +699,18 @@ int add_symvar_addr( symvar * * dict, char * name, char * val,
 /*  without returning ptr to symsub entry                                  */
 /***************************************************************************/
 
-int add_symvar( symvar * * dict, char * name, char * val, sub_index subscript, symbol_flags f )
+int add_symvar( symdict * dict, char * name, char * val, sub_index subscript, symbol_flags f )
 {
     symsub  *   newsub;
 
     return( add_symvar_addr( dict, name, val, subscript, f, &newsub ) );
 }
 
-/***************************************************************************/
-/*  reset_auto_inc_dict  reset auto_inc value for passes 2 - n             */
-/*  and set variable as deleted                                            */
-/***************************************************************************/
-
-void    reset_auto_inc_dict( symvar * dict )
+static void reset_auto_inc_chain( symvar * wk )
 {
-    symvar  *   wk;
     symsub  *   ws;
 
-    wk = dict;
     while( wk != NULL ) {
-
 
         if( wk->flags & auto_inc ) {
 
@@ -576,19 +731,39 @@ void    reset_auto_inc_dict( symvar * dict )
     return;
 }
 
+/***************************************************************************/
+/*  reset_auto_inc_dict  reset auto_inc value for passes 2 - n             */
+/*  and set variable as deleted                                            */
+/***************************************************************************/
+
+void    reset_auto_inc_dict( symdict * dict_parm )
+{
+    sym_dcp *   dict = dict_parm;
+    int         i;
+
+    if( dict->local ) {
+        reset_auto_inc_chain( dict->first );
+    } else {
+        for( i = 0; i < SYM_HASH_SIZE; ++i )
+            reset_auto_inc_chain( dict->htbl[i] );
+    }
+    return;
+}
+
 
 /***************************************************************************/
 /*  print_sym_dict  output all of the symbol dictionary                    */
 /***************************************************************************/
 
-void    print_sym_dict( symvar * dict )
+void    print_sym_dict( symdict * dict_parm )
 {
     symvar      *   wk;
+    sym_dcp     *   dict = dict_parm;
     char        *   lgs;
     int             symcnt;
     int             symsubcnt;
 
-    wk          = dict;
+    wk          = dict->first;
     symcnt      = 0;
     symsubcnt   = 0;
 

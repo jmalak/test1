@@ -241,7 +241,11 @@ static condcode gargterm( termcb * t )
         t->term_string = mem_alloc( t->term_length + 1 );
         strncpy_s( t->term_string, t->term_length + 1, tok_start, t->term_length );
     } else {
-        scan_start = gn.argstart;
+        if( gn.argstart > gn.argstop ) {
+            scan_start = gn.argstop;        // enforce end of logical record
+        } else {
+            scan_start = gn.argstart;
+        }
         t->numeric = true;
         t->term_number = gn.result;
         t->term_string  = mem_alloc( sizeof( gn.resultstr ) );
@@ -395,7 +399,6 @@ void    scr_if( void )
     bool            ifcond;             // current condition
     bool            totalcondition;     // resultant condition
     bool            firstcondition;     // first comparison .if
-    char            linestr[MAX_L_AS_STR];
     char        *   p;
     condcode        cct1;
     condcode        cct2;
@@ -414,6 +417,10 @@ void    scr_if( void )
 
     process_late_subst(scan_start);
 
+    if( *(p + strlen(p) - 1) == CONT_char ) {  // remove trailing continue character
+        *(p + strlen(p) - 1) = '\0';
+    }
+
     cb = input_cbs->if_cb;              // get .if control block
     cb->if_flags[cb->if_level].ifcwif = false;  // reset cwif switch
 
@@ -424,32 +431,10 @@ void    scr_if( void )
         cct2    = gargterm( &t2 );      // get term 2
 
         if( (cct1 == no) || (cct2 == no) ) {
-            scan_err = true;
-            err_count++;
-            g_err( err_if_term );
-            if( input_cbs->fmflags & II_tag_mac ) {
-                ulongtodec( input_cbs->s.m->lineno, linestr );
-                g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-            } else {
-                ulongtodec( input_cbs->s.f->lineno, linestr );
-                g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-            }
-            show_include_stack();
-            return;
+            xx_source_err( err_if_term );
         }
         if( ccrelop != pos ) {
-            scan_err = true;
-            err_count++;
-            g_err( err_if_relop );
-            if( input_cbs->fmflags & II_tag_mac ) {
-                ulongtodec( input_cbs->s.m->lineno, linestr );
-                g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-            } else {
-                ulongtodec( input_cbs->s.f->lineno, linestr );
-                g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-            }
-            show_include_stack();
-            return;
+            xx_source_err( err_if_relop );
         }
 
         // terms and operator ok now compare
@@ -467,18 +452,7 @@ void    scr_if( void )
                 cb->if_flags[cb->if_level].iftrue = false;  // cond not yet true
                 cb->if_flags[cb->if_level].iffalse = false; // cond not yet false
             } else {
-                scan_err = true;
-                g_err( err_if_nesting );
-                if( input_cbs->fmflags & II_tag_mac ) {
-                    ulongtodec( input_cbs->s.m->lineno, linestr );
-                    g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-                } else {
-                    ulongtodec( input_cbs->s.f->lineno, linestr );
-                    g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                }
-                show_include_stack();
-                err_count++;
-                return;
+                xx_source_err( err_if_nesting );
             }
             totalcondition = ifcond;
         } else {
@@ -565,10 +539,10 @@ void    scr_if( void )
     }
 
     if( *scan_start ) {                 // rest of line is not empty
-        split_input( buff2, scan_start, input_cbs->fmflags & (II_sol | II_eol) );   // split and process next
-    } else if( (input_cbs->hidden_head != NULL) &&  !(input_cbs->hidden_head->fmflags & II_sol) &&
-               (input_cbs->fmflags & II_sol) ) {
-        input_cbs->hidden_head->fmflags |= II_sol;      // propagate II_sol to potential text
+        split_input( buff2, scan_start, input_cbs->fmflags );   // split and process next
+        if( cb->if_flags[cb->if_level].iffalse ) {  // condition failed
+            ProcFlags.pre_fsp = false;       // cancel fsp
+        }
     }
     scan_restart = scan_stop + 1;
     return;
@@ -610,7 +584,6 @@ void    scr_if( void )
 void    scr_th( void )
 {
     ifcb    *   cb = input_cbs->if_cb;
-    char        linestr[MAX_L_AS_STR];
 
     scan_err = false;
     cb->if_flags[cb->if_level].ifcwte = false;
@@ -623,19 +596,7 @@ void    scr_th( void )
         || cb->if_flags[cb->if_level].ifelse
         || cb->if_flags[cb->if_level].ifdo ) {
 
-        scan_err = true;
-        g_err( err_if_then );
-        if( input_cbs->fmflags & II_tag_mac ) {
-            ulongtodec( input_cbs->s.m->lineno, linestr );
-            g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-        } else {
-            ulongtodec( input_cbs->s.f->lineno, linestr );
-            g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-        }
-        show_ifcb( "then", cb );
-        show_include_stack();
-        err_count++;
-        return;
+        xx_source_err( err_if_then );
     }
     cb->if_flags[cb->if_level].iflast = false;
     cb->if_flags[cb->if_level].ifthen = true;
@@ -647,10 +608,7 @@ void    scr_th( void )
     SkipSpaces( scan_start );
 
     if( *scan_start ) {                 // rest of line is not empty
-        split_input( buff2, scan_start, input_cbs->fmflags & (II_sol | II_eol) );   // split and process next
-    } else if( (input_cbs->hidden_head != NULL) &&  !(input_cbs->hidden_head->fmflags & II_sol) &&
-               (input_cbs->fmflags & II_sol) ) {
-        input_cbs->hidden_head->fmflags |= II_sol;      // propagate II_sol to potential text
+        split_input( buff2, scan_start, input_cbs->fmflags );   // split and process next
     }
     scan_restart = scan_stop + 1;
     return;
@@ -684,7 +642,6 @@ void    scr_th( void )
 void    scr_el( void )
 {
     ifcb    *   cb = input_cbs->if_cb;
-    char        linestr[MAX_L_AS_STR];
 
     scan_err = false;
     cb->if_flags[cb->if_level].iflast = false;
@@ -697,19 +654,7 @@ void    scr_el( void )
         || cb->if_flags[cb->if_level].ifelse
         || cb->if_flags[cb->if_level].ifdo ) {
 
-        scan_err = true;
-        g_err( err_if_else );
-        if( input_cbs->fmflags & II_tag_mac ) {
-            ulongtodec( input_cbs->s.m->lineno, linestr );
-            g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-        } else {
-            ulongtodec( input_cbs->s.f->lineno, linestr );
-            g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-        }
-        show_ifcb( "else", cb );
-        show_include_stack();
-        err_count++;
-        return;
+        xx_source_err( err_if_else );
     }
     cb->if_flags[cb->if_level].ifelse = true;
     ProcFlags.keep_ifstate = true;
@@ -720,10 +665,7 @@ void    scr_el( void )
     SkipSpaces( scan_start );
 
     if( *scan_start ) {                 // rest of line is not empty
-        split_input( buff2, scan_start, input_cbs->fmflags & (II_sol | II_eol) );   // split and process next
-    } else if( (input_cbs->hidden_head != NULL) &&  !(input_cbs->hidden_head->fmflags & II_sol) &&
-               (input_cbs->fmflags & II_sol) ) {
-        input_cbs->hidden_head->fmflags |= II_sol;      // propagate II_sol to potential text
+        split_input( buff2, scan_start, input_cbs->fmflags );   // split and process next
     }
     scan_restart = scan_stop + 1;
     return;
@@ -752,7 +694,6 @@ void    scr_do( void )
 {
     ifcb    *   cb = input_cbs->if_cb;
     condcode    cc;
-    char        linestr[MAX_L_AS_STR];
 
     scan_err = false;
     cc = getarg();
@@ -763,19 +704,7 @@ void    scr_do( void )
             || cb->if_flags[cb->if_level].ifelse)
             || cb->if_flags[cb->if_level].ifdo ) {
 
-            scan_err = true;
-            g_err( err_if_do );
-            if( input_cbs->fmflags & II_tag_mac ) {
-                ulongtodec( input_cbs->s.m->lineno, linestr );
-                g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-            } else {
-                ulongtodec( input_cbs->s.f->lineno, linestr );
-                g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-            }
-            show_ifcb( "dobegin", cb );
-            show_include_stack();
-            err_count++;
-            return;
+            xx_source_err( err_if_do );
         }
         cb->if_flags[cb->if_level].ifdo = true;
         cb->if_flags[cb->if_level].ifindo = true;
@@ -808,19 +737,7 @@ void    scr_do( void )
                     || !(cb->if_flags[cb->if_level].iftrue
                     || cb->if_flags[cb->if_level].iffalse) ) {
 
-                    scan_err = true;
-                    g_err( err_if_do_end );
-                    if( input_cbs->fmflags & II_tag_mac ) {
-                        ulongtodec( input_cbs->s.m->lineno, linestr );
-                        g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-                    } else {
-                        ulongtodec( input_cbs->s.f->lineno, linestr );
-                        g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                    }
-                    show_ifcb( "doend", cb );
-                    show_include_stack();
-                    err_count++;
-                    return;
+                    xx_source_err( err_if_do_end );
                 }
 
                 cb->if_flags[cb->if_level].ifindo = false;
@@ -835,18 +752,7 @@ void    scr_do( void )
             }
 #endif
         } else {
-            scan_err = true;
-            g_err( err_if_do_fun );
-            if( input_cbs->fmflags & II_tag_mac ) {
-                ulongtodec( input_cbs->s.m->lineno, linestr );
-                g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-            } else {
-                ulongtodec( input_cbs->s.f->lineno, linestr );
-                g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-            }
-            show_include_stack();
-            err_count++;
-            return;
+            xx_source_err( err_if_do_fun );
         }
     }
     if( (input_cbs->fmflags & II_research) && GlobalFlags.firstpass ) {

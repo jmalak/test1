@@ -1,5 +1,5 @@
 .*
-.chap *refid='ipfintro' Introduction
+.chap *refid='ipfintr' Introduction
 .*
 .np
 Documentation for programs in the form of help files can make the user's life much easier.

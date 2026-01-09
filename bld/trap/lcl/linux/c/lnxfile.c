@@ -272,7 +272,11 @@ unsigned ReqFile_run_cmd( void )
         tcsetpgrp( 0, pgrp );
         tcsetpgrp( 1, pgrp );
         tcsetpgrp( 2, pgrp );
+#if defined(__WATCOMC__) && (__WATCOMC__ <= 1290)
         execv( shell, (const char **)argv );
+#else
+        execv( shell, argv );
+#endif
         exit( 1 );
     }
     /* parent */

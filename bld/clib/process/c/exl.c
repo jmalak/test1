@@ -24,8 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  Implementation of execl() and _wexecl().
 *
 ****************************************************************************/
 
@@ -50,7 +49,7 @@ _WCRTLINK int __F_NAME((execl),_wexecl)( const CHAR_TYPE *path, const CHAR_TYPE 
                         (const CHAR_TYPE **)_RWD_wenviron ) );
             #else
                 return( execve( path, (const CHAR_TYPE**)ap.__base,
-                        (const CHAR_TYPE **)_RWD_environ ) );
+                        (EXCV_CHAR **)_RWD_environ ) );
             #endif
         #else
             #ifdef __WIDECHAR__
@@ -58,10 +57,10 @@ _WCRTLINK int __F_NAME((execl),_wexecl)( const CHAR_TYPE *path, const CHAR_TYPE 
                         (const CHAR_TYPE **)_RWD_wenviron ) );
             #else
                 #ifdef __RDOS__
-                    return( execv( path, (const CHAR_TYPE**)ap[0] ) );
+                    return( execv( path, (EXCV_CHAR **)ap[0] ) );
                 #else
-                    return( execve( path, (const CHAR_TYPE**)ap[0],
-                            (const CHAR_TYPE **)_RWD_environ ) );
+                    return( execve( path, (EXCV_CHAR **)ap[0],
+                            (EXCV_CHAR **)_RWD_environ ) );
                 #endif
             #endif
         #endif

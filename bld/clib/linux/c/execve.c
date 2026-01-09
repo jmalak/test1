@@ -33,8 +33,8 @@
 #include <errno.h>
 #include "linuxsys.h"
 
-_WCRTLINK int execve( const char *__path, const char *const __argv[],
-                      const char *const __envp[] )
+_WCRTLINK int execve( const char *__path, char *const __argv[],
+                      char *const __envp[] )
 {
     u_long res = sys_call3( SYS_execve, (u_long)__path, (u_long)__argv,
                            (u_long)__envp );

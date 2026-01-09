@@ -1,4 +1,5 @@
 # This file produced by MS2WLINK
+option nofarcalls
 system os2v2 dll initglobal
 file obj.obj
 option modname=TEST23

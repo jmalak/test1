@@ -126,10 +126,6 @@ typedef struct def_frame {
 } def_frame;
 
 /***************************************************************************/
-/*  definition for note_string for :NOTE tag and others                    */
-/***************************************************************************/
-
-/***************************************************************************/
 /*  definitions for :Hx tag number form and page position                  */
 /*                                                                         */
 /***************************************************************************/
@@ -901,17 +897,5 @@ typedef struct layout_data {
 #if defined( __WATCOMC__ )
 #pragma enable_message( 128 );// reenable: Warning! W128: 3 padding byte(s) added
 #endif
-
-
-/***************************************************************************/
-/*  parameter structure for parsing layout attributes name + value         */
-/***************************************************************************/
-
-typedef struct att_args {
-    char    *   start[2];
-    int         len[2];
-    bool        quoted;                 // only for value
-} att_args;
-
 
 #endif  /* GTYPELAY_H_INCLUDED */

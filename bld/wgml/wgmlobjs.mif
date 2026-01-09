@@ -10,8 +10,6 @@ common_objs =  &
         gdeflay.obj  &
         gdocpage.obj &
         gdummy.obj   &
-        gerror.obj   &
-        gerrorxx.obj &
         getnum.obj   &
         gindexut.obj &
         gmacdict.obj &
@@ -27,6 +25,7 @@ common_objs =  &
         gsyssym.obj  &
         gtxtpool.obj &
         gutil.obj    &
+        messages.obj &
         wgmlmsg.obj
  
 #
@@ -51,7 +50,6 @@ gml_objs =  &
         gauthor.obj  &
         gbanner.obj  &
         gbinclud.obj &
-        gchpxsfq.obj &
         gcmt.obj     &
         gdate.obj    &
         gdocnum.obj  &
@@ -60,6 +58,7 @@ gml_objs =  &
         gfnefn.obj   &
         ggraphic.obj &
         ghx.obj      &
+        ginline.obj  &
         glq.obj      &
         ginclude.obj &
         gixx.obj     &
@@ -127,6 +126,7 @@ scr_objs =  &
         gsbr.obj     &
         gsbx.obj     &
         gscd.obj     &
+        gscm.obj     &
         gscofoju.obj &
         gscs.obj     &
         gsct.obj     &

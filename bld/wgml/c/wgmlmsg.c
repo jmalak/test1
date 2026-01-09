@@ -98,8 +98,7 @@ bool init_msgs( void )
     if( error ) {
         if( Instance.handle != -1 )
             CloseResFile( &Instance );
-        out_msg( "Resources not found\n" );
-        g_suicide();
+        xx_simple_err( err_res_not_found );
     }
     return( true );
 }

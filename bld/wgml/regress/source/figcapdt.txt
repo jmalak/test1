@@ -1,0 +1,22 @@
+ 
+           Figure 1. Caption
+0          Text between figures.
+-          Figure 2. This figure has a very long caption which shall be
+                     broken into multiple lines, even on wider pages.
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+0                                                                     1

@@ -80,6 +80,10 @@ static void gml_xl_lp_common( e_tags t )
 
     end_lp();                           // terminate :LP if active
 
+    if( ProcFlags.overprint && ProcFlags.cc_cp_done ) {
+        ProcFlags.overprint = false;    // cancel overprint
+    }
+
     if( ProcFlags.dd_starting ) {
         scr_process_break();
         t_element = alloc_doc_el( el_vspace );
@@ -114,7 +118,6 @@ static void gml_xl_lp_common( e_tags t )
         if( !ProcFlags.reprocess_line && *p != '\0' ) {
             process_text( p, g_curr_font );
         }
-        ProcFlags.ix_in_block = true;
     }
 
     return;
@@ -186,6 +189,8 @@ void gml_dl( const gmltag * entry )
     } else {
         dl_cur_level = 1;
     }
+
+    ProcFlags.block_starting = true;    // to catch empty lists
 
     dl_break = dl_layout->line_break;
     headhi = layout_work.dthd.font;
@@ -274,9 +279,6 @@ void gml_dl( const gmltag * entry )
     nest_cb->tsize = tsize;
     nest_cb->in_list = true;
 
-    nest_cb->lm = t_page.cur_left;
-    nest_cb->rm = t_page.max_width;
-
     g_text_spacing = nest_cb->u.dl_layout->spacing;
 
     ProcFlags.null_value = false;
@@ -314,6 +316,8 @@ void gml_gl( const gmltag * entry )
     if( !ProcFlags.start_section ) {
         start_doc_sect();
     }
+
+    ProcFlags.block_starting = true;    // to catch empty lists
 
     termhi = layout_work.gt.font;
 
@@ -379,9 +383,6 @@ void gml_gl( const gmltag * entry )
     nest_cb->termhi = termhi;
     nest_cb->in_list = true;
 
-    nest_cb->lm = t_page.cur_left;
-    nest_cb->rm = t_page.max_width;
-
     g_text_spacing = nest_cb->u.gl_layout->spacing;
 
     scan_start = scan_stop + 1;
@@ -413,6 +414,8 @@ void gml_ol( const gmltag * entry )
     if( !ProcFlags.start_section ) {
         start_doc_sect();
     }
+
+    ProcFlags.block_starting = true;    // to catch empty lists
 
     p = scan_start;
     SkipSpaces( p );                        // over spaces
@@ -469,9 +472,6 @@ void gml_ol( const gmltag * entry )
     nest_cb->xl_pre_skip = conv_vert_unit( &nest_cb->u.ol_layout->pre_skip, g_text_spacing, g_curr_font );
     nest_cb->in_list = true;
 
-    nest_cb->lm = t_page.cur_left;
-    nest_cb->rm = t_page.max_width;
-
     g_text_spacing = nest_cb->u.ol_layout->spacing;
 
     scan_start = scan_stop + 1;
@@ -502,6 +502,8 @@ void gml_sl( const gmltag * entry )
     if( !ProcFlags.start_section ) {
         start_doc_sect();
     }
+
+    ProcFlags.block_starting = true;    // to catch empty lists
 
     p = scan_start;
     SkipSpaces( p );                        // over spaces
@@ -557,9 +559,6 @@ void gml_sl( const gmltag * entry )
     nest_cb->xl_pre_skip = conv_vert_unit( &nest_cb->u.sl_layout->pre_skip, g_text_spacing, g_curr_font );
     nest_cb->in_list = true;
 
-    nest_cb->lm = t_page.cur_left;
-    nest_cb->rm = t_page.max_width;
-
     g_text_spacing = nest_cb->u.sl_layout->spacing;
 
     scan_start = scan_stop + 1;
@@ -590,6 +589,8 @@ void gml_ul( const gmltag * entry )
     if( !ProcFlags.start_section ) {
         start_doc_sect();
     }
+
+    ProcFlags.block_starting = true;    // to catch empty lists
 
     p = scan_start;
     SkipSpaces( p );                        // over spaces
@@ -646,9 +647,6 @@ void gml_ul( const gmltag * entry )
     nest_cb->xl_pre_skip = conv_vert_unit( &nest_cb->u.ul_layout->pre_skip, g_text_spacing, g_curr_font );
     nest_cb->in_list = true;
 
-    nest_cb->lm = t_page.cur_left;
-    nest_cb->rm = t_page.max_width;
-
     g_text_spacing = nest_cb->u.ul_layout->spacing;
 
     scan_start = scan_stop + 1;
@@ -661,11 +659,38 @@ void gml_ul( const gmltag * entry )
 
 static void     gml_exl_common( const gmltag * entry )
 {
-    char    *   p;
-    tag_cb  *   wk;
+    char        *   p;
+    font_number     l_font;
+    su              l_post_skip;
+    tag_cb      *   wk;
 
     t_page.cur_left = nest_cb->lm;
     t_page.max_width = nest_cb->rm;
+
+    switch( nest_cb->c_tag ) {
+    case t_DL :
+        l_post_skip = nest_cb->u.dl_layout->post_skip;
+        l_font = layout_work.dd.font;
+        break;
+    case t_GL :
+        l_post_skip = nest_cb->u.gl_layout->post_skip;
+        l_font = layout_work.gt.font;
+        break;
+    case t_OL :
+        l_post_skip = nest_cb->u.ol_layout->post_skip;
+        l_font = nest_cb->u.ol_layout->font;
+        break;
+    case t_SL :
+        l_post_skip = nest_cb->u.sl_layout->post_skip;
+        l_font = nest_cb->u.sl_layout->font;
+        break;
+    case t_UL :
+        l_post_skip = nest_cb->u.ul_layout->post_skip;
+        l_font = nest_cb->u.ul_layout->font;
+        break;
+    default :
+        internal_err( __FILE__, __LINE__ ); // not an inline phrase end tag
+    }
 
     wk = nest_cb;
     nest_cb = nest_cb->prev;
@@ -676,8 +701,17 @@ static void     gml_exl_common( const gmltag * entry )
     scan_err = false;
     p = scan_start;
     SkipDot( p );                       // over '.'
+    SkipSpaces( p );                    // over WS to <text line>
     if( *p != '\0' ) {
-        do_force_pc( p );
+        if( !input_cbs->hidden_head->ip_start && (*(p + 1) == '\0') && (*p == CONT_char) ) { // text is continuation character only
+            if( &l_post_skip != NULL ) {
+                g_post_skip = conv_vert_unit( &l_post_skip , g_text_spacing, l_font );
+            } else {
+                g_post_skip = 0;
+            }
+        } else {
+            do_force_pc( p );
+        }
     } else {
         ProcFlags.force_pc = true;
         ProcFlags.skips_valid = false;  // force use of post_skip with following text element
@@ -737,7 +771,14 @@ void    gml_edl( const gmltag * entry )
             g_err_tag_nest( str_tags[nest_cb->c_tag + 1] ); // exxx expected
         }
     } else {
-        set_skip_vars( NULL, NULL, &nest_cb->u.dl_layout->post_skip, 1, g_curr_font );
+        if( ProcFlags.block_starting ) {    // block is empty
+            set_skip_vars( &nest_cb->u.dl_layout->pre_skip, NULL, &nest_cb->u.dl_layout->post_skip, 1, g_curr_font );
+            g_subs_skip += g_post_skip;
+            g_post_skip = 0;
+            ProcFlags.block_starting = false;
+        } else {
+            set_skip_vars( NULL, NULL, &nest_cb->u.dl_layout->post_skip, 1, g_curr_font );
+        }
         gml_exl_common( entry );
         if( dl_cur_level == 1 ) {
             dl_cur_level = layout_work.dl.max_level;
@@ -764,7 +805,14 @@ void    gml_egl( const gmltag * entry )
             g_err_tag_nest( str_tags[nest_cb->c_tag + 1] ); // exxx expected
         }
     } else {
-        set_skip_vars( NULL, NULL, &nest_cb->u.gl_layout->post_skip, 1, g_curr_font );
+        if( ProcFlags.block_starting ) {    // block is empty
+            set_skip_vars( &nest_cb->u.gl_layout->pre_skip, NULL, &nest_cb->u.gl_layout->post_skip, 1, g_curr_font );
+            g_subs_skip += g_post_skip;
+            g_post_skip = 0;
+            ProcFlags.block_starting = false;
+        } else {
+            set_skip_vars( NULL, NULL, &nest_cb->u.gl_layout->post_skip, 1, g_curr_font );
+        }
         gml_exl_common( entry );
         if( gl_cur_level == 1 ) {
             gl_cur_level = layout_work.gl.max_level;
@@ -776,10 +824,10 @@ void    gml_egl( const gmltag * entry )
 
 void    gml_eol( const gmltag * entry )
 {
+    scr_process_break();
     if( g_line_indent == 0 ) {
         ProcFlags.para_starting = false;    // clear for this tag's break
     }
-    scr_process_break();
     if( nest_cb->c_tag == t_LP ) {      // terminate :LP if active
         end_lp();
         g_curr_font = nest_cb->font;    // restore font
@@ -792,7 +840,14 @@ void    gml_eol( const gmltag * entry )
             g_err_tag_nest( str_tags[nest_cb->c_tag + 1] ); // exxx expected
         }
     } else {
-        set_skip_vars( NULL, NULL, &nest_cb->u.ol_layout->post_skip, 1, g_curr_font );
+        if( ProcFlags.block_starting ) {    // block is empty
+            set_skip_vars( &nest_cb->u.ol_layout->pre_skip, NULL, &nest_cb->u.ol_layout->post_skip, 1, g_curr_font );
+            g_subs_skip += g_post_skip;
+            g_post_skip = 0;
+            ProcFlags.block_starting = false;
+        } else {
+            set_skip_vars( NULL, NULL, &nest_cb->u.ol_layout->post_skip, 1, g_curr_font );
+        }
         gml_exl_common( entry );
         if( ol_cur_level == 1 ) {
             ol_cur_level = layout_work.ol.max_level;
@@ -804,10 +859,10 @@ void    gml_eol( const gmltag * entry )
 
 void    gml_esl( const gmltag * entry )
 {
+    scr_process_break();
     if( g_line_indent == 0 ) {
         ProcFlags.para_starting = false;    // clear for this tag's break
     }
-    scr_process_break();
     if( nest_cb->c_tag == t_LP ) {      // terminate :LP if active
         end_lp();
         g_curr_font = nest_cb->font;    // restore font
@@ -820,7 +875,14 @@ void    gml_esl( const gmltag * entry )
             g_err_tag_nest( str_tags[nest_cb->c_tag + 1] ); // exxx expected
         }
     } else {
-        set_skip_vars( NULL, NULL, &nest_cb->u.sl_layout->post_skip, 1, g_curr_font );
+        if( ProcFlags.block_starting ) {    // block is empty
+            set_skip_vars( &nest_cb->u.sl_layout->pre_skip, NULL, &nest_cb->u.sl_layout->post_skip, 1, g_curr_font );
+            g_subs_skip += g_post_skip;
+            g_post_skip = 0;
+            ProcFlags.block_starting = false;
+        } else {
+            set_skip_vars( NULL, NULL, &nest_cb->u.sl_layout->post_skip, 1, g_curr_font );
+        }
         gml_exl_common( entry );
         if( sl_cur_level == 1 ) {
             sl_cur_level = layout_work.sl.max_level;
@@ -832,10 +894,10 @@ void    gml_esl( const gmltag * entry )
 
 void    gml_eul( const gmltag * entry )
 {
+    scr_process_break();
     if( g_line_indent == 0 ) {
         ProcFlags.para_starting = false;    // clear for this tag's break
     }
-    scr_process_break();
     if( nest_cb->c_tag == t_LP ) {      // terminate :LP if active
         end_lp();
         g_curr_font = nest_cb->font;    // restore font
@@ -848,7 +910,14 @@ void    gml_eul( const gmltag * entry )
             g_err_tag_nest( str_tags[nest_cb->c_tag + 1] ); // exxx expected
         }
     } else {
-        set_skip_vars( NULL, NULL, &nest_cb->u.ul_layout->post_skip, 1, g_curr_font );
+        if( ProcFlags.block_starting ) {    // block is empty
+            set_skip_vars( &nest_cb->u.ul_layout->pre_skip, NULL, &nest_cb->u.ul_layout->post_skip, 1, g_curr_font );
+            g_subs_skip += g_post_skip;
+            g_post_skip = 0;
+            ProcFlags.block_starting = false;
+        } else {
+            set_skip_vars( NULL, NULL, &nest_cb->u.ul_layout->post_skip, 1, g_curr_font );
+        }
         gml_exl_common( entry );
         if( ul_cur_level == 1 ) {
             ul_cur_level = layout_work.ul.max_level;
@@ -865,10 +934,14 @@ void    gml_eul( const gmltag * entry )
 
 static  void    gml_li_ol( const gmltag * entry )
 {
-    char            charnumber[MAX_L_AS_STR];
+    char            charnumber[MAX_L_AS_STR + 2];
     char        *   p;
     char        *   pn;
     uint32_t        num_len;
+
+    if( ProcFlags.overprint && ProcFlags.cc_cp_done ) {
+        ProcFlags.overprint = false;    // cancel overprint
+    }
 
     scr_process_break();
 
@@ -880,13 +953,15 @@ static  void    gml_li_ol( const gmltag * entry )
                      nest_cb->u.ol_layout->number_style );
     if( pn != NULL ) {
         num_len = strlen( pn );
-        *(pn + num_len ) = '\0';
-        num_len++;
+        *(pn + num_len) = CONT_char;
+        *(pn + num_len + 1) = '\0';
+        num_len += 2;
     } else {
         pn = charnumber;
         *pn = '?';
-        *(pn + 1) = 0;
-        num_len = 1;
+        *(pn + 1) = CONT_char;
+        *(pn + 2) = '\0';
+        num_len = 2;
     }
 
     g_curr_font = nest_cb->u.ol_layout->number_font;
@@ -936,6 +1011,10 @@ static  void    gml_li_sl( const gmltag * entry )
 {
     char        *   p;
 
+    if( ProcFlags.overprint && ProcFlags.cc_cp_done ) {
+        ProcFlags.overprint = false;    // cancel overprint
+    }
+
     scr_process_break();
 
     scan_err = false;
@@ -978,7 +1057,11 @@ static  void    gml_li_sl( const gmltag * entry )
 static  void    gml_li_ul( const gmltag * entry )
 {
     char        *   p;
-    char            bullet[2];
+    char            bullet[3];
+
+    if( ProcFlags.overprint && ProcFlags.cc_cp_done ) {
+        ProcFlags.overprint = false;    // cancel overprint
+    }
 
     scr_process_break();
 
@@ -990,7 +1073,8 @@ static  void    gml_li_ul( const gmltag * entry )
     } else {
         bullet[0] = nest_cb->u.ul_layout->bullet;
     }
-    bullet[1] = '\0';
+    bullet[1] = CONT_char;
+    bullet[2] = '\0';
 
     if( ProcFlags.need_li_lp ) {        // first :li for this list
         set_skip_vars( &nest_cb->u.ul_layout->pre_skip, NULL, NULL, g_text_spacing, g_curr_font );
@@ -1107,6 +1191,9 @@ void    gml_lp( const gmltag * entry )
     }
     scr_process_break();
 
+    ProcFlags.block_starting = true;    // to catch an empty paragraph
+    ProcFlags.para_is_lp = true;        // to mark this as from an LP
+
     nest_cb->compact = false;
     nest_cb->font = g_curr_font;
     g_curr_font = layout_work.defaults.font;    // matches wgml 4.0
@@ -1116,9 +1203,6 @@ void    gml_lp( const gmltag * entry )
                             + nest_cb->prev->left_indent;
     nest_cb->right_indent = -1 * conv_hor_unit( &layout_work.lp.right_indent, g_curr_font )
                             + nest_cb->prev->right_indent;
-
-    nest_cb->lm = t_page.cur_left;
-    nest_cb->rm = t_page.max_width;
 
     g_text_spacing = layout_work.lp.spacing;
 
@@ -1168,6 +1252,11 @@ void    gml_lp( const gmltag * entry )
 void gml_dthd( const gmltag * entry )
 {
     char    *   p;
+    char    *   pa;
+
+    if( ProcFlags.overprint && ProcFlags.cc_cp_done ) {
+        ProcFlags.overprint = false;    // cancel overprint
+    }
 
     if( !ProcFlags.start_section ) {
         start_doc_sect();
@@ -1195,6 +1284,11 @@ void gml_dthd( const gmltag * entry )
     ju_x_start = t_page.cur_width;
 
     p = get_text_line( p );
+    pa = p + strlen(p);
+    if( (pa > p) && (*(pa - 1) != CONT_char) ) { // text exists and does not end with a continue character
+        *pa = CONT_char;                        // add continue character to GT text
+        *(pa + 1) = '\0';
+    }
 
     if( !ProcFlags.reprocess_line ) {
         SkipSpaces( p );                    // skip initial spaces
@@ -1235,11 +1329,9 @@ void gml_ddhd( const gmltag * entry )
     if( ProcFlags.need_ddhd ) {
         ProcFlags.need_ddhd = false;
     } else if( ProcFlags.need_dd ) {
-        xx_tag_err( err_tag_expected, "DD");
-        ProcFlags.need_dd = false;
+        xx_err_c( err_tag_expected, "DD");
     } else if( ProcFlags.need_gd ) {
-        xx_tag_err( err_tag_expected, "GD");
-        ProcFlags.need_gd = false;
+        xx_err_c( err_tag_expected, "GD");
     } else {
         xx_nest_err_cc( err_tag_preceding_2, "DTHD", "DDHD" );
     }
@@ -1256,6 +1348,7 @@ void gml_ddhd( const gmltag * entry )
         post_space = 0;
         ProcFlags.zsp = true;
     } else {
+        post_space = wgml_fonts[layout_work.dthd.font].spc_width;
         ProcFlags.dd_space = true;
     }
 
@@ -1285,6 +1378,11 @@ void gml_ddhd( const gmltag * entry )
 void gml_dt( const gmltag * entry )
 {
     char    *   p;
+    char    *   pa;
+
+    if( ProcFlags.overprint && ProcFlags.cc_cp_done ) {
+        ProcFlags.overprint = false;    // cancel overprint
+    }
 
     if( !ProcFlags.start_section ) {
         start_doc_sect();
@@ -1325,6 +1423,11 @@ void gml_dt( const gmltag * entry )
     ju_x_start = t_page.cur_width;
 
     p = get_text_line( p );
+    pa = p + strlen(p);
+    if( (pa > p) && (*(pa - 1) != CONT_char) ) { // text exists and does not end with a continue character
+        *pa = CONT_char;                        // add continue character to GT text
+        *(pa + 1) = '\0';
+    }
 
     if( !ProcFlags.reprocess_line ) {
         if( (input_cbs->fmflags & II_macro) && ProcFlags.null_value ) {
@@ -1370,11 +1473,9 @@ void gml_dd( const gmltag * entry )
     if( ProcFlags.need_dd ) {
         ProcFlags.need_dd = false;
     } else if( ProcFlags.need_ddhd ) {
-        xx_tag_err( err_tag_expected, "DDHD");
-        ProcFlags.need_ddhd = false;
+        xx_err_c( err_tag_expected, "DDHD");
     } else if( ProcFlags.need_gd ) {
-        xx_tag_err( err_tag_expected, "GD");
-        ProcFlags.need_gd = false;
+        xx_err_c( err_tag_expected, "GD");
     } else {
         xx_nest_err_cc( err_tag_preceding_2, "DT", "DD" );
     }
@@ -1401,6 +1502,7 @@ void gml_dd( const gmltag * entry )
         post_space = 0;
         ProcFlags.dd_break_done = true;     // move dd text to new line
     } else {                                // cur_width > cur_left and no break
+        post_space = wgml_fonts[layout_work.dt.font].spc_width;
         ProcFlags.dd_space = true;
     }
     t_page.max_width = nest_cb->rm + nest_cb->right_indent;
@@ -1433,6 +1535,11 @@ void gml_dd( const gmltag * entry )
 void gml_gt( const gmltag * entry )
 {
     char    *   p;
+    char    *   pa;
+
+    if( ProcFlags.overprint && ProcFlags.cc_cp_done ) {
+        ProcFlags.overprint = false;    // cancel overprint
+    }
 
     if( !ProcFlags.start_section ) {
         start_doc_sect();
@@ -1461,6 +1568,11 @@ void gml_gt( const gmltag * entry )
     }
 
     p = get_text_line( p );
+    pa = p + strlen(p);
+    if( (pa > p) && (*(pa - 1) != CONT_char) ) { // text exists and does not end with a continue character
+        *pa = CONT_char;                        // add continue character to GT text
+        *(pa + 1) = '\0';
+    }
 
     if( !ProcFlags.reprocess_line ) {
         SkipSpaces( p );                    // skip initial spaces
@@ -1496,20 +1608,18 @@ void gml_gt( const gmltag * entry )
 
 void gml_gd( const gmltag * entry )
 {
-    char    *   p;
-    char        delim[2];
+    char        *   p;
+    char            delim[3];
+    text_chars  *   marker;
 
     if( ProcFlags.need_gd ) {
         ProcFlags.need_gd = false;
     } else if( ProcFlags.need_ddhd ) {
-        xx_tag_err( err_tag_expected, "DDHD");
-        ProcFlags.need_ddhd = false;
+        xx_err_c( err_tag_expected, "DDHD");
     } else if( ProcFlags.need_dd ) {
-        xx_tag_err( err_tag_expected, "DD");
-        ProcFlags.need_dd = false;
+        xx_err_c( err_tag_expected, "DD");
     } else {
         xx_nest_err_cc( err_tag_preceding_2, "GT", "GD" );
-        ProcFlags.need_gd = false;
     }
 
     p = scan_start;
@@ -1517,14 +1627,35 @@ void gml_gd( const gmltag * entry )
     ProcFlags.ct = true;
     post_space = 0;
     delim[0] = nest_cb->u.gl_layout->delim;
-    delim[1] = '\0';
+    delim[1] = CONT_char;
+    delim[2] = '\0';
+    ProcFlags.concat = true;        // even if was false on entry
     process_text( delim, g_curr_font );
 
+    /* This is from GD processing, hence marker type used */
+
+    if( ProcFlags.wh_device ) {             // Insert a marker
+        marker = process_word( NULL, 0, g_curr_font, false );
+        marker->f_switch = fs_from;         // emit marker
+        marker->x_address = t_page.cur_width;
+        t_line->last->next = marker;
+        marker->prev = t_line->last;
+        t_line->last = marker;
+        marker = process_word( NULL, 0, g_curr_font, false );
+        marker->f_switch = fs_full;         // emit marker
+        marker->x_address = t_page.cur_width;
+        t_line->last->next = marker;
+        marker->prev = t_line->last;
+        t_line->last = marker;
+        marker = NULL;
+    }
+
     g_curr_font = layout_work.gd.font;
+    g_prev_font = g_curr_font;
 
     t_page.cur_left = nest_cb->lm + nest_cb->left_indent + nest_cb->tsize;   // left start
 
-    post_space = 2 * wgml_fonts[g_curr_font].spc_width;
+    post_space = 2 * wgml_fonts[layout_work.gt.font].spc_width;
     if( (t_page.cur_width + post_space) < t_page.cur_left ) {  // set for current line
         t_page.cur_width = t_page.cur_left;
         post_space = 0;

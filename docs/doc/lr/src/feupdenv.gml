@@ -32,5 +32,5 @@ void main( void )
     feupdateenv( &env );
 }
 .exmp end
-.class C99
+.class ISO C99
 .system

@@ -875,7 +875,9 @@ is also provided.
 .fd *fun="lltoa" "long long int" to string
 .fd *fun="ltoa" "long int" to string
 .fd *fun="strtod" string to "double"
+.fd *fun="strtof" string to "float"
 .fd *fun="strtol" string to "long int"
+.fd *fun="strtold" string to "long double"
 .fd *fun="strtoll" string to "long long int"
 .fd *fun="strtoul" string to "unsigned long int"
 .fd *fun="strtoull" string to "unsigned long long int"

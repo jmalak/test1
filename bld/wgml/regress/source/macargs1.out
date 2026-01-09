@@ -1,0 +1,13 @@
+Processing device information
+0>spaced string< 1>spaced< 2>string<
+0>'single quote'< 1>single quote< 2><
+0>"double quote"< 1>double quote< 2><
+0>`back quote`< 1>back quote< 2><
+0>'backx quote'x< 1>'backx< 2>quote'x<
+0>x'frontx quote'< 1>x'frontx< 2>quote'<
+0>'bsp quote '< 1>bsp quote < 2><
+0>' fsp quote'< 1> fsp quote< 2><
+0>'first quote< 1>'first< 2>quote<
+0>quote last'< 1>quote< 2>last'<
+0>'quote'middle'< 1>quote'middle< 2><
+Formatting complete

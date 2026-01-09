@@ -78,6 +78,8 @@ type="l"    dir="lib386/nt"     usr="clib3r.lib"    cond="wnttarg 3r"       wher
 type="l"    dir="lib386/nt"     usr="clib3s.lib"    cond="wnttarg 3s"       where="c f77 ac"
 type="s"    dir="lib386/nt"     usr="binmode.obj"   cond="wnttarg"          where="c f77"
 type="s"    dir="lib386/nt"     usr="commode.obj"   cond="wnttarg"          where="c f77"
+type="s"    dir="lib386/nt"     usr="maint31r.obj"  cond="wnttarg 3r"       where="c f77"
+type="s"    dir="lib386/nt"     usr="maint31s.obj"  cond="wnttarg 3s"       where="c f77"
 
 type="l"    dir="libaxp/nt"     usr="clib.lib"      cond="alphatarg"        where="ac"
 type="s"    dir="libaxp/nt"     usr="binmode.obj"   cond="alphatarg"        where="ac"

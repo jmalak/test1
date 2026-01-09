@@ -1,0 +1,14 @@
+proj_name = wmapsym
+
+symdump_autodepends = .autodepend
+
+!include cproj.mif
+!include deftarg.mif
+!include defrule.mif
+
+.c: ..
+.h: ..
+
+objs = wmapsym.obj
+
+!include exetarg.mif

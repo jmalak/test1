@@ -187,13 +187,66 @@ static void setTBit( set_t set )
     setATBit( ti, set );
 }
 
-/*
- * handleInt3 - process an encountered break point
- */
 #if defined( MD_x86 )
 static DWORD    BreakFixed;
 #endif
 
+/*
+ * handleInt1 - process a trace or watch point
+ */
+static int handleInt1( DWORD state )
+{
+    if( PendingProgramInterrupt ) {
+        /*
+         * this was really an async stop request, so turn the t-bit
+         * off in all the threads
+         */
+        setTBitInAllThreads( T_OFF );
+        PendingProgramInterrupt = FALSE;
+        return( COND_USER );
+    }
+
+#if defined( MD_x86 )
+    if( state & STATE_WATCH_386 ) {
+        if( GetDR6() & 0xf ) {
+            return( COND_WATCH );
+        }
+    }
+#endif
+    if( state & STATE_WATCH ) {
+        if( CheckWatchPoints() ) {
+            return( COND_WATCH );
+        }
+    } else {
+#if defined( MD_x86 )
+        HANDLE      proc;
+        DWORD       written;
+        brkpnt_type ch;
+        thread_info *ti;
+
+        if( BreakFixed == 0 ) {
+            return( COND_TRACE );
+        }
+        ti = FindThread( DebugeeTid );
+        if( ti && !ti->is_foreign ) {
+            return( COND_TRACE );
+        }
+        ch = BRK_POINT;
+        proc = OpenProcess( PROCESS_ALL_ACCESS, FALSE, DebugeePid );
+        WriteProcessMemory( proc, ( LPVOID ) BreakFixed, &ch, 1, &written );
+        CloseHandle( proc );
+        BreakFixed = 0;
+        return( 0 );
+#else
+        return( COND_TRACE );
+#endif
+    }
+    return( 0 );
+}
+
+/*
+ * handleInt3 - process an encountered break point
+ */
 static int handleInt3( DWORD state )
 {
 #if defined( MD_x86 )
@@ -251,59 +304,6 @@ static int handleInt3( DWORD state )
     #error handleInt3 not configured
 #endif
     return( COND_BREAK );
-}
-
-/*
- * handleInt1 - process a trace or watch point
- */
-static int handleInt1( DWORD state )
-{
-    if( PendingProgramInterrupt ) {
-        /*
-         * this was really an async stop request, so turn the t-bit
-         * off in all the threads
-         */
-        setTBitInAllThreads( T_OFF );
-        PendingProgramInterrupt = FALSE;
-        return( COND_USER );
-    }
-
-#if defined( MD_x86 )
-    if( state & STATE_WATCH_386 ) {
-        if( GetDR6() & 0xf ) {
-            return( COND_WATCH );
-        }
-    }
-#endif
-    if( state & STATE_WATCH ) {
-        if( CheckWatchPoints() ) {
-            return( COND_WATCH );
-        }
-    } else {
-#if defined( MD_x86 )
-        HANDLE      proc;
-        DWORD       written;
-        brkpnt_type ch;
-        thread_info *ti;
-
-        if( BreakFixed == 0 ) {
-            return( COND_TRACE );
-        }
-        ti = FindThread( DebugeeTid );
-        if( ti && !ti->is_foreign ) {
-            return( COND_TRACE );
-        }
-        ch = BRK_POINT;
-        proc = OpenProcess( PROCESS_ALL_ACCESS, FALSE, DebugeePid );
-        WriteProcessMemory( proc, ( LPVOID ) BreakFixed, &ch, 1, &written );
-        CloseHandle( proc );
-        BreakFixed = 0;
-        return( 0 );
-#else
-        return( COND_TRACE );
-#endif
-    }
-    return( 0 );
 }
 
 #ifdef WOW

@@ -72,7 +72,6 @@ condcode    scr_substr( parm parms[MAX_FUN_PARMS], size_t parmcount, char * * re
     int                 len;
     getnum_block        gn;
     char                padchar;
-    char                linestr[MAX_L_AS_STR];
 
     if( (parmcount < 2) || (parmcount > 4) ) {
         return( neg );
@@ -97,16 +96,7 @@ condcode    scr_substr( parm parms[MAX_FUN_PARMS], size_t parmcount, char * * re
             cc = getnum( &gn );
             if( (cc != pos) || (gn.result == 0) ) {
                 if( !ProcFlags.suppress_msg ) {
-                    g_err( err_func_parm, "2 (startpos)" );
-                    if( input_cbs->fmflags & II_tag_mac ) {
-                        ulongtodec( input_cbs->s.m->lineno, linestr );
-                        g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-                    } else {
-                        ulongtodec( input_cbs->s.f->lineno, linestr );
-                        g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                    }
-                    err_count++;
-                    show_include_stack();
+                    xx_source_err_c( err_func_parm, "2 (startpos)" );
                 }
                 return( cc );
             }
@@ -121,16 +111,7 @@ condcode    scr_substr( parm parms[MAX_FUN_PARMS], size_t parmcount, char * * re
             cc = getnum( &gn );
             if( (cc != pos) || (gn.result == 0) ) {
                 if( !ProcFlags.suppress_msg ) {
-                    g_err( err_func_parm, "3 (length)" );
-                    if( input_cbs->fmflags & II_tag_mac ) {
-                        ulongtodec( input_cbs->s.m->lineno, linestr );
-                        g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-                    } else {
-                        ulongtodec( input_cbs->s.f->lineno, linestr );
-                        g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                    }
-                    err_count++;
-                    show_include_stack();
+                    xx_source_err_c( err_func_parm, "3 (length)" );
                 }
                 return( cc );
             }

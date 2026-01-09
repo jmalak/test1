@@ -594,8 +594,9 @@ void DBIWrite( void )
 
     if( !( LinkFlags & ANY_DBI_FLAG ) )
         return;
-    if( LinkFlags & CV_DBI_FLAG ) {
+    if( (LinkFlags & CV_DBI_FLAG) && (FmtData.type & MK_PE) ) {
         // write DEBUG_TYPE_MISC: name of file containing the debug info
+        // (for PE modules only)
         if( SymFileName != NULL ) {
             CVWriteDebugTypeMisc( SymFileName );
         } else {

@@ -60,6 +60,17 @@ static int  is_final_sep_seq( const char *p )
     return( !*p );
 }
 
+static void strip_trailing_sep( char *p )
+{
+    while( *p ) {
+        if( is_path_sep( *p ) && is_final_sep_seq( p ) ) {
+            *p = '\0';
+            break;
+        }
+        ++p;
+    }
+}
+
 _WCRTLINK char *dirname( char *path )
 {
     if( path == NULL || *path == '\0' ) {
@@ -74,28 +85,50 @@ _WCRTLINK char *dirname( char *path )
         if( isalnum( s[0] ) && s[1] == ':' )
             s += 2;
 #endif
-        if( !is_path_sep( *s++ ) ) {
-            /* If path is not absolute, return "."
-             */
-            --s;
-            s[0] = '.';
+        /* If the path consists entirely of path separators, collapse them
+         * to a single path separator. This is a special case that cannot
+         * be handled by removing trailing path separators.
+         */
+        if( is_path_sep( *s ) && is_final_sep_seq( s ) ) {
             s[1] = '\0';
         } else {
-            char    *last_sep = s;
+            char    *tmps;
+            char    *ls;
 
-            while( *s ) {
-                /* If the rest of the path is a sequence of path separators,
-                 * don't consider them and quit.
+            /* Strip trailing path separators. Because we know the input
+             * string was not just a sequence of path separators, there has
+             * to be something left after stripping trailing separators.
+             */
+            strip_trailing_sep( s );
+
+            /* Now look for the last path separator. If there is one,
+             * it cannot be the last character in the string.
+             */
+            ls = NULL;
+            tmps = s;
+            do {
+                if( is_path_sep( *tmps ) )
+                    ls = tmps;
+            } while( *++tmps );
+
+            if( !ls ) {
+                /* There was no path separator, return "." and we're done.
                  */
-                if( is_final_sep_seq( s ) )
-                    break;
+                s[0] = '.';
+                s[1] = '\0';
+            } else {
+                /* Chop off whatever was after the last separator and
+                 * strip trailing separators again.
+                 */
+                ls[1] = '\0';
+                strip_trailing_sep( s );
 
-                if( is_path_sep( *s ) )
-                    last_sep = s;
-
-                ++s;
+                /* If there's nothing left, return root directory. */
+                if( !*s ) {
+                    s[0] = '/';
+                    s[1] = '\0';
+                }
             }
-            *last_sep = '\0';
         }
     }
     return( path_buf );

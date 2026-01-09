@@ -392,7 +392,6 @@ static  int evaluate( char **line, long *val )
 /***************************************************************************/
 /*  ideas from cbt282.122                                                  */
 /*  getnum  evaluate a numeric result                                      */
-/*                                                                         */
 /***************************************************************************/
 
 condcode getnum( getnum_block *gn )
@@ -404,6 +403,7 @@ condcode getnum( getnum_block *gn )
 
     a = gn->argstart;
     z = gn->argstop;
+
     while( a < z && *a == ' ' ) {
         a++;                            // skip leading blanks
     }
@@ -421,13 +421,13 @@ condcode getnum( getnum_block *gn )
     }
     ignore_blanks = gn->ignore_blanks;
     c = *(z + 1);
-    *(z + 1) = '\0';                    // make null terminated string
+    *(z + 1) = '\0';                // make null terminated string
     rc = evaluate( &a, &gn->result );
     *(z + 1) = c;
     if( rc != 0 ) {
         gn->cc = notnum;
     } else {
-        gn->argstart = a + 1;           // start for next scan
+        gn->argstart = a + 1;       // start for next scan
         gn->length = sprintf_s( gn->resultstr, sizeof( gn->resultstr ), "%ld",
                                 gn->result );
         if( gn->result >= 0 ) {

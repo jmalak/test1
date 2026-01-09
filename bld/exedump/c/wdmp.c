@@ -230,6 +230,7 @@ static void usage( void )
     Wdputs( "        -p causes LE/LX page map to be dumped\n" );
     Wdputs( "        -q quiet dump - don't write banner\n" );
     Wdputs( "        -r causes more resource information to be dumped\n" );
+    Wdputs( "        -R dump NE resources to files\n" );
     Wdputs( "        -s causes segments' data to be dumped\n" );
     Wdputs( "        -S<segnum> like -s but only applies to segment <segnum>\n" );
     Wdputs( "        -x dump export information for NE/LX DLLs in .DEF format\n" );
@@ -277,7 +278,7 @@ static int parse_options( int argc, char * const *argv )
     Hexoff = 0;
 
     while( 1 ) {
-        while( (c = getopt( argc, argv, ":aA:bB:dD:efipqrsS:x" )) != -1 ) {
+        while( (c = getopt( argc, argv, ":aA:bB:dD:efipqrRsS:x" )) != -1 ) {
             switch( c ) {
             case 'A':
                 Options_dmp |= FIX_DMP | PAGE_DMP | RESRC_DMP | EXE_INFO | DOS_SEG_DMP | OS2_SEG_DMP;
@@ -329,6 +330,9 @@ static int parse_options( int argc, char * const *argv )
                 break;
             case 'r':
                 Options_dmp |= EXE_INFO | RESRC_DMP;
+                break;
+            case 'R':
+                Options_dmp |= EXE_INFO | RSRC_FILE_DMP;
                 break;
             case 'S':
                 Options_dmp |= EXE_INFO | DOS_SEG_DMP | OS2_SEG_DMP;

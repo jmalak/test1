@@ -38,8 +38,6 @@
 
 void    gml_graphic( const gmltag * entry )
 {
-    bool            depth_found             = false;
-    bool            file_found              = false;
     char            file[FILENAME_MAX];
     char            rt_buff[MAX_FILE_ATTR];
     char        *   p;
@@ -56,10 +54,11 @@ void    gml_graphic( const gmltag * entry )
 
     if( (ProcFlags.doc_sect < doc_sect_gdoc) ) {
         if( (ProcFlags.doc_sect_nxt < doc_sect_gdoc) ) {
-            xx_tag_err( err_tag_before_gdoc, entry->tagname );
+            xx_err_c( err_tag_before_gdoc, entry->tagname );
         }
     }
 
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
     scr_process_break();                // flush existing text
     start_doc_sect();                   // if not already done
 
@@ -72,21 +71,36 @@ void    gml_graphic( const gmltag * entry )
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
             if( !strnicmp( "file", p, 4 ) ) {
                 p += 4;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.file ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.file = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                file_found = true;
-                memcpy_s( file, FILENAME_MAX, val_start, val_len );
+                memcpy_s( file, FILENAME_MAX, g_att_val.val_start, g_att_val.val_len );
                 if( val_len < FILENAME_MAX ) {
-                    file[val_len] = '\0';
+                    file[g_att_val.val_len] = '\0';
                 } else {
                     file[FILENAME_MAX - 1] = '\0';
                 }
@@ -99,47 +113,78 @@ void    gml_graphic( const gmltag * entry )
                 }
             } else if( !strnicmp( "depth", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.depth ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.depth = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                depth_found = true;
-                if( att_val_to_su( &cur_su, true ) ) {
+                if( value_to_su( &cur_su, true ) ) {
                     break;
                 }
                 depth = conv_vert_unit( &cur_su, g_text_spacing, g_curr_font );
                 if( depth == 0 ) {
-                    xx_line_err( err_inv_depth_graphic_1, val_start );
+                    xx_line_err_c( err_inv_depth_graphic_1, g_att_val.val_start );
                 }
                 if( depth > t_page.max_depth ) {
-                    xx_line_err( err_inv_depth_graphic_2, val_start );
+                    xx_line_err_c( err_inv_depth_graphic_2, g_att_val.val_start );
                 }
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else if( !strnicmp( "width", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.width ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.width = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
 
                 /* GRAPHIC uses the current column width even if "page" is specified */
 
-                if( !strnicmp( "page", val_start, 4 ) ) {
+                if( !strnicmp( "page", g_att_val.val_start, 4 ) ) {
                     // default value is the correct value to use
-                } else if( !strnicmp( "column", val_start, 6 ) ) {
+                } else if( !strnicmp( "column", g_att_val.val_start, 6 ) ) {
                     // default value is the correct value to use
                 } else {    // value actually specifies the width
-                    if( att_val_to_su( &cur_su, true ) ) {
+                    if( value_to_su( &cur_su, true ) ) {
                         break;
                     }
                     width = conv_hor_unit( &cur_su, g_curr_font );
                     if( width == 0 ) {
-                        xx_line_err( err_inv_width_graphic_1, val_start );
+                        xx_line_err_c( err_inv_width_graphic_1, g_att_val.val_start );
                     }
                     if( width > t_page.last_pane->col_width ) {
-                        xx_line_err( err_inv_width_graphic_2, val_start );
+                        xx_line_err_c( err_inv_width_graphic_2, g_att_val.val_start );
                     }
                 }
                 if( ProcFlags.tag_end_found ) {
@@ -147,38 +192,70 @@ void    gml_graphic( const gmltag * entry )
                 }
             } else if( !strnicmp( "scale", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.scale ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.scale = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                pb = val_start;
+                pb = g_att_val.val_start;
                 if( (*pb == '+') || (*pb == '-') ) {    // signs not allowed
-                    xx_line_err( err_num_too_large, val_start );
+                    xx_line_err_c( err_num_too_large, g_att_val.val_start );
                 }
                 scale = 0;
                 while( my_isdigit( *pb ) ) {            // convert to number
                     scale = (10 * scale) + (*pb - '0');
                     pb++;
-                    if( (pb - val_start) > val_len ) {  // value end reached
+                    if( (pb - g_att_val.val_start) > g_att_val.val_len ) {  // value end reached
                         break;
                     }
                 }
                 if( scale > 0x7fffffff ) {              // wgml 4.0 limit
-                    xx_line_err( err_num_too_large, val_start );
+                    xx_line_err_c( err_num_too_large, g_att_val.val_start );
                 }
-                if( (pb - val_start) < val_len ) {      // value continues on
-                    xx_line_err( err_num_too_large, val_start );
+                if( (pb - g_att_val.val_start) < g_att_val.val_len ) {      // value continues on
+                    xx_line_err_c( err_num_too_large, g_att_val.val_start );
                 }
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else if( !strnicmp( "xoff", p, 4 ) ) {
                 p += 4;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.xoff ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.xoff = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                if( att_val_to_su( &cur_su, false ) ) {
+                if( value_to_su( &cur_su, false ) ) {
                     break;
                 }
                 xoff = conv_hor_unit( &cur_su, g_curr_font );
@@ -187,11 +264,27 @@ void    gml_graphic( const gmltag * entry )
                 }
             } else if( !strnicmp( "yoff", p, 4 ) ) {
                 p += 4;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.yoff ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                    }
+                }
+                AttrFlags.yoff = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                if( att_val_to_su( &cur_su, false ) ) {
+                if( value_to_su( &cur_su, false ) ) {
                     break;
                 }
                 yoff = conv_vert_unit( &cur_su, g_text_spacing, g_curr_font );
@@ -206,7 +299,7 @@ void    gml_graphic( const gmltag * entry )
         }
     }
 
-    if( !depth_found || !file_found ) { // detect missing required attributes
+    if( !AttrFlags.depth || !AttrFlags.file ) { // detect missing required attributes
         xx_err( err_att_missing );
     }
 
@@ -227,7 +320,11 @@ void    gml_graphic( const gmltag * entry )
         cur_el->element.graph.yoff = yoff;
         cur_el->element.graph.fp = try_fp;
         try_fp = NULL;
-        cur_el->element.graph.prev_font = g_prev_font;
+        if( nest_cb->c_tag == t_NONE ){
+            cur_el->element.graph.next_font = FONT0;
+        } else {
+            cur_el->element.graph.next_font = g_prev_font;
+        }
         strncpy_s( cur_el->element.graph.short_name, FILENAME_MAX, file, FILENAME_MAX );
         strncpy_s( cur_el->element.graph.file, FILENAME_MAX, try_file_name, FILENAME_MAX );
 
@@ -242,7 +339,7 @@ void    gml_graphic( const gmltag * entry )
         insert_col_main( cur_el );
 
     } else {
-        xx_tag_err( err_file_not_found, file );
+        xx_err_c( err_file_not_found, file );
     }
 
     if( !ProcFlags.reprocess_line && *p != '\0' ) {

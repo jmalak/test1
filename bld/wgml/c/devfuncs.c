@@ -45,6 +45,7 @@
 *                   fb_absoluteaddress()
 *                   fb_new_section()
 *                   fb_position()
+*                   set_oc_pos()
 *               as well as a macro:
 *                   MAX_FUNC_INDEX
 *               some local typedefs and structs:
@@ -145,6 +146,7 @@
 *                   fb_first_text_chars()
 *                   fb_firstword()
 *                   fb_font_switch()
+*                   fb_fs_marker()
 *                   fb_htab()
 *                   fb_initial_horizontal_positioning()
 *                   fb_internal_horizontal_positioning()
@@ -227,6 +229,7 @@ static bool             uline                   = false;
 /* These are used to control some aspects of device function operation. */
 
 static bool             at_start                = true;
+static bool             fs_marker               = false;
 static bool             htab_done               = false;
 static bool             page_start              = false;
 static bool             shift_done              = false;
@@ -497,27 +500,24 @@ static void post_text_output( void )
 
             /* Emit the appropriate post-subscript/superscript sequence. */
 
-            switch( current_state.type ) {
-            case tx_sub:
+            if( !current_state.type ) {
+                /* Since shift_done was true, norm is not allowed. */
+            } else if( current_state.type & tx_sub ) {
                 ps_size = strlen( shift_scale );
                 ob_insert_block( shift_scale, ps_size, false, false, active_font );
 
                 ps_size = strlen( shift_rmoveto );
                 ob_insert_block( shift_rmoveto, ps_size, false, false, active_font );
-                break;
-            case tx_sup:
+            } else if( current_state.type & tx_sup ) {
                 ps_size = strlen( shift_scale ) + 1;
                 ob_insert_block( shift_scale, ps_size, false, false, active_font );
 
-                ps_size = strlen( shift_neg );
+                ps_size = strlen( shift_neg ) + 1;
                 ob_insert_block( shift_neg, ps_size, false, false, active_font );
 
                 ps_size = strlen( shift_rmoveto );
                 ob_insert_block( shift_rmoveto, ps_size, false, false, active_font );
-                break;
-            case tx_norm:
-                /* Since shift_done was true, norm is not allowed. */
-            default:
+            } else {
                 internal_err( __FILE__, __LINE__ );
             }
             current_state.type = tx_norm;
@@ -552,11 +552,8 @@ static void pre_text_output( void )
 
             /* Emit the appropriate post-subscript/superscript sequence. */
 
-            switch( desired_state.type ) {
-            case tx_norm:
-                shift_done = false;
-                break;
-            case tx_sub:
+            shift_done = false;
+            if( desired_state.type & tx_sub ) {
                 ob_insert_block( " ", 1, false, false, active_font );
 
                 ps_size = wgml_fonts[active_font].shift_count;
@@ -577,8 +574,7 @@ static void pre_text_output( void )
                 ob_insert_block( shift_scale, ps_size, false, false, active_font );
 
                 shift_done = true;
-                break;
-            case tx_sup:
+            } else if( desired_state.type & tx_sup ) {
                 ob_insert_block( " ", 1, false, false, active_font );
 
                 ps_size = wgml_fonts[active_font].shift_count;
@@ -596,9 +592,6 @@ static void pre_text_output( void )
                 ob_insert_block( shift_scale, ps_size, false, false, active_font );
 
                 shift_done = true;
-                break;
-            default:
-                internal_err( __FILE__, __LINE__ );
             }
         }
     }
@@ -1578,7 +1571,7 @@ static void *df_setsymbol( void )
 
     /* Insert the symbol into the global symbol table. */
 
-    add_symvar( &global_dict, first, second, no_subscript, 0 );
+    add_symvar( global_dict, first, second, no_subscript, 0 );
 
     /* Free the memory allocated to the parameters. */
 
@@ -1995,7 +1988,7 @@ static void *df_getnumsymbol( void )
 
     /* Now get the symbol's value. */
 
-    find_symvar( &global_dict, name, no_subscript, &sym_val );
+    find_symvar( global_dict, name, no_subscript, &sym_val );
     if( sym_val != NULL )
         ret_val = atol( sym_val->value );
 
@@ -2028,7 +2021,7 @@ static void *df_getstrsymbol( void )
 
     /* Now get the symbol's value. */
 
-    find_symvar( &global_dict, name, no_subscript, &sym_val );
+    find_symvar( global_dict, name, no_subscript, &sym_val );
     if( sym_val == NULL ) {
         ret_val = char_convert( NULL );
     } else {
@@ -2639,6 +2632,58 @@ static void fb_font_switch( void )
     return;
 }
 
+/* Function fb_fs_marker().
+ * Processes FONTSWIRCH-related markers.
+ * Used with character devices.
+ */
+
+static void fb_fs_marker( text_chars *in_chars )
+{
+    wgml_font               *fs_font;
+
+    fs_font = &wgml_fonts[in_chars->font];
+    switch( in_chars->f_switch ) {
+    case fs_full : 
+        if( (fs_font->font_style != NULL) && (fs_font->font_style->lineprocs != NULL) ) {
+            if( fs_font->font_style->lineprocs->startvalue != NULL ) {
+                df_interpret_driver_functions( fs_font->font_style->lineprocs->startvalue->text );
+            }
+            if( fs_font->font_style->lineprocs->endvalue != NULL ) {
+                df_interpret_driver_functions( fs_font->font_style->lineprocs->endvalue->text );
+            }
+        }
+        break;
+
+    case fs_from : 
+    case fs_from2 : 
+        if( (fs_font->font_style != NULL) && (fs_font->font_style->lineprocs != NULL)
+                && (fs_font->font_style->lineprocs->endvalue != NULL) ) {
+            df_interpret_driver_functions( fs_font->font_style->lineprocs->endvalue->text );
+            if( in_chars->f_switch == fs_from2 ) {
+                df_interpret_driver_functions( fs_font->font_style->lineprocs->endvalue->text );
+            }
+        }
+        break;
+
+    case fs_to : 
+    case fs_to2 : 
+        if( (fs_font->font_style != NULL) && (fs_font->font_style->lineprocs != NULL)
+                && (fs_font->font_style->lineprocs->endvalue != NULL) ) {
+            df_interpret_driver_functions( fs_font->font_style->lineprocs->startvalue->text );
+            if( in_chars->f_switch == fs_to2 ) {
+                df_interpret_driver_functions( fs_font->font_style->lineprocs->startvalue->text );
+            }
+        }
+        break;
+
+    default :
+        internal_err( __FILE__, __LINE__ );
+    }
+
+    fs_marker = true;
+    return;
+}
+
 /* Function fb_htab().
  * Function fb_htab() inteprets the :HTAB block and sets htab_done to "true".
  *
@@ -2717,7 +2762,7 @@ static void fb_initial_horizontal_positioning( void )
  * Performs the internal horizontal positioning as described in the Wiki.
  */
 
-static void fb_internal_horizontal_positioning( void )
+static void fb_internal_horizontal_positioning( text_chars * in_chars )
 {
     size_t      spaces;
 
@@ -2729,11 +2774,25 @@ static void fb_internal_horizontal_positioning( void )
 
     /* Perform the internal horizontal positioning. */
 
-    /* Use :HTAB if tab_width is not an integral number of spaces. */
+    /****************************************************************/
+    /* Use :HTAB if:                                                */
+    /*   the device has defined an HTAB block                       */
+    /*   the tab_width is greater than 0 and either                 */
+    /*     the tab_width is not an integral number of spaces        */
+    /*     or the desired position was set by a tab                 */
+    /*        and the font has changed                              */
+    /*        and the spacing is from a tab stop                    */
+    /*   the spacing is not from a tab stop when the prior          */
+    /*   text_chars is a marker, which has already established the  */
+    /*   desired position, so any spacing required must be from     */
+    /*   the text itself                                            */
+    /****************************************************************/
 
     x_address = desired_state.x_address;
     tab_width = desired_state.x_address - current_state.x_address;
-    if( has_htab && (tab_width % wgml_fonts[active_font].spc_width > 0) ) {
+    if( has_htab && (tab_width > 0) && ((tab_width % wgml_fonts[active_font].spc_width > 0)
+            || ((in_chars->tab_pos != tt_none) && ((in_chars->prev->font != in_chars->font)
+                && (in_chars->prev->count != 0))) ) ) {
         fb_htab();
     } else {
 
@@ -3011,7 +3070,7 @@ static void fb_new_font_text_chars( text_chars *in_chars, line_proc *in_lineproc
      */
 
     if( textpass ) {
-        fb_internal_horizontal_positioning();
+        fb_internal_horizontal_positioning( in_chars );
         if( !text_out_open && ProcFlags.ps_device ) {
             ob_insert_ps_text_start();
             text_out_open = true;
@@ -3346,7 +3405,7 @@ static void fb_subsequent_text_chars( text_chars *in_chars, line_proc *in_linepr
 
     if( in_chars->next == NULL ) {
         undo_shift = true;
-    } else if( in_chars->type != in_chars->next->type ) {
+    } else if( (in_chars->type != in_chars->next->type) ) {
         undo_shift = true;
     } else {
         undo_shift = false;
@@ -3357,7 +3416,7 @@ static void fb_subsequent_text_chars( text_chars *in_chars, line_proc *in_linepr
      */
 
     if( textpass ) {
-        fb_internal_horizontal_positioning();
+        fb_internal_horizontal_positioning( in_chars );
         if( !text_out_open && ProcFlags.ps_device ) {
             ob_insert_ps_text_start();
             text_out_open = true;
@@ -3524,7 +3583,7 @@ void df_setup( void )
      * but have not been affected by anything in the document specification.
      */
 
-    find_symvar( &global_dict, "date", no_subscript, &sym_val );
+    find_symvar( global_dict, "date", no_subscript, &sym_val );
     if( sym_val == NULL ) {
         date_val = char_convert( NULL );
     } else {
@@ -3532,7 +3591,7 @@ void df_setup( void )
     }
 
     sym_val = NULL;
-    find_symvar( &global_dict, "time", no_subscript, &sym_val );
+    find_symvar( global_dict, "time", no_subscript, &sym_val );
     if( sym_val == NULL ) {
         time_val = char_convert( NULL );
     } else {
@@ -3792,7 +3851,11 @@ void fb_first_text_line_pass( text_line *out_line )
         }
     }
     x_address = desired_state.x_address;
-    fb_first_text_chars( current, cur_lineproc );
+    if( current->f_switch == fs_norm ) {
+        fb_first_text_chars( current, cur_lineproc );   // normal text_chars, not marker
+    } else {
+        fb_fs_marker( current );                        // character device marker
+    }
     page_start = false;     // solves problem but putting it here may not be best place
 
     /* Now do the remaining text_chars instances. */
@@ -3800,7 +3863,9 @@ void fb_first_text_line_pass( text_line *out_line )
     for( current = current->next; current != NULL; current = current->next ) {
         desired_state.x_address = current->x_address;
         desired_state.type = current->type;
-        if( (current_state.font != current->font) || (desired_state.type == tx_figcap) ) {
+        if( current->f_switch != fs_norm ) {
+            fb_fs_marker( current );                    // character device marker
+        } else if( (current_state.font != current->font) || (desired_state.type & tx_figcap) ) {
             if( wgml_fonts[current->font].font_style != NULL ) {
                 if( wgml_fonts[current->font].font_style->lineprocs == NULL ) {
                     cur_lineproc = NULL;
@@ -3809,9 +3874,18 @@ void fb_first_text_line_pass( text_line *out_line )
                 }
             }
             desired_state.font = current->font;
-            fb_new_font_text_chars( current, cur_lineproc );
+            fb_new_font_text_chars( current, cur_lineproc );    // normal text_chars, not marker
         } else {
-            fb_subsequent_text_chars( current, cur_lineproc );
+            if( wgml_fonts[current->font].font_style != NULL ) {
+                if( wgml_fonts[current->font].font_style->lineprocs == NULL ) {
+                    cur_lineproc = NULL;
+                    textpass = true;
+                } else {
+                    cur_lineproc = &wgml_fonts[current->font].font_style->lineprocs[0];
+                }
+            }
+            desired_state.font = current->font;
+            fb_subsequent_text_chars( current, cur_lineproc );  // normal text_chars, not marker
         }
     }
 
@@ -3991,9 +4065,13 @@ void fb_lineproc_endvalue( void )
             }
             post_text_output();
         }
-        if( wgml_fonts[df_font].font_style->lineprocs != NULL ) {
-            if( wgml_fonts[df_font].font_style->lineprocs[line_pass_number].endvalue != NULL ) {
-                df_interpret_driver_functions( wgml_fonts[df_font].font_style->lineprocs[line_pass_number].endvalue->text );
+        if( fs_marker ) {
+            fs_marker = false;  // char device marker done, don't do endvalue
+        } else {
+            if( wgml_fonts[df_font].font_style->lineprocs != NULL ) {
+                if( wgml_fonts[df_font].font_style->lineprocs[line_pass_number].endvalue != NULL ) {
+                    df_interpret_driver_functions( wgml_fonts[df_font].font_style->lineprocs[line_pass_number].endvalue->text );
+                }
             }
         }
     }
@@ -4136,7 +4214,9 @@ void fb_subsequent_text_line_pass( text_line *out_line, uint16_t line_pass )
 
     /* Interpret a :LINEPROC :ENDVALUE block if appropriate. */
 
-    fb_lineproc_endvalue();
+    if( out_line->last->f_switch == fs_norm ) {
+        fb_lineproc_endvalue();
+    }
     line_pass_number = line_pass;
 
     /* Update the internal state to the first text_chars that uses a
@@ -4212,7 +4292,7 @@ void fb_subsequent_text_line_pass( text_line *out_line, uint16_t line_pass )
                     df_interpret_driver_functions( cur_fontstyle->endvalue->text );
                 }
 
-                fb_internal_horizontal_positioning();
+                fb_internal_horizontal_positioning( current );
 
                 if( cur_fontstyle->startvalue != NULL ) {
                     df_interpret_driver_functions( cur_fontstyle->startvalue->text );
@@ -4239,3 +4319,22 @@ void fb_subsequent_text_line_pass( text_line *out_line, uint16_t line_pass )
         post_text_output();
     }
 }
+
+/* Function set_oc_pos().
+ * Set x_address to the value of g_oc_hpos.
+ *
+ * Note:
+ *      This function is to be used only by ob_oc.
+ */
+
+void set_oc_pos( void )
+{
+    uint32_t sav_x_address;
+    
+    sav_x_address = x_address;
+    x_address = g_oc_hpos;
+    df_interpret_driver_functions( bin_driver->absoluteaddress.text );
+    x_address = sav_x_address;
+    return;
+}
+

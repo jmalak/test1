@@ -32,19 +32,24 @@
 #include "wgml.h"
 
 
-/***************************************************************************/
-/* construct symbol name and optionally subscript from input               */
-/***************************************************************************/
+/*****************************************************************************/
+/* construct symbol name and optionally subscript from input                 */
+/* Note: p must point to a symbol name, as no trailing "=<value" is required */
+/*****************************************************************************/
 
 char * scan_sym( char * p, symvar * sym, sub_index * subscript, char * * result, bool splittable )
 {
-    char        linestr[MAX_L_AS_STR];
-    char    *   pend;
-    char        quote;
-    char    *   sym_start;
-    int         p_level;
-    size_t      k;
+    char        *   pend;
+    int             p_level;
+    char        *   psave;
+    char            quote;
+    char        *   sym_start;
+    int             rc;
+    size_t          k;
+    sub_index       var_ind;
+    symsub      *   symsubval;
 
+    psave = p;
     scan_err = false;
     sym->next = NULL;
     sym->flags = 0;
@@ -66,6 +71,16 @@ char * scan_sym( char * p, symvar * sym, sub_index * subscript, char * * result,
     k = 0;
     while( is_symbol_char( *p ) ) {
 
+        /* Special WGML 4.0 compatibility: When scanning symbol names,
+         * the scanning stops after 10 characters (not including the '&').
+         * It is thus possible to reference symbols with maximum-length
+         * names without properly separating them, such as
+         *   &longsymname
+         * and &longsymnam will be resolved if it exists.
+         */
+        if( splittable && (k == SYM_NAME_LENGTH) )
+            break;
+
         if( k < SYM_NAME_LENGTH ) {
             if( (k == 3) && (sym->name[0] != '$') ) {
                 if( sym->name[0] == 's' &&
@@ -84,18 +99,7 @@ char * scan_sym( char * p, symvar * sym, sub_index * subscript, char * * result,
                 if( !ProcFlags.suppress_msg ) {
                     // SC--074 For the symbol '%s'
                     //     The length of a symbol cannot exceed ten characters
-
-                    g_err( err_sym_long, sym_start );
-                    g_info( inf_sym_10 );
-                    if( input_cbs->fmflags & II_tag_mac ) {
-                        ulongtodec( input_cbs->s.m->lineno, linestr );
-                        g_info( inf_mac_line, linestr, input_cbs->s.m->mac->name );
-                    } else {
-                        ulongtodec( input_cbs->s.f->lineno, linestr );
-                        g_info( inf_file_line, linestr, input_cbs->s.f->filename );
-                    }
-                    show_include_stack();
-                    err_count++;
+                    symbol_name_length_err( sym_start );
                 }
             }
         }
@@ -109,6 +113,8 @@ char * scan_sym( char * p, symvar * sym, sub_index * subscript, char * * result,
                 && (input_cbs->fmflags & II_tag_mac) ) {
 
                 strcpy_s( sym->name, SYM_NAME_LENGTH, MAC_STAR_NAME );
+            } else if( (sym->flags & local_var) && (input_cbs->fmflags & II_file) ) {
+                strcpy_s( sym->name, SYM_NAME_LENGTH, MAC_STAR_NAME );
             } else {
                 scan_err = true;
             }
@@ -120,12 +126,8 @@ char * scan_sym( char * p, symvar * sym, sub_index * subscript, char * * result,
     pend = p;                                   // char after symbol name if not subscripted
 
     if( !scan_err && (*p == '(') ) {    // subscripted ?
-        char        *   psave       = p;
-        int             rc;
-        sub_index       var_ind;
-        symsub      *   symsubval;
-
         // find true end of subscript
+        psave = p;
         p_level = 0;
         while( *p != '\0' ) {               // to end of buffer
             if( *p == '(' ) {
@@ -149,9 +151,9 @@ char * scan_sym( char * p, symvar * sym, sub_index * subscript, char * * result,
                 p++;
                 var_ind = 0;
                 if( sym->flags & local_var )  {
-                    rc = find_symvar( &input_cbs->local_dict, sym->name, var_ind, &symsubval );
+                    rc = find_symvar( input_cbs->local_dict, sym->name, var_ind, &symsubval );
                 } else {
-                    rc = find_symvar( &global_dict, sym->name, var_ind, &symsubval );
+                    rc = find_symvar( global_dict, sym->name, var_ind, &symsubval );
                 }
                 if( rc > 0 ) {              // variable exists use last_auto_inc
                     *subscript = symsubval->base->last_auto_inc + 1;
@@ -159,6 +161,20 @@ char * scan_sym( char * p, symvar * sym, sub_index * subscript, char * * result,
                     *subscript = 1;         // start with index 1
                 }
                 sym->flags |= auto_inc + subscripted;
+            } else if( *p == '*' ) {        // * concatenates all elements
+                p++;
+                if( *p == '+' ) {
+                    *subscript = pos_subscript; // positive indices only
+                    p++;
+                } else if( *p == '-' ) {
+                    *subscript = neg_subscript; // negative indices only
+                    p++;
+                } else {
+                    *subscript = all_subscript; // all indices
+                }
+                if( *p != ')' ) {
+                    scan_err = true;
+                }
             } else {
                 char            *       pa;
                 char            *   *   ppval;
@@ -197,7 +213,7 @@ char * scan_sym( char * p, symvar * sym, sub_index * subscript, char * * result,
                         sym->flags |= subscripted;
                     } else {
                         if( !scan_err && !ProcFlags.suppress_msg ) {
-                            xx_line_err( err_sub_invalid, p );
+                            xx_line_err_c( err_sub_invalid, p );
                         }
                         scan_err = true;
                     }
@@ -254,7 +270,7 @@ void    scr_se( void )
     sub_index       subscript;
     symsub      *   symsubval;
     symvar          sym;
-    symvar      * * working_dict;
+    symdict     *   working_dict;
     size_t          len;
 
     subscript = no_subscript;                       // not subscripted
@@ -264,17 +280,18 @@ void    scr_se( void )
     if( strcmp( sym.name, MAC_STAR_NAME ) != 0 ) {  // remove trailing blanks from all symbols except *
         valstart = p;
         for( len = strlen( p ); len-- > 0; ) {
-            if( p[len] != ' ' )
+            if( p[len] != ' ' ) {
                 break;
+            }
             p[len] = '\0';
         }
         p = valstart;
     }
 
     if( sym.flags & local_var ) {
-        working_dict = &input_cbs->local_dict;
+        working_dict = input_cbs->local_dict;
     } else {
-        working_dict = &global_dict;
+        working_dict = global_dict;
     }
 
     if( ProcFlags.blanks_allowed ) {
@@ -282,7 +299,7 @@ void    scr_se( void )
     }
     if( *p == '\0' ) {
         if( !ProcFlags.suppress_msg ) {
-            xx_line_err ( err_eq_expected, p);
+            xx_line_err_c( err_eq_expected, p);
         }
         scan_err = true;
     }
@@ -323,7 +340,6 @@ void    scr_se( void )
                 }                               // if notnum treat as character value
             }
             rc = add_symvar( working_dict, sym.name, valstart, subscript, sym.flags );
-
         } else if( *p == '\'' ) {               // \' may introduce valid value
             if( *(p - 1) == ' ' ) {             // but must be preceded by a space
                 p++;
@@ -337,7 +353,7 @@ void    scr_se( void )
                 rc = add_symvar( working_dict, sym.name, valstart, subscript, sym.flags );
             } else {                                        // matches wgml 4.0
                 if( !ProcFlags.suppress_msg ) {
-                    xx_line_err ( err_eq_expected, p);
+                    xx_line_err_c( err_eq_expected, p);
                 }
                 scan_err = true;
             }

@@ -60,6 +60,7 @@ extern bool         MapOption;
 extern format_type  FmtType;
 extern extra_type   FmtInfo;
 extern bool         DebugInfo;
+extern bool         FarCallOpt;
 
 extern cmdfilelist *CmdFile;
 
@@ -1174,6 +1175,7 @@ static void ProcDynamic( const char *arg )
 {
     NotNecessary( "dynamic" );
     CheckNum( arg );
+    FarCallOpt = TRUE;
 }
 
 static void ProcExePack( const char *arg )
@@ -1187,6 +1189,7 @@ static void ProcFarCallTrans( const char *arg )
 {
     Warning( "far call translation happens automatically for WATCOM .obj files", OPTION_SLOT );
     Warning( "use FCENABLE for far call translation on non-WATCOM .obj files", OPTION_SLOT );
+    FarCallOpt = TRUE;
 }
 
 static void WriteOptions( switch_entry *entry )
@@ -1277,7 +1280,7 @@ static void ProcNoExtDictSearch( const char *arg )
 static void ProcNoFarCallTrans( const char *arg )
 /***********************************************/
 {
-    NotNecessary( "nofarcalltranslation" );
+    FarCallOpt = FALSE;
 }
 
 static void ProcNoGroupAssoc( const char *arg )
@@ -1320,6 +1323,7 @@ static void ProcOldOverlay( const char *arg )
 /*******************************************/
 {
     AddOption( "standard" );
+    FarCallOpt = TRUE;
 }
 
 static void ProcOnError( const char *arg )
@@ -1435,6 +1439,7 @@ static void ProcTiny( const char *arg )
 /*************************************/
 {
     FmtType = FMT_COM;
+    FarCallOpt = TRUE;
 }
 
 static void ProcWarnFixup( const char *arg )

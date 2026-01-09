@@ -33,7 +33,40 @@
 
 
 /***************************************************************************/
-/*  get_refid_value        parse reference id                              */
+/*  get_id_value        parse reference id (using g_att_val)               */
+/*                                                                         */
+/*  Note: parameter refid should be a pointer to char[ID_LEN]              */
+/***************************************************************************/
+
+char * get_id_value( char * p, char * refid )
+{
+    int k;
+
+    p = get_value( p );
+
+    if( g_att_val.val_start == NULL ) {       // no valid id
+        return( p );
+    }
+    if( g_att_val.val_len < ID_LEN ) {
+        for( k = 0; k < g_att_val.val_len; k++ ) {
+            refid[k] = my_tolower( *(g_att_val.val_start + k) );
+        }
+        refid[g_att_val.val_len] = '\0';
+    } else {
+        for( k = 0; k < ID_LEN; k++ ) {
+            refid[k] = my_tolower( *(g_att_val.val_start + k) );
+        }
+        refid[ID_LEN - 1] = '\0';
+    }
+    if( g_att_val.val_len > 7 ) {             // wgml 4 warning level
+        xx_warn_c_info( wng_id_xxx, refid, inf_id_len );
+    }
+    return( p );
+}
+
+
+/***************************************************************************/
+/*  get_refid_value        parse reference id  (using old vars)            */
 /*                                                                         */
 /*  Note: parameter refid should be a pointer to char[ID_LEN]              */
 /***************************************************************************/
@@ -59,10 +92,7 @@ char * get_refid_value( char * p, char * refid )
         refid[ID_LEN - 1] = '\0';
     }
     if( val_len > 7 ) {                     // wgml 4 warning level
-        g_warn( wng_id_xxx, refid );
-        g_info( inf_id_len );
-        file_mac_info();
-        wng_count++;
+        xx_warn_c_info( wng_id_xxx, refid, inf_id_len );
     }
     return( p );
 }

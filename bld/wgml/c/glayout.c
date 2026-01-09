@@ -85,17 +85,12 @@ void    gml_layout( const gmltag * entry )
 
     if( *p == '\0' || *p == '.' ) {
         if( ProcFlags.layout ) {        // nested layout
-            err_count++;
-            g_err( err_nested_tag, entry->tagname );
-            file_mac_info();
-            return;
+            xx_err_c( err_nested_tag, entry->tagname );
         }
         ProcFlags.layout = true;
         return;
     } else {
-        err_count++;
-        g_err( err_extra_ignored, tok_start, p );
-        file_mac_info();
+        xx_err_cc( err_extra_ignored, tok_start, p );
     }
     return;
 }
@@ -119,19 +114,14 @@ void    lay_elayout( const gmltag * entry )
 
     if( *p == '\0' || *p == '.' ) {
         if( !ProcFlags.layout ) {       // not in layout processing
-            err_count++;
-            g_err( err_no_lay, &(entry->tagname[1]), entry->tagname );
-            file_mac_info();
-            return;
+            xx_err_cc( err_no_lay, &(entry->tagname[1]), entry->tagname );
         }
         ProcFlags.layout = false;
         ProcFlags.lay_xxx = el_zero;
 
         return;
     } else {
-        err_count++;
-        g_err( err_extra_ignored, tok_start, p );
-        file_mac_info();
+        xx_err_cc( err_extra_ignored, tok_start, p );
     }
     return;
 }

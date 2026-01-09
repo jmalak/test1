@@ -100,6 +100,13 @@ void LnkFilesInit( void )
 {
     OpenFiles = 0;
     CaughtBreak = FALSE;
+
+    // Console support code, notably QReadStr(), but also QWriteNL(),
+    // expects that stdio handles use binary mode and no translation.
+    // NB: This might have undesirable side effects when building with
+    // shared DLL runtime (i.e. when _SW_BR is defined).
+    setmode( STDIN_HANDLE, O_BINARY );
+    setmode( STDOUT_HANDLE, O_BINARY );
 }
 
 void PrintIOError( unsigned msg, char *types, char *name )

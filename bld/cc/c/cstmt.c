@@ -1250,6 +1250,7 @@ void Statement( void )
         CompFlags.pending_dead_code = 0;
         if( GrabLabels() == 0 && declaration_allowed && IsDeclarator( CurToken ) ) {
             GetLocalVarDecls();
+            continue;
         }
         if( CompFlags.c99_extensions ) {
             declaration_allowed = TRUE;

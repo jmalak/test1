@@ -1,10 +1,11 @@
-#pmake: trap remote os_nt cpu_386 nov axp
-host_CPU = axp
-host_OS = nt
+#pmake: trap remote os_nt cpu_axp nov axp
 
-os = nt
-srv = nov
-cpu = axp
+host_cpu = axp
+host_os  = nt
+
+os    = nt
+srv   = nov
+cpu   = axp
 which = TRAP
 type  = remote_link
 

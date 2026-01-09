@@ -1,4 +1,4 @@
-#pmake: lcl os_nt cpu_386 trap axp
+#pmake: lcl os_nt cpu_axp trap axp
 #
 # Create the NT STD.DLL for Alpha
 #
@@ -29,6 +29,7 @@ extra_objs = &
         peread.obj &
         supp.obj &
         dbgthrd.obj &
+        supphdlr.obj &
         core.obj
 
 inc_dirs += -I"$(trap_dir)/lcl/dos/h"

@@ -24,7 +24,7 @@
 *
 *  ========================================================================
 *
-* Description:  Linux initialization support routines for wd
+* Description:  Linux initialization support routines for wd.
 *
 ****************************************************************************/
 
@@ -149,7 +149,7 @@ bool TBreak()
 long _fork( char *cmd, unsigned len )
 {
     char    buff[256];
-    const char    *argv[4];
+    char    *argv[4];
     char    *shell;
     pid_t   pid;
     
@@ -174,7 +174,11 @@ long _fork( char *cmd, unsigned len )
             dup2( DbgConHandle, 2 );
             close( DbgConHandle );
             setsid(); 
-            execve(shell, argv, (const char **)environ);
+#if defined(__WATCOMC__) && (__WATCOMC__ <= 1290)
+            execve( shell, (const char **)argv, (const char **)environ );
+#else
+            execve( shell, argv, environ );
+#endif
             exit( 1 );
     } else {
             fcntl( DbgConHandle, F_SETFD, (int)FD_CLOEXEC );

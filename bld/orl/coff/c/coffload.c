@@ -509,12 +509,20 @@ orl_return CoffLoadFileStructure( coff_file_handle coff_file_hnd )
     }
     loop_limit = coff_file_hnd->num_sections;
     // read string table; always follows the symbol table, but may not exist
+    // the string table can be tacked onto the file, but it could also be
+    // stored within an existing section (such as .debug)
     if( last_sec_hnd == coff_file_hnd->string_table ) {
         // read the string table size; if that fails, there isn't any
         if( f_hdr->sym_table ) {
             string_sec_size = _ClientRead( coff_file_hnd, sizeof( coff_sec_size ) );
             if( string_sec_size ) {
                 last_sec_hnd->size = *string_sec_size;
+            } else if( last_sec_hnd->offset ) {
+                _ClientSeek( coff_file_hnd, last_sec_hnd->offset, SEEK_SET );
+                string_sec_size = _ClientRead( coff_file_hnd, sizeof( coff_sec_size ) );
+                if( string_sec_size ) {
+                    last_sec_hnd->size = *string_sec_size;
+                }
             }
         }
         if( last_sec_hnd->size <= sizeof( coff_sec_size ) 
