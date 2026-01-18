@@ -103,6 +103,7 @@ void    scr_in( void )
     cwcurr[3] = '\0';
 
     ProcFlags.block_starting = false;
+    ProcFlags.in_done = true;
     scr_process_break();
 
     p = scan_start;

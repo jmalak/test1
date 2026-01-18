@@ -2746,6 +2746,7 @@ void process_text( char * text, font_number font )
     ProcFlags.dt_space = false;
     ProcFlags.einl_in_inlp = false;
     ProcFlags.force_pc = false;
+    ProcFlags.in_done = false;
     ProcFlags.ix_seen = false;
     ProcFlags.null_value = false;
     ProcFlags.para_is_lp = false;

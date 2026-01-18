@@ -69,7 +69,11 @@ static void p_pc_setup( p_lay_tag * p_pc )
 
     g_cur_threshold = layout_work.widow.threshold; // standard threshold
 
-    set_skip_vars( &(p_pc->pre_skip), NULL, &(p_pc->post_skip), g_text_spacing, g_curr_font );
+    if( ProcFlags.force_pc && ProcFlags.in_done ) {
+        // placeholder
+    } else {
+        set_skip_vars( &(p_pc->pre_skip), NULL, &(p_pc->post_skip), g_text_spacing, g_curr_font );
+    }
 
     if( ProcFlags.wh_device ) {             // for WHELP and perhaps other devices, but not for PS
         // placeholder

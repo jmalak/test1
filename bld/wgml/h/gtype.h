@@ -1723,6 +1723,7 @@ typedef struct proc_flags {
 
     unsigned        br_done             : 1;// break done after einl_in_inlp set: set font to FONT0 in process_text()
     unsigned        einl_in_inlp        : 1;// inline end tag inside inline phrase
+    unsigned        in_done             : 1;// IN done (affects text processed by do_force_pc())
     unsigned        inl_text            : 1;// text just processed was inside an inline phrase
     unsigned        scr_scope_eip       : 1;// inline phrase end tag inside BD/BI/US scope
     unsigned        xmp_ut_sf           : 1;// SF in user-defined tag inside XMP block
