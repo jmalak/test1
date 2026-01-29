@@ -236,7 +236,7 @@ static void draw_box( doc_el_group * in_group )
             cur_doc_el->subs_skip = wgml_fonts[layout_work.fig.font].line_height;
         }
         cur_doc_el->element.dbox.h_start = t_page.cur_left;
-        cur_doc_el->element.dbox.h_len = width;
+        cur_doc_el->element.dbox.h_len = width - nest_cb->left_indent;
         cur_doc_el->element.dbox.v_len = in_group->depth;
         if( (place == inline_place) ) {
 
@@ -325,7 +325,7 @@ static void insert_frame_line( void )
             h_line_el = init_doc_el( el_hline, 0 );
             h_line_el->element.hline.ban_adjust = false;   // TBD, may not apply to FIG
             h_line_el->element.hline.h_start = nest_cb->left_indent;
-            h_line_el->element.hline.h_len = width;
+            h_line_el->element.hline.h_len = width - nest_cb->left_indent;
             insert_col_main( h_line_el );
         } else {                    // char_frame Note: wgml 4.0 uses font 0 regardless of the default font for the section
             str_count = strlen( frame.string );
@@ -689,7 +689,7 @@ void gml_fig( const gmltag * entry )
         }
     }
 
-    /* insert_frame_line() uses width and nest_cb->left_indent */
+    /* Adjust skips as needed */
 
     if( (place != top_place) &&
             ((frame.type == rule_frame) || (frame.type == char_frame)) ) {
@@ -698,7 +698,6 @@ void gml_fig( const gmltag * entry )
             g_subs_skip += wgml_fonts[FONT0].line_height;   // this is actually the depth used by the HLINE
             g_top_skip += wgml_fonts[FONT0].line_height;    // for use if fig moved to top of next column
         }
-        insert_frame_line();
     }
 
     if( (frame.type == none) && (place != bottom_place) ) {
@@ -745,6 +744,13 @@ void gml_fig( const gmltag * entry )
             left_inset = 2 * tab_col;
             right_inset = 2 * tab_col;
         }
+    }
+
+    /* insert_frame_line() uses width and nest_cb->left_indent */
+
+    if( (place != top_place) &&
+            ((frame.type == rule_frame) || (frame.type == char_frame)) ) {
+        insert_frame_line();
     }
 
     /* This is for the overall figure, including any frame */

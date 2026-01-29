@@ -65,6 +65,9 @@ void    gml_graphic( const gmltag * entry )
     file[0] = '\0';
     rt_buff[0] = '\0';
     width = t_page.max_width - t_page.cur_left;
+    if( nest_cb->c_tag == t_FIG ) {
+        width -=  nest_cb->left_indent;
+    }
 
     p = scan_start;
     if( *p == '.' ) {
