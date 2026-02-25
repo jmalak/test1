@@ -72,6 +72,7 @@ static void gml_xl_lp_common( e_tags t )
 {
     char        *   p;
 
+    ProcFlags.p_pc_in_li = false;       // clear flag for start tags
     if( t != t_LP ) {
         if( is_ip_tag( nest_cb->c_tag ) ) {                 // inline phrase not closed
             g_err_tag_nest( str_tags[nest_cb->c_tag + 1] ); // end tag expected
@@ -664,6 +665,8 @@ static void     gml_exl_common( const gmltag * entry )
     su              l_post_skip;
     tag_cb      *   wk;
 
+    ProcFlags.p_pc_in_li = false;       // clear flag for end tags
+
     t_page.cur_left = nest_cb->lm;
     t_page.max_width = nest_cb->rm;
 
@@ -1089,10 +1092,20 @@ static  void    gml_li_ul( const gmltag * entry )
     t_page.max_width = nest_cb->rm + nest_cb->right_indent;
     t_page.cur_width = t_page.cur_left;
 
-    ProcFlags.keep_left_margin = true;  // keep special Note indent
+    ProcFlags.keep_left_margin = true;      // keep special Note indent
     g_curr_font = nest_cb->u.ul_layout->bullet_font;
-    process_text( bullet, g_curr_font );    // insert bullet
-    insert_hard_spaces( " ", 1, FONT0 );
+    if( bullet[0] == ' ' ) {            // if the bullet is a space character, special processing is needed
+        if( ProcFlags.wh_device ) {     // WHELP and perhaps other devices but not PS
+            insert_hard_spaces( " ", 1, FONT0 );
+            process_text( bullet, g_curr_font );    // insert bullet
+            insert_hard_spaces( " ", 1, FONT0 );
+        } else {                        // PS and perhaps other devices byt not WHELP
+            // placeholder -- code will be needed if ' ' is to be used as bullet with PS
+        }
+    } else {                            // the bullet is not a space character
+        process_text( bullet, g_curr_font );    // insert bullet
+        insert_hard_spaces( " ", 1, FONT0 );
+    }
     ProcFlags.zsp = true;
 
     t_page.cur_left = nest_cb->lm + nest_cb->left_indent + nest_cb->align;   // left start
@@ -1138,6 +1151,7 @@ void    gml_li( const gmltag * entry )
         end_lp();
     }
 
+    ProcFlags.p_pc_in_li = false;       // clear flag for LI
     switch( nest_cb->c_tag ) {
     case t_OL :
         gml_li_ol( entry );

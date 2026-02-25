@@ -46,6 +46,10 @@ static void do_co_off( void )
     cur_doc_el_group->block_font = g_curr_font;
     cur_doc_el_group->next = t_doc_el_group;
     t_doc_el_group = cur_doc_el_group;
+    if( ProcFlags.p_pc_in_li ) {        // special for P or PC inside a list followed by CO OFF
+        t_doc_el_group->post_skip = g_post_skip;
+        g_post_skip = 0;
+    }
     return;
 }
     
@@ -58,27 +62,27 @@ static void do_co_off( void )
 
 static void do_co_on( void )
 {
-    bool                skip_blank = false; // blank line at bottom of page
-    bool                text_first = false; // no blank lines precede the first text line
+    bool                skip_blank  = false;    // blank line at bottom of page
+    bool                text_first  = false;    // no blank lines precede the first text line
     doc_element     *   cur_el;
-    doc_el_group    *   cur_group;          // current group from n_page, not cur_doc_el_group
-    doc_el_group    *   last_group;         // group to which doc_elements are to be added
-    uint32_t            b_cur_line  = 0;    // current blank line number
-    uint32_t            b_line_tot  = 0;    // total blank lines in block
-    uint32_t            break_point = 0;    // potential break point
-    uint32_t            break_start = 0;    // first possible break point
-    uint32_t            line_height = 0;    // line height for block
-    uint32_t            lpp         = 0;    // lines per page
-    uint32_t            interval    = 0;    // interval between break_point values and between max_lines values
-    uint32_t            max_start   = 0;    // first possible maximum line number
-    uint32_t            max_lines   = 0;    // maximum line number
-    uint32_t            min_lines   = 0;    // minimum line number  
-    uint32_t            offset      = 0;    // offset from non-full first page
-    uint32_t            page_line   = 0;    // current line number on current page
-    uint32_t            start_page  = 0;    // apage on which block starts
-    uint32_t            t_cur_line  = 0;    // current text line number
-    uint32_t            t_line_tot  = 0;    // total text lines in block
-    uint32_t            threshold   = 0;    // threshold line number  
+    doc_el_group    *   cur_group;                  // current group from n_page, not cur_doc_el_group
+    doc_el_group    *   last_group;                 // group to which doc_elements are to be added
+    uint32_t            b_cur_line  = 0;        // current blank line number
+    uint32_t            b_line_tot  = 0;        // total blank lines in block
+    uint32_t            break_point = 0;        // potential break point
+    uint32_t            break_start = 0;        // first possible break point
+    uint32_t            line_height = 0;        // line height for block
+    uint32_t            lpp         = 0;        // lines per page
+    uint32_t            interval    = 0;        // interval between break_point values and between max_lines values
+    uint32_t            max_start   = 0;        // first possible maximum line number
+    uint32_t            max_lines   = 0;        // maximum line number
+    uint32_t            min_lines   = 0;        // minimum line number  
+    uint32_t            offset      = 0;        // offset from non-full first page
+    uint32_t            page_line   = 0;        // current line number on current page
+    uint32_t            start_page  = 0;        // apage on which block starts
+    uint32_t            t_cur_line  = 0;        // current text line number
+    uint32_t            t_line_tot  = 0;        // total text lines in block
+    uint32_t            threshold   = 0;        // threshold line number  
 
     /* must have text and it must have been started by CO OFF */
 
@@ -116,6 +120,13 @@ static void do_co_on( void )
                     cur_doc_el_group->first = cur_doc_el_group->first->next;
                     cur_el->next = NULL;
                     insert_col_main( cur_el );
+                }
+                if( cur_doc_el_group->post_skip > 0 ) {
+                    cur_el = alloc_doc_el( el_vspace );
+                    cur_el->depth = cur_doc_el_group->post_skip;
+                    cur_doc_el_group->post_skip = 0;
+                    insert_col_main( cur_el );
+                    cur_el = NULL;
                 }
                 add_doc_el_group_to_pool( cur_doc_el_group );
                 cur_doc_el_group = NULL;

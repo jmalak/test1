@@ -1709,6 +1709,7 @@ typedef struct proc_flags {
     unsigned        block_starting      : 1;// P, PC, LP, NOTE, DL, FIG, GL, LQ, XMP block starting
     unsigned        keep_left_margin    : 1;// for indented NOTE tag paragraph (and others)
     unsigned        note_starting       : 1;// :NOTE had no text (in scr_process_break())
+    unsigned        p_pc_in_li          : 1;// tag P or tag PC inside tag LI
     unsigned        para_is_lp          : 1;// current paragraph was started with tag LP   
     unsigned        para_starting       : 1;// :LP, :P or :PC had no text (in scr_process_break())
     unsigned        para_has_text       : 1;// :LP, :P, :PB or :PC had text (used by PB)

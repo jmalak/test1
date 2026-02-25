@@ -98,6 +98,10 @@ static void proc_p_pc( p_lay_tag * p_pc, e_tags t )
 
     p_pc_setup( p_pc );
 
+    if( (nest_cb->c_tag == t_DL) || (nest_cb->c_tag == t_OL) || (nest_cb->c_tag == t_SL) || (nest_cb->c_tag == t_UL) ) {
+        ProcFlags.p_pc_in_li = true;
+    }
+
     if( nest_cb->c_tag != t_LQ ) {
         ProcFlags.block_starting = true;    // to catch empty paragraphs
     }
