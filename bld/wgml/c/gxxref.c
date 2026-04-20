@@ -47,38 +47,72 @@ static char * get_ref_attributes( void )
     char        *   pa;
 
     scan_err = false;
-    p = scan_start;
 
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
+
+    p = scan_start;
     if( *p == '.' ) {
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
             if( !strnicmp( "page", p, 4 ) ) {
                 page_found = true;
                 p += 4;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.page ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.symbol = page;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                if( !strnicmp( "yes", val_start, 3 ) ) {
+                if( !strnicmp( "yes", g_att_val.val_start, 3 ) ) {
                     ref_page = true;
-                } else if( !strnicmp( "no", val_start, 2 ) ) {
+                } else if( !strnicmp( "no", g_att_val.val_start, 2 ) ) {
                     ref_page = false;
                 } else {
-                    xx_line_err_c( err_inv_att_val, val_start );
+                    xx_line_err_c( err_inv_att_val, g_att_val.val_start );
                 }
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else if( !strnicmp( "refid", p, 5 ) ) {
                 p += 5;
-                p = get_refid_value( p, refid );
-                if( val_start == NULL ) {
+                p = get_id_value( p, refid );
+                if( AttrFlags.refid ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.refid = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
                 refid_found = true;

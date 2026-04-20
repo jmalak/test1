@@ -24,9 +24,10 @@
 ;*
 ;*  ========================================================================
 ;*
-;* Description:  routine for checking FPU type
+;* Description:  Check FPU presence and type (16-bit).
 ;*
 ;*****************************************************************************
+
 
 include mdef.inc
 
@@ -52,14 +53,13 @@ __init_8087_emu endp
 __x87id proc near
         push    BP                      ; save BP
         mov     BP,SP                   ; get access to stack
-        sub     AX,AX
+        sub     AX,AX                   ; ensure AX is zero
         push    AX                      ; allocate space for status word
-        finit                           ; use default infinity mode
-        fstcw   word ptr [BP-2]         ; save control word
-        fwait
+        fninit                          ; use default infinity mode
+        fnstcw   word ptr [BP-2]        ; save control word
         pop     AX
         mov     AL,0
-        cmp     AH,3
+        cmp     AH,3                    ; will be 00h or FFh if no FPU
         jnz     nox87
         push    AX                      ; allocate space for status word
         fld1                            ; generate infinity by
@@ -69,13 +69,12 @@ __x87id proc near
         fchs                            ; ...
         fcompp                          ; compare +/- infinity
         fstsw   word ptr [BP-2]         ; equal for 87/287
-        fwait                           ; wait fstsw to complete
         pop     AX                      ; get NDP status word
         mov     AL,2                    ; assume 80287
         sahf                            ; store condition bits in flags
         jz      not387                  ; it's 287 if infinities equal
         mov     AL,3                    ; indicate 80387
-not387: finit                           ; re-initialize the 8087
+not387: fninit                          ; re-initialize the 8087
 nox87:  mov     AH,0
         mov     SP,BP                   ; clean up stack
         pop     BP                      ; restore BP

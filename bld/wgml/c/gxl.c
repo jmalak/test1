@@ -72,7 +72,7 @@ static void gml_xl_lp_common( e_tags t )
 {
     char        *   p;
 
-    ProcFlags.p_pc_in_li = false;       // clear flag for start tags
+    ProcFlags.lp_p_pc_in_block = false; // clear flag for start tags
     if( t != t_LP ) {
         if( is_ip_tag( nest_cb->c_tag ) ) {                 // inline phrase not closed
             g_err_tag_nest( str_tags[nest_cb->c_tag + 1] ); // end tag expected
@@ -162,8 +162,6 @@ static void gml_xl_lp_common( e_tags t )
 
 void gml_dl( const gmltag * entry )
 {
-    bool                compact     =   false;
-    bool                dl_break;
     char            *   p;
     char            *   pa;
     dl_lay_level    *   dl_layout;
@@ -193,10 +191,10 @@ void gml_dl( const gmltag * entry )
 
     ProcFlags.block_starting = true;    // to catch empty lists
 
-    dl_break = dl_layout->line_break;
     headhi = layout_work.dthd.font;
     termhi = layout_work.dt.font;
     tsize = conv_hor_unit( &dl_layout->align, g_curr_font );
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
 
     p = scan_start;
     SkipSpaces( p );                    // over spaces
@@ -204,51 +202,114 @@ void gml_dl( const gmltag * entry )
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
 
             if( !strnicmp( "compact", p, 7 ) ) {
-                compact = true;
                 p += 7;
+                if( AttrFlags.compact ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.compact = true;
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else if( !strnicmp( "break", p, 5 ) ) {
                 p += 5;
-                dl_break = true;
+                if( AttrFlags.break_a ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.break_a = true;
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else if( !strnicmp( "headhi", p, 6 ) ) {
                 p += 6;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.headhi ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.headhi = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                headhi = get_font_number( val_start, val_len );
+                headhi = get_font_number( g_att_val.val_start, g_att_val.val_len );
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else if( !strnicmp( "termhi", p, 6 ) ) {
                 p += 6;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.termhi ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.termhi = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                termhi = get_font_number( val_start, val_len );
+                termhi = get_font_number( g_att_val.val_start, g_att_val.val_len );
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
             } else if( !strnicmp( "tsize", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
-                    break;
+                p = get_value( p );
+                if( AttrFlags.tsize ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
                 }
-                if( att_val_to_su( &cur_su, true ) ) {
+                AttrFlags.tsize = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( value_to_su( &cur_su, true ) ) {
                     break;
                 }
                 tsize = conv_hor_unit( &cur_su, g_curr_font );
@@ -266,8 +327,8 @@ void gml_dl( const gmltag * entry )
     gml_xl_lp_common( t_DL );
 
     nest_cb->u.dl_layout = dl_layout;
-    nest_cb->compact = compact;
-    nest_cb->dl_break = dl_break;
+    nest_cb->compact = AttrFlags.compact;
+    nest_cb->dl_break = AttrFlags.break_a;
     nest_cb->font = g_curr_font;
 
     nest_cb->li_number = 0;
@@ -309,7 +370,6 @@ void gml_dl( const gmltag * entry )
 
 void gml_gl( const gmltag * entry )
 {
-    bool            compact =   false;
     char        *   p;
     char        *   pa;
     font_number     termhi  =   0;
@@ -321,6 +381,7 @@ void gml_gl( const gmltag * entry )
     ProcFlags.block_starting = true;    // to catch empty lists
 
     termhi = layout_work.gt.font;
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
 
     p = scan_start;
     SkipSpaces( p );                        // over spaces
@@ -328,22 +389,50 @@ void gml_gl( const gmltag * entry )
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
 
             if( !strnicmp( "compact", p, 7 ) ) {
                 p += 7;
-                compact = true;
-            } else if( !strnicmp( "termhi", p, 6 ) ) {
-                p += 6;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                if( AttrFlags.compact ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.compact = true;
+                if( ProcFlags.tag_end_found ) {
                     break;
                 }
-                termhi = get_font_number( val_start, val_len );
+            } else if( !strnicmp( "termhi", p, 6 ) ) {
+                p += 6;
+                p = get_value( p );
+                if( AttrFlags.termhi ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.termhi = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
+                    break;
+                }
+                termhi = get_font_number( g_att_val.val_start, g_att_val.val_len );
                 if( ProcFlags.tag_end_found ) {
                     break;
                 }
@@ -372,7 +461,7 @@ void gml_gl( const gmltag * entry )
         gl_cur_level = 1;
     }
 
-    nest_cb->compact = compact;
+    nest_cb->compact = AttrFlags.compact;
     nest_cb->font = g_curr_font;
 
     nest_cb->li_number = 0;
@@ -408,7 +497,6 @@ void gml_gl( const gmltag * entry )
 
 void gml_ol( const gmltag * entry )
 {
-    bool        compact =   false;
     char    *   p;
     char    *   pa;
 
@@ -418,21 +506,35 @@ void gml_ol( const gmltag * entry )
 
     ProcFlags.block_starting = true;    // to catch empty lists
 
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
+
     p = scan_start;
     SkipSpaces( p );                        // over spaces
     if( *p == '.' ) {
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
 
             if( !strnicmp( "compact", p, 7 ) ) {
                 p += 7;
-                compact = true;
+                if( AttrFlags.compact ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.compact = true;
+                if( ProcFlags.tag_end_found ) {
+                    break;
+                }
             } else {
                 p = pa; // restore any spaces before non-attribute value
                 break;
@@ -461,7 +563,7 @@ void gml_ol( const gmltag * entry )
         ol_cur_level = 1;
     }
 
-    nest_cb->compact = compact;
+    nest_cb->compact = AttrFlags.compact;
     nest_cb->font = g_curr_font;
     g_curr_font = nest_cb->u.ol_layout->font;
 
@@ -496,7 +598,6 @@ void gml_ol( const gmltag * entry )
 
 void gml_sl( const gmltag * entry )
 {
-    bool        compact =   false;
     char    *   p;
     char    *   pa;
 
@@ -506,21 +607,35 @@ void gml_sl( const gmltag * entry )
 
     ProcFlags.block_starting = true;    // to catch empty lists
 
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
+
     p = scan_start;
     SkipSpaces( p );                        // over spaces
     if( *p == '.' ) {
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
 
             if( !strnicmp( "compact", p, 7 ) ) {
                 p += 7;
-                compact = true;
+                if( AttrFlags.compact ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.compact = true;
+                if( ProcFlags.tag_end_found ) {
+                    break;
+                }
             } else {
                 p = pa; // restore any spaces before non-attribute value
                 break;
@@ -549,7 +664,7 @@ void gml_sl( const gmltag * entry )
         sl_cur_level = 1;
     }
 
-    nest_cb->compact = compact;
+    nest_cb->compact = AttrFlags.compact;
     nest_cb->font = g_curr_font;
     g_curr_font = nest_cb->u.sl_layout->font;
 
@@ -583,7 +698,6 @@ void gml_sl( const gmltag * entry )
 
 void gml_ul( const gmltag * entry )
 {
-    bool        compact =   false;
     char    *   p;
     char    *   pa;
 
@@ -593,21 +707,35 @@ void gml_ul( const gmltag * entry )
 
     ProcFlags.block_starting = true;    // to catch empty lists
 
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
+
     p = scan_start;
     SkipSpaces( p );                        // over spaces
     if( *p == '.' ) {
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
 
             if( !strnicmp( "compact", p, 7 ) ) {
                 p += 7;
-                compact = true;
+                if( AttrFlags.compact ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.compact = true;
+                if( ProcFlags.tag_end_found ) {
+                    break;
+                }
             } else {
                 p = pa; // restore any spaces before non-attribute value
                 break;
@@ -636,7 +764,7 @@ void gml_ul( const gmltag * entry )
         ul_cur_level = 1;
     }
 
-    nest_cb->compact = compact;
+    nest_cb->compact = AttrFlags.compact;
     nest_cb->font = g_curr_font;
     g_curr_font = nest_cb->u.ul_layout->font;
 
@@ -665,7 +793,10 @@ static void     gml_exl_common( const gmltag * entry )
     su              l_post_skip;
     tag_cb      *   wk;
 
-    ProcFlags.p_pc_in_li = false;       // clear flag for end tags
+    if( ProcFlags.lp_p_pc_in_block ) {
+        ProcFlags.lp_p_pc_in_block = false; // clear flag for end tags
+        ProcFlags.para_in_block = true;
+    }
 
     t_page.cur_left = nest_cb->lm;
     t_page.max_width = nest_cb->rm;
@@ -1142,7 +1273,8 @@ static  void    gml_li_ul( const gmltag * entry )
 /* when the list item is in an ordered list. The identifier name is used when processing a */
 /* list item reference, and must be unique within the document.                            */
 /*                                                                                         */
-/* NOTE: wgml 4.0 produces an error if LI occurs inside a DL or GL                         */
+/* NOTES: wgml 4.0 produces an error if LI occurs inside a DL or GL                        */
+/*        attribute ID is not implemented                                                  */
 /*******************************************************************************************/
 
 void    gml_li( const gmltag * entry )
@@ -1151,7 +1283,7 @@ void    gml_li( const gmltag * entry )
         end_lp();
     }
 
-    ProcFlags.p_pc_in_li = false;       // clear flag for LI
+    ProcFlags.lp_p_pc_in_block = false; // clear flag for LI
     switch( nest_cb->c_tag ) {
     case t_OL :
         gml_li_ol( entry );
@@ -1196,6 +1328,7 @@ void    gml_lp( const gmltag * entry )
     }
 
     gml_xl_lp_common( t_LP );
+    ProcFlags.lp_p_pc_in_block = true;
 
     nest_cb->font = g_curr_font;
     g_curr_font = layout_work.defaults.font;    // matches wgml 4.0

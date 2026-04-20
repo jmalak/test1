@@ -98,8 +98,16 @@ static void proc_p_pc( p_lay_tag * p_pc, e_tags t )
 
     p_pc_setup( p_pc );
 
-    if( (nest_cb->c_tag == t_DL) || (nest_cb->c_tag == t_OL) || (nest_cb->c_tag == t_SL) || (nest_cb->c_tag == t_UL) ) {
-        ProcFlags.p_pc_in_li = true;
+    switch( nest_cb->c_tag ) {
+    case t_DL:
+    case t_GL:
+    case t_OL:
+    case t_SL:
+    case t_UL:
+    case t_FIG:
+    case t_LQ:
+    case t_XMP:
+        ProcFlags.lp_p_pc_in_block = true;
     }
 
     if( nest_cb->c_tag != t_LQ ) {
@@ -119,7 +127,7 @@ static void proc_p_pc( p_lay_tag * p_pc, e_tags t )
             }
         }
         process_text( p, g_curr_font );
-    } else if( (t == t_P) && !ProcFlags.concat ) {
+    } else if( !ProcFlags.concat ) {
         g_post_skip = 0;
     }
 

@@ -1689,22 +1689,66 @@ void process_line_full( text_line * a_line, bool justify )
 
         if( t_element == NULL ) {
             if( !ProcFlags.skips_valid) {
+
+                /********************************************************************************/
+                /* The flag can be set even if SK 0 C or SP 0 C was entered                     */       
+                /* But whether that is what these are catching is not entirely clear            */       
+                /* Note that they apply to both WHELP and PS                                    */
+                /********************************************************************************/
+
                 if( ProcFlags.sk_has_c ) {
                     g_post_skip = g_subs_skip;
                 }
                 if( ProcFlags.sp_has_c ) {
                     g_post_skip = g_subs_skip;
                 }
-                if( ProcFlags.wh_device && (g_subs_skip > 0) ) {    // only if a tag set post_skip and WHELP is device
-                    if( g_space > 0 ) {                             // SP used
-                        g_subs_skip += g_space;
-                        g_space = 0 ;
-                    } else if( g_space_c > 0 ) {                    // SP used with "C" operand
-                        if( nest_cb->c_tag == t_XMP ) {             // text is in an XMP block
-                            g_subs_skip += g_space_c;
-                            g_space_c = 0;
+                if( ProcFlags.wh_device ) {                 // WHELP and perhaps others, but not PS
+
+                    /********************************************************************************/
+                    /* Some of this may actually apply to PS if its layout were the same as WHELP's */
+                    /* This might belong in set_skip_vars(), but then again, it might belong here   */
+                    /* This is about how the SK/SP control words interact with post_skip attributes */
+                    /* Note that multiple SK/SK control words are not accounted for                 */
+                    /* and neither are SK 0, SK 0 C, SP 0, or SP 0 C                                */
+                    /* nor are SK -1, SK -1 C, SP -1, or SP -1 C                                    */
+                    /********************************************************************************/
+
+                    if( g_skip > 0 ) {
+                        // placeholder
+                    } else if( g_skip_c > 0 ) {
+                        if( ProcFlags.para_in_block ) {
+                            g_subs_skip = 0;
+                            g_post_skip = 0;
                         }
+                    } else if( g_space > 0 ) {
+                        if( g_subs_skip > 0 ) {
+                            if( ProcFlags.para_in_block ) {
+                                g_subs_skip = 0;
+                                g_post_skip = 0;
+                            } else {
+                                g_subs_skip += g_space;
+                                g_space = 0 ;
+                            }
+                        } else if( g_post_skip > 0 ) {
+                            if( ProcFlags.para_in_block ) {
+                                g_subs_skip = 0;
+                                g_post_skip = 0;
+                            } else {
+                                g_subs_skip = g_post_skip + g_space;
+                            }
+                        }
+                    } else if( g_space_c > 0 ) {
+                        if( g_subs_skip > 0 ) {             // only if a tag set post_skip
+                            if( nest_cb->c_tag == t_XMP ) { // text is in an XMP block
+                                g_subs_skip += g_space_c;
+                                g_space_c = 0;
+                            }
+                        }
+                    } else {
+                        // placeholder -- no SK/SP present
                     }
+                } else {                                // PS and perhaps others, but not WHELP
+                    // placeholder
                 }
                 set_skip_vars( NULL, NULL, NULL, g_text_spacing, g_curr_font );
             } else if( !ProcFlags.block_starting ) {
@@ -1734,6 +1778,7 @@ void process_line_full( text_line * a_line, bool justify )
     }
     ProcFlags.line_started = false;     // line is now empty
     ProcFlags.just_override = true;     // justify for following lines
+    ProcFlags.para_in_block = false;    // used above
     tabbing = false;                    // tabbing ends when line committed
 
     set_h_start();

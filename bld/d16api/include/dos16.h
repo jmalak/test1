@@ -181,7 +181,10 @@ typedef struct _pgm_load_info {
 
 #define CarryFlag   0x1         /* Carry flag bit */
 
-typedef /* _Packed */ struct {
+/* The D16INFO struct is naturally packed for 16-bit, but not
+ * 32-bit compilation.
+ */
+typedef _Packed struct {
     SHORT      version;         /* Version times 100 */
     USHORT     passdn0;         /* Offset of first pass-down in kernel seg */
     USHORT     passdn255;       /* Offset of last pass-down */

@@ -79,6 +79,11 @@
 
 !include ../../../../objlist.mif
 
+086_fpi_postopts=-fpi
+286_fpi_postopts=-fpi
+386_fpi_postopts=
+fpi_postopts=$($(processor)_fpi_postopts)
+
 086_fpi87_postopts=-fpi87
 286_fpi87_postopts=-fpi87
 386_fpi87_postopts=-fpi87
@@ -86,9 +91,21 @@ axp_fpi87_postopts=
 ppc_fpi87_postopts=
 fpi87_postopts=$($(processor)_fpi87_postopts)
 
-7u8f086_postopts=$(fpi87_postopts)
+# The 7xxx086 modules (routines __FSU87, __FDU87, __U8FS7, __U8FD7) must
+# be built with -fpi because they are used when linking programs built with
+# both -fpi and with -fpi87, therefore the code must run on systems with
+# no FPU and has to be ready to be emulated.
+#
+# The fxmth086 modules are used when linking programs built with -fpc and the
+# FPU instructions within will only be executed on systems that are known to
+# have a real FPU, therefore emulation is never needed.
+#
+# 386 modules can always be built with -fpi87 because the FPU emulation does
+# not rely on replacing FPU instructions with software interrupts.
+#
+7u8f086_postopts=$(fpi_postopts)
 7u8f386_postopts=$(fpi87_postopts)
-7fu8086_postopts=$(fpi87_postopts)
+7fu8086_postopts=$(fpi_postopts)
 7fu8386_postopts=$(fpi87_postopts)
 fdmth086_postopts=$(fpi87_postopts)
 fdmth386_postopts=$(fpi87_postopts)

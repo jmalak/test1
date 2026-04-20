@@ -1709,7 +1709,8 @@ typedef struct proc_flags {
     unsigned        block_starting      : 1;// P, PC, LP, NOTE, DL, FIG, GL, LQ, XMP block starting
     unsigned        keep_left_margin    : 1;// for indented NOTE tag paragraph (and others)
     unsigned        note_starting       : 1;// :NOTE had no text (in scr_process_break())
-    unsigned        p_pc_in_li          : 1;// tag P or tag PC inside tag LI
+    unsigned        lp_p_pc_in_block    : 1;// tag LP, tag P, or tag PC inside a list or block
+    unsigned        para_in_block       : 1;// lp_p_pc_in_block after block has ended
     unsigned        para_is_lp          : 1;// current paragraph was started with tag LP   
     unsigned        para_starting       : 1;// :LP, :P or :PC had no text (in scr_process_break())
     unsigned        para_has_text       : 1;// :LP, :P, :PB or :PC had text (used by PB)
@@ -1773,15 +1774,18 @@ typedef struct attr_flags {
     unsigned    binding             : 1;
     unsigned    backm_string        : 1;
     unsigned    body_string         : 1;
+    unsigned    break_a             : 1;    // using just "break" causes compiler problems
     unsigned    bullet              : 1;
     unsigned    bullet_translate    : 1;
     unsigned    bullet_font         : 1;
     unsigned    case_a              : 1;    // using just "case" causes compiler problems
     unsigned    columns             : 1;
     unsigned    contents            : 1;
+    unsigned    compact             : 1;
     unsigned    date_form           : 1;
     unsigned    default_frame       : 1;
     unsigned    default_place       : 1;
+    unsigned    delete              : 1;
     unsigned    delim               : 1;
     unsigned    depth               : 1;
     unsigned    display_heading     : 1;
@@ -1797,6 +1801,7 @@ typedef struct attr_flags {
     unsigned    gutter              : 1;
     unsigned    hoffset             : 1;
     unsigned    header              : 1;
+    unsigned    headhi              : 1;
     unsigned    id                  : 1;
     unsigned    indent              : 1;
     unsigned    index_delim         : 1;
@@ -1818,6 +1823,7 @@ typedef struct attr_flags {
     unsigned    number_form         : 1;
     unsigned    number_reset        : 1;
     unsigned    number_style        : 1;
+    unsigned    page                : 1;
     unsigned    page_eject          : 1;
     unsigned    page_position       : 1;
     unsigned    page_reset          : 1;
@@ -1854,9 +1860,13 @@ typedef struct attr_flags {
     unsigned    stitle              : 1;
     unsigned    stop_eject          : 1;
     unsigned    string_font         : 1;
+    unsigned    symbol              : 1;
+    unsigned    termhi              : 1;
     unsigned    threshold           : 1;
     unsigned    toc_levels          : 1;
     unsigned    top_margin          : 1;
+    unsigned    tsize               : 1;
+    unsigned    value               : 1;
     unsigned    voffset             : 1;
     unsigned    width               : 1;
     unsigned    wrap_indent         : 1;

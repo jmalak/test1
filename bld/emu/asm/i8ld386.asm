@@ -24,7 +24,7 @@
 ;*
 ;*  ========================================================================
 ;*
-;* Description:  convert 8-byte integer into long double
+;* Description:  Convert 8-byte integer to 80-bit long double.
 ;*
 ;*****************************************************************************
 
@@ -60,7 +60,7 @@ endif
 ;       __U8LD - convert unsigned 8-byte integer into long double
 
         defp    __U8LD
-        push    ECX              ; save DI
+        push    ECX             ; save DI
         mov     CL,1            ; unsigned value
         jmp     short cont1
 
@@ -87,25 +87,25 @@ endif
           _endif                ; endif
         _endguess
         _guess
-          or    EDX,EDX         ; if high order word is 0
+          or    EDX,EDX         ; if high order dword is 0
           _quif ne
           sub   CL,32           ; - adjust exponent
           or    EDX,EAX         ; - shift operand left 32 bits
           mov   EAX,0           ; - ...
-          _quif ne              ; - if last word was also 0
+          _quif ne              ; - if low dword was also 0
           mov   CX,AX           ; - set exponent to 0
         _admit
           _if ns                ; if not already normalized
             _loop               ; - loop (normalize result)
               dec   CX          ; - - decrement exponent
-              shld  EDX,EAX,1   ; - - shift left 1 bit
-              shl   EAX,1       ; - - ...
+              _shl  EAX,1       ; - - shift left 1 bit
+              _rcl  EDX,1       ; - - ...
             _until s            ; - until normalized
           _endif                ; endif
         _endguess
-        mov     8[EBX],CX        ; store exponent
-        mov     4[EBX],EDX       ; fraction
-        mov     [EBX],EAX        ; ...
+        mov     8[EBX],CX       ; store exponent
+        mov     4[EBX],EDX      ; fraction
+        mov     [EBX],EAX       ; ...
 ifdef _BUILDING_MATHLIB
         pop     EBX
 endif

@@ -60,45 +60,78 @@ extern  void    gml_set( const gmltag * entry )
 
     subscript = no_subscript;           // not subscripted
     scan_err = false;
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
 
     p = scan_start;
     if( *p == '.' ) {
         /* already at tag end */
     } else {
         for( ;;) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
             if( !strnicmp( "symbol", p, 6 ) ) {
                 p += 6;
 
-                /* both get_att_value() and scan_sym() must be used */
+                /* both get_value() and scan_sym() must be used */
 
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.symbol ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.symbol = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
-                scan_sym( val_start, &sym, &subscript, NULL, false );
+                scan_sym( g_att_val.val_start, &sym, &subscript, NULL, false );
                 if( scan_err ) {
                     break;
                 }
                 symbol_found = true;
             } else if( !strnicmp( "value", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
+                p = get_value( p );
+                if( AttrFlags.value ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
+                }
+                AttrFlags.value = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( g_att_val.val_start == NULL ) {
                     break;
                 }
                 value_found = true;
-                memcpy_s( token_buf, buf_size, val_start, val_len );
-                if( val_len < buf_size ) {
-                    token_buf[val_len] = '\0';
+                memcpy_s( token_buf, buf_size, g_att_val.val_start, g_att_val.val_len );
+                if( g_att_val.val_len < buf_size ) {
+                    token_buf[g_att_val.val_len] = '\0';
                 } else {
                     token_buf[buf_size - 1] = '\0';
                 }
-            } else if( !strnicmp( token_buf, "delete", 6 ) ) {
+            } else if( !strnicmp( token_buf, "delete", 6 ) ) {  // catches "value=delete" by using token_buf
                 p += 6;
                 sym.flags |= deleted;
             } else {    // no match = end-of-tag in wgml 4.0

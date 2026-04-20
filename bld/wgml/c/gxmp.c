@@ -80,24 +80,39 @@ void gml_xmp( const gmltag * entry )
     font_save = g_curr_font;
     g_curr_font = layout_work.xmp.font;
     depth = 0;                          // default value: depth will be depth of box contents
+    memset( &AttrFlags, 0, sizeof( AttrFlags ) );   // clear all attribute flags
+
     p = scan_start;
     if( *p == '.' ) {
         /* already at tag end */
     } else {
         for( ;; ) {
-            pa = get_att_start( p );
-            p = att_start;
+            pa = get_attribute( p );
+            p = g_att_val.att_start;
             if( ProcFlags.reprocess_line ) {
                 break;
             }
 
             if( !strnicmp( "depth", p, 5 ) ) {
                 p += 5;
-                p = get_att_value( p );
-                if( val_start == NULL ) {
-                    break;
+                p = get_value( p );
+                if( AttrFlags.depth ) {
+                    if( g_att_val.val_quoted ) {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len + 1 );
+                    } else {
+                        xx_line_err_ci( err_att_dup, g_att_val.att_start, 
+                            g_att_val.val_start - g_att_val.att_start + g_att_val.val_len );
+                        }
                 }
-                if( att_val_to_su( &cur_su, true ) ) {
+                AttrFlags.depth = true;
+                if( ProcFlags.no_value_found ) {
+                    xx_line_err_c( err_att_val_missing, p );
+                }
+                if( ProcFlags.no_equal_sign ) {
+                    xx_line_err_c( err_eq_missing, p );
+                }
+                if( value_to_su( &cur_su, true ) ) {
                     break;
                 }
                 depth = conv_vert_unit( &cur_su, g_text_spacing, g_curr_font );
@@ -206,6 +221,10 @@ void gml_exmp( const gmltag * entry )
         g_err_tag_nest( str_tags[nest_cb->c_tag + 1] ); // end tag expected
     }
 
+    if( ProcFlags.lp_p_pc_in_block ) {
+        ProcFlags.lp_p_pc_in_block = false; // clear flag for end tag
+        ProcFlags.para_in_block = true;
+    }
     /* Ensure blank lines at end of XMP use correct font */
 
     if( (g_blank_units_lines == 0) && (g_blank_text_lines > 0) ) {

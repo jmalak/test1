@@ -46,7 +46,8 @@ static void do_co_off( void )
     cur_doc_el_group->block_font = g_curr_font;
     cur_doc_el_group->next = t_doc_el_group;
     t_doc_el_group = cur_doc_el_group;
-    if( ProcFlags.p_pc_in_li ) {        // special for P or PC inside a list followed by CO OFF
+    /* this was originally restricted to P or PC inside an LI and may need further work */
+    if( ProcFlags.lp_p_pc_in_block ) {  // special for P or PC inside a list followed by CO OFF
         t_doc_el_group->post_skip = g_post_skip;
         g_post_skip = 0;
     }

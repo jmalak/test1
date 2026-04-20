@@ -829,6 +829,11 @@ void gml_efig( const gmltag * entry )
     scr_process_break();
     rs_loc = 0;
 
+    if( ProcFlags.lp_p_pc_in_block ) {
+        ProcFlags.lp_p_pc_in_block = false; // clear flag for end tag
+        ProcFlags.para_in_block = true;
+    }
+
     /* Done here because needed for the minimum post_skip */
 
     p = scan_start;

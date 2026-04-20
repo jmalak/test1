@@ -24,7 +24,7 @@
 ;*
 ;*  ========================================================================
 ;*
-;* Description:  routine for checking FPU type
+;* Description:  Check FPU presence and type (32-bit).
 ;*
 ;*****************************************************************************
 
@@ -38,12 +38,11 @@ include mdef.inc
 __x87id proc
         sub     EAX,EAX
         push    EAX                     ; allocate space for status word
-        finit                           ; use default infinity mode
-        fstcw   word ptr [ESP]          ; save control word
-        fwait
+        fninit                          ; use default infinity mode
+        fnstcw   word ptr [ESP]         ; save control word
         pop     EAX
         mov     AL,0
-        cmp     AH,3
+        cmp     AH,3                    ; AH will be FFh if no FPU
         jnz     nox87
         push    EAX                     ; allocate space for status word
         fld1                            ; generate infinity by
@@ -53,13 +52,12 @@ __x87id proc
         fchs                            ; ...
         fcompp                          ; compare +/- infinity
         fstsw   word ptr [ESP]          ; equal for 87/287
-        fwait                           ; wait fstsw to complete
         pop     EAX                     ; get NDP status word
         mov     AL,2                    ; assume 80287
         sahf                            ; store condition bits in flags
         jz      not387                  ; it's 287 if infinities equal
         mov     AL,3                    ; indicate 80387
-not387: finit                           ; re-initialize the 8087
+not387: fninit                          ; re-initialize the 8087
 nox87:  mov     AH,0
         ret                             ; return
 __x87id endp

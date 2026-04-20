@@ -103,6 +103,10 @@ void gml_elq( const gmltag * entry )
 
     scr_process_break();
 
+    if( ProcFlags.lp_p_pc_in_block ) {
+        ProcFlags.lp_p_pc_in_block = false; // clear flag for end tag
+        ProcFlags.para_in_block = true;
+    }
     if( nest_cb->c_tag != t_LQ ) {                          // unexpected exxx tag
         if( nest_cb->c_tag == t_NONE ) {
             g_err_tag_no( str_tags[t_LQ + 1] );             // no exxx expected, no tag active
