@@ -102,7 +102,7 @@ void    gml_graphic( const gmltag * entry )
                     break;
                 }
                 memcpy_s( file, FILENAME_MAX, g_att_val.val_start, g_att_val.val_len );
-                if( val_len < FILENAME_MAX ) {
+                if( g_att_val.val_len < FILENAME_MAX ) {
                     file[g_att_val.val_len] = '\0';
                 } else {
                     file[FILENAME_MAX - 1] = '\0';

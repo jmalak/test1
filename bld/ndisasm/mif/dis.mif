@@ -17,11 +17,11 @@ dis_objs = disentry.obj $+$(o$(target_cpu))$-
 
 axp_disbuild_headers   = $(disasm_dir)/core/h/insaxp.h   $(disasm_dir)/core/h/refaxp.h   $(disasm_dir)/core/h/regaxp.h
 ppc_disbuild_headers   = $(disasm_dir)/core/h/insppc.h   $(disasm_dir)/core/h/refppc.h   $(disasm_dir)/core/h/regppc.h
-x86_disbuild_headers   = $(disasm_dir)/core/h/insx86.h   $(disasm_dir)/core/h/refx86.h   $(disasm_dir)/core/h/regx86.h
+x86_disbuild_headers   = $(disasm_dir)/core/h/insx86.h   $(disasm_dir)/core/h/refx86.h   $(disasm_dir)/core/h/regx86.h $(disasm_dir)/core/h/insx86e1.h $(disasm_dir)/core/h/insx86e2.h $(disasm_dir)/core/h/insx86e3.h $(disasm_dir)/core/h/insx86e4.h
+x64_disbuild_headers   = $(disasm_dir)/core/h/insx64.h   $(disasm_dir)/core/h/refx86.h   $(disasm_dir)/core/h/regx64.h $(disasm_dir)/core/h/insx86e1.h $(disasm_dir)/core/h/insx86e2.h $(disasm_dir)/core/h/insx86e3.h $(disasm_dir)/core/h/insx86e4.h
 jvm_disbuild_headers   = $(disasm_dir)/core/h/insjvm.h   $(disasm_dir)/core/h/refjvm.h   $(disasm_dir)/core/h/regjvm.h
 sparc_disbuild_headers = $(disasm_dir)/core/h/inssparc.h $(disasm_dir)/core/h/refsparc.h $(disasm_dir)/core/h/regsparc.h
 mips_disbuild_headers  = $(disasm_dir)/core/h/insmips.h  $(disasm_dir)/core/h/refmips.h  $(disasm_dir)/core/h/regmips.h
-x64_disbuild_headers   = $(disasm_dir)/core/h/insx64.h   $(disasm_dir)/core/h/refx64.h   $(disasm_dir)/core/h/regx64.h
 
 #                                  haxp hppc hx86 hjvm hsparc hmips hx64 hall htest
 #==================================================================================

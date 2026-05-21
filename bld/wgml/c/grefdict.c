@@ -66,39 +66,6 @@ char * get_id_value( char * p, char * refid )
 
 
 /***************************************************************************/
-/*  get_refid_value        parse reference id  (using old vars)            */
-/*                                                                         */
-/*  Note: parameter refid should be a pointer to char[ID_LEN]              */
-/***************************************************************************/
-
-char * get_refid_value( char * p, char * refid )
-{
-    int k;
-
-    p = get_att_value( p );
-
-    if( val_start == NULL ) {       // no valid id
-        return( p );
-    }
-    if( val_len < ID_LEN ) {
-        for( k = 0; k < val_len; k++ ) {
-            refid[k] = my_tolower( *(val_start + k) );
-        }
-        refid[val_len] = '\0';
-    } else {
-        for( k = 0; k < ID_LEN; k++ ) {
-            refid[k] = my_tolower( *(val_start + k) );
-        }
-        refid[ID_LEN - 1] = '\0';
-    }
-    if( val_len > 7 ) {                     // wgml 4 warning level
-        xx_warn_c_info( wng_id_xxx, refid, inf_id_len );
-    }
-    return( p );
-}
-
-
-/***************************************************************************/
 /*  init_ref_dict   initialize dictionary pointer                          */
 /***************************************************************************/
 

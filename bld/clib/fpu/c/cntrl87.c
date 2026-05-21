@@ -70,13 +70,13 @@ extern unsigned short __dos87emucall;
 
 void _WCI86NEAR __dos_emu_fldcw( cwp );
 #pragma aux __dos_emu_fldcw "*" = \
-        "mov    ax,3" \
+        "mov    ax,4" \
         "call   __dos87emucall" \
         parm [bx];
 
 void _WCI86NEAR __dos_emu_fstcw( cwp );
 #pragma aux __dos_emu_fstcw "*" = \
-        "mov    ax,4" \
+        "mov    ax,3" \
         "call   __dos87emucall" \
         parm [bx];
 

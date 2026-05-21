@@ -93,6 +93,8 @@ typedef enum {
     DI_X86_SKIPBACK = DI_X86_FIRST - 1,
     #undef inspick
     #define inspick( idx, name, opcode, mask, handler ) DI_X86_##idx,
+    #undef inspckn
+    #define inspckn inspick
     #include "insx86.h"
     #include "insx86e1.h"
     #include "insx86e2.h"
@@ -104,7 +106,13 @@ typedef enum {
     DI_X64_SKIPBACK = DI_X64_FIRST - 1,
     #undef inspick
     #define inspick( idx, name, opcode, mask, handler ) DI_X64_##idx,
+    #undef inspckn
+    #define inspckn inspick
     #include "insx64.h"
+    #include "insx86e1.h"
+    #include "insx86e2.h"
+    #include "insx86e3.h"
+    #include "insx86e4.h"
 #endif
 #if DISCPU & DISCPU_jvm
     DI_JVM_FIRST,
@@ -202,19 +210,12 @@ typedef enum {
     #define refpick( idx, name ) DRT_PPC_##idx,
     #include "refppc.h"
 #endif
-#if DISCPU & DISCPU_x86
+#if DISCPU & (DISCPU_x86 | DISCPU_x64)
     DRT_X86_FIRST,
     DRT_X86_SKIPBACK = DRT_X86_FIRST - 1,
     #undef refpick
     #define refpick( idx, name ) DRT_X86_##idx,
     #include "refx86.h"
-#endif
-#if DISCPU & DISCPU_x64
-    DRT_X64_FIRST,
-    DRT_X64_SKIPBACK = DRT_X64_FIRST - 1,
-    #undef refpick
-    #define refpick( idx, name ) DRT_X64_##idx,
-    #include "refx64.h"
 #endif
 #if DISCPU & DISCPU_jvm
     DRT_JVM_FIRST,

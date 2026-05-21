@@ -953,145 +953,14 @@ char * format_num( uint32_t n, char * r, size_t rsize, num_style ns )
 }
 
 /***************************************************************************/
-/* get the start of the next potential attribute                           */
-/* returns the start of the part of the line on which that potential       */
-/*   attribute was found, thus preserving any preceding spaces in case it  */
-/*   turns out that it is not an attribute at all but rather text          */
-/* NOTE: ProcFlags.tag_end_found is cleared here rather than in            */
-/*       get_att_value() to accomodate attributes "compact" and "break"    */
-/*       which have no "value" but which must not return tag_end_found     */
-/*       unless, of course, it is                                          */
-/***************************************************************************/
-
-char * get_att_start( char * p )
-{
-    char    * pa;
-
-    static  char      buf[BUF_SIZE];
-
-    ProcFlags.tag_end_found = false;
-    for(;;) {                           // loop until potential attribute/rescan line found
-        pa = p;                         // save initial location
-        SkipSpaces( p );                // over WS to attribute
-        if( *p == '.' ) {   // end-of-tag
-            p++;
-            pa = p;         // return next char after end-of-tag
-            ProcFlags.tag_end_found = true;
-            break;
-        }
-        if( *p == '\0' ) {              // end of line: get new line
-            if( !(input_cbs->fmflags & II_eof) ) {
-                if( get_line( true ) ) {// next line for missing attribute
-
-                    /*******************************************************/
-                    /* buff2 must be restored if it is to be reprocessed   */
-                    /* so that any symbol substitutions will reflect any   */
-                    /* changes made by the tag calling it                  */
-                    /*******************************************************/
-
-                    strcpy_s( buf, strlen( buff2 ) + 1, buff2 );
-                    scan_start = buff2;
-                    scan_stop  = buff2 + buff2_lg;
-                    if( (*scan_start == SCR_char) ||    // cw found: end-of-tag
-                        (*scan_start == GML_char) ) {   // tag found: end-of-tag
-                        ProcFlags.reprocess_line = true;
-                        break;
-                    } else {
-                        process_line();
-                        p = scan_start; // new line is part of current tag
-                        continue;
-                    }
-                }
-            } else {
-                break;  // eof() found: return for further processing
-            }
-        } else {
-            break;      // potential next attribute found
-        }
-    }
-    att_start = p;      // only valid if !ProcFlags.reprocess_line && !ProcFlags.tag_end_found
-    return( pa );       // return initial location for current att_start
-}
-
-/***************************************************************************/
-/* get the attribute value and report tag-end ('.') if found               */
-/*     [<white space>]=[<white space>]<value>                              */
-/***************************************************************************/
-
-char * get_att_value( char * p )
-{
-    char        quote;
-
-    quote_char = '\0';
-    val_start = NULL;
-    val_len = 0;
-    SkipSpaces( p );                    // over WS to '='
-    if( *p == '=' ) {
-        p++;
-        SkipSpaces( p );                // over WS to value
-    } else {
-        if( *p == '.' ) {
-            ProcFlags.tag_end_found = true;
-        }
-        xx_line_err_c( err_eq_missing, p );
-    }
-    if( (*p == '\0') || (*p == '.') ) { // value is missing
-        if( *p == '.' ) {
-            ProcFlags.tag_end_found = true;
-        }
-        xx_line_err_c( err_att_val_missing, p );
-    }
-    if( *p == '"' || *p == '\'' || *p == '`' ) {
-        quote = *p;
-        quote_char = *p;
-        ++p;
-        val_start = p;
-        while( *p != '\0' ) {
-            if( *p == quote ) {
-                if( *(p + 1) != quote ) {
-                    break;
-                }
-                { // this should almost never be used
-                    char    *   q;
-                    char    *   r;
-                    q = p;
-                    r = p + 1;
-                    while( *r != '\0' ) {
-                        *q = *r;
-                        q++;
-                        r++;
-                    }
-                }
-            }
-            ++p;
-        }
-        val_len = p - val_start;    // up to (not including) final quote
-        if( *p != quote ) {         // terminating quote not found
-            xx_line_err_c( err_att_val_open, val_start - 1 );
-        }
-        ++p;                        // over final quote
-    } else {
-        val_start = p;
-        while( *p != '\0' && *p != ' ' && *p != '.' ) {
-            ++p;
-        }
-        val_len = p - val_start;
-    }
-    if( *p == '.' ) {
-        ProcFlags.tag_end_found = true;
-    }
-    return( p );
-}
-
-/***************************************************************************/
 /* get the start and length of the next potential attribute                */
 /* returns the start of the part of the line on which that potential       */
 /*   attribute was found, thus preserving any preceding spaces in case it  */
 /*   turns out that it is not an attribute at all but rather text          */
 /* NOTE: ProcFlags.tag_end_found is cleared here rather than in            */
-/*       get_att_value() to accomodate attributes "compact" and "break"    */
-/*       which have no "value" but which must not return tag_end_found     */
-/*       unless, of course, it is                                          */
+/*       get_value() to accomodate attributes "compact" and "break" which  */
+/*       have no "value" but which must not return tag_end_found unless,   */
+/*       of course, it is                                                  */
 /***************************************************************************/
 
 char * get_attribute( char * p )

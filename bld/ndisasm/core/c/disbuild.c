@@ -154,7 +154,7 @@ string_data X86InsTable1[] = {
 
 ins_decode_data X86DecodeTable2[] = {
     #undef inspick
-    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X86_##idx, #idx, #handler },
+    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X86_##idx, #idx, "X86" #handler },
     #include "insx86e1.h"
 };
 
@@ -166,7 +166,7 @@ string_data X86InsTable2[] = {
 
 ins_decode_data X86DecodeTable3[] = {
     #undef inspick
-    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X86_##idx, #idx, #handler },
+    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X86_##idx, #idx, "X86" #handler },
     #include "insx86e2.h"
 };
 
@@ -178,7 +178,7 @@ string_data X86InsTable3[] = {
 
 ins_decode_data X86DecodeTable4[] = {
     #undef inspick
-    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X86_##idx, #idx, #handler },
+    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X86_##idx, #idx, "X86" #handler },
     #include "insx86e3.h"
 };
 
@@ -190,13 +190,17 @@ string_data X86InsTable4[] = {
 
 ins_decode_data X86DecodeTable5[] = {
     #undef inspick
-    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X86_##idx, #idx, #handler },
+    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X86_##idx, #idx, "X86" #handler },
+    #undef inspckn
+    #define inspckn( idx, name, opcode, mask, handler ) { opcode, mask, DI_X86_##idx, #idx, #handler },
     #include "insx86e4.h"
 };
 
 string_data X86InsTable5[] = {
     #undef inspick
     #define inspick( idx, name, opcode, mask, handler ) { name, 0 },
+    #undef inspckn
+    #define inspckn( idx, name, opcode, mask, handler ) { name, 0 },
     #include "insx86e4.h"
 };
 
@@ -255,6 +259,58 @@ string_data X64InsTable1[] = {
     #include "insx64.h"
 };
 
+ins_decode_data X64DecodeTable2[] = {
+    #undef inspick
+    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X64_##idx, #idx, "X64" #handler },
+    #include "insx86e1.h"
+};
+
+string_data X64InsTable2[] = {
+    #undef inspick
+    #define inspick( idx, name, opcode, mask, handler ) { name, 0 },
+    #include "insx86e1.h"
+};
+
+ins_decode_data X64DecodeTable3[] = {
+    #undef inspick
+    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X64_##idx, #idx, "X64" #handler },
+    #include "insx86e2.h"
+};
+
+string_data X64InsTable3[] = {
+    #undef inspick
+    #define inspick( idx, name, opcode, mask, handler ) { name, 0 },
+    #include "insx86e2.h"
+};
+
+ins_decode_data X64DecodeTable4[] = {
+    #undef inspick
+    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X64_##idx, #idx, "X64" #handler },
+    #include "insx86e3.h"
+};
+
+string_data X64InsTable4[] = {
+    #undef inspick
+    #define inspick( idx, name, opcode, mask, handler ) { name, 0 },
+    #include "insx86e3.h"
+};
+
+ins_decode_data X64DecodeTable5[] = {
+    #undef inspick
+    #define inspick( idx, name, opcode, mask, handler ) { opcode, mask, DI_X64_##idx, #idx, "X64" #handler },
+    #undef inspckn
+    #define inspckn( idx, name, opcode, mask, handler ) { opcode, mask, DI_X86_##idx, #idx, #handler },
+    #include "insx86e4.h"
+};
+
+string_data X64InsTable5[] = {
+    #undef inspick
+    #define inspick( idx, name, opcode, mask, handler ) { name, 0 },
+    #undef inspckn
+    #define inspckn( idx, name, opcode, mask, handler ) { name, 0 },
+    #include "insx86e4.h"
+};
+
 string_data X64RegTable[] = {
     #undef regpick
     #define regpick( idx, name ) { name, 0 },
@@ -264,21 +320,33 @@ string_data X64RegTable[] = {
 string_data X64RefTable[] = {
     #undef refpick
     #define refpick( idx, name ) { name, 0 },
-    #include "refx64.h"
+    #include "refx86.h"
 };
 
 unsigned X64InsNum[] = {
     NUM_ELTS( X64DecodeTable1 ),
+    NUM_ELTS( X64DecodeTable2 ),
+    NUM_ELTS( X64DecodeTable3 ),
+    NUM_ELTS( X64DecodeTable4 ),
+    NUM_ELTS( X64DecodeTable5 ),
     0
 };
 
 ins_decode_data *X64DecodeTable[] = {
     X64DecodeTable1,
+    X64DecodeTable2,
+    X64DecodeTable3,
+    X64DecodeTable4,
+    X64DecodeTable5,
     NULL
 };
 
 string_data *X64InsTable[] = {
     X64InsTable1,
+    X64InsTable2,
+    X64InsTable3,
+    X64InsTable4,
+    X64InsTable5,
     NULL
 };
 

@@ -106,7 +106,7 @@ static int output( int i )
      */
     if( USE_FPU_EMUL ) {
         if( ins->token == T_FWAIT ) {
-            if( (rCode->info.cpu & P_FPU_MASK) < P_387 ) {
+            if( (rCode->info.cpu & P_FPU_MASK) < P_386 ) {
                 patch = FPP_WAIT;
             }
         } else if( ins->allowed_prefix != NO_FWAIT ) {

@@ -504,9 +504,9 @@ void gml_fig( const gmltag * entry )
                     frame.type = char_frame;
                 }
                 if( frame.type == char_frame ) {
-                    memcpy_s( frame.string, str_size, g_att_val.val_start, val_len );
-                    if( val_len < str_size ) {
-                        frame.string[val_len] = '\0';
+                    memcpy_s( frame.string, str_size, g_att_val.val_start, g_att_val.val_len );
+                    if( g_att_val.val_len < str_size ) {
+                        frame.string[g_att_val.val_len] = '\0';
                     } else {
                         frame.string[str_size - 1] = '\0';
                     }

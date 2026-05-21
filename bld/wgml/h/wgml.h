@@ -279,7 +279,6 @@ extern  void            print_ref_dict( ref_entry * dict, const char * type );
 extern  ref_entry   *   find_refid( ref_entry * dict, char const * id );
 extern  void            init_ref_entry( ref_entry * re, char * id );
 extern  char        *   get_id_value( char * p, char * refid );
-extern  char        *   get_refid_value( char * p, char * refid );
 
 /* gresrch.c                            */
 extern  void    add_GML_tag_research( char * tag );
@@ -439,12 +438,10 @@ extern  char        *   format_num( uint32_t n, char * r, size_t rsize, num_styl
 extern  void            free_ffh_list( ffh_entry * ffh_list );
 extern  void            free_fwd_refs( fwd_ref * fwd_refs );
 extern  void            g_keep_nest( const char * cw_tag );
-extern  char        *   get_att_start( char * p );
-extern  char        *   get_att_value( char * p );
 extern  char        *   get_attribute( char * p );
-extern  char        *   get_value( char * p );
 extern  font_number     get_font_number( char * p, size_t len );
 extern  char        *   get_tag_value( char * p );
+extern  char        *   get_value( char * p );
 extern  ffh_entry   *   init_ffh_entry( ffh_entry * ffh_list );
 extern  fwd_ref     *   init_fwd_ref( fwd_ref * fr_dict, const char * fr_id );
 extern  char        *   int_to_roman( uint32_t n, char * r, size_t rsize );
