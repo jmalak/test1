@@ -440,13 +440,13 @@ static  void    proc_input( char * filename )
         if( ProcFlags.newLevelFile ) {
             ProcFlags.newLevelFile = 0; // start a new include FILE level
 
-            /***************************************************************/
-            /*  if line is to be reprocessed, store it in hidden_head      */
-            /***************************************************************/
+            /********************************************************************/
+            /*  if line is to be reprocessed, store it in input_cbs->reprocess  */
+            /********************************************************************/
 
             if( ProcFlags.reprocess_line ) {
-                input_cbs->reprocess = mem_alloc( buff2_lg + 1 );
-                strcpy_s( input_cbs->reprocess, buff2_lg + 1, buff2 );
+                input_cbs->reprocess = mem_alloc( buff2_lg + 2 );
+                strcpy_s( input_cbs->reprocess, buff2_lg + 2, buff2 );
                 ProcFlags.reprocess_line = false;
             }
 

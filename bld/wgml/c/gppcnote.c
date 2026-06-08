@@ -28,8 +28,9 @@
 *
 ****************************************************************************/
 
-
 #include    "wgml.h"
+
+static  bool    in_fig_xmp_block;       // set to true if in FIG or XMP
 
 
 /***************************************************************************/
@@ -38,6 +39,26 @@
 
 static void p_pc_setup( p_lay_tag * p_pc )
 {
+    /****************************************************************/
+    /* While this was once much more straightforward, FIG, LQ, and  */
+    /* XMP turned out to have an additonal effect on P and PC       */
+    /****************************************************************/
+
+    in_fig_xmp_block = false;
+    switch( nest_cb->c_tag ) {
+    case t_FIG:
+    case t_XMP:
+        in_fig_xmp_block = true;
+    case t_LQ:
+        g_curr_font = layout_work.defaults.font;
+    case t_DL:
+    case t_GL:
+    case t_OL:
+    case t_SL:
+    case t_UL:
+        ProcFlags.lp_p_pc_in_block = true;
+    }
+
     ProcFlags.keep_left_margin = true;  // special Note indent
     if( ProcFlags.overprint && ProcFlags.cc_cp_done ) {
         ProcFlags.overprint = false;    // cancel overprint
@@ -58,7 +79,7 @@ static void p_pc_setup( p_lay_tag * p_pc )
                 g_post_skip +=g_subs_skip;      // this appears to be correct so far
                 ProcFlags.block_starting = false;
             }
-        } else {
+        } else {                                // for PS and perhaps other devices, but not for WHELP
             g_post_skip +=g_subs_skip;          // this appears to be correct so far
             ProcFlags.block_starting = false;
         }
@@ -98,18 +119,6 @@ static void proc_p_pc( p_lay_tag * p_pc, e_tags t )
 
     p_pc_setup( p_pc );
 
-    switch( nest_cb->c_tag ) {
-    case t_DL:
-    case t_GL:
-    case t_OL:
-    case t_SL:
-    case t_UL:
-    case t_FIG:
-    case t_LQ:
-    case t_XMP:
-        ProcFlags.lp_p_pc_in_block = true;
-    }
-
     if( nest_cb->c_tag != t_LQ ) {
         ProcFlags.block_starting = true;    // to catch empty paragraphs
     }
@@ -118,7 +127,9 @@ static void proc_p_pc( p_lay_tag * p_pc, e_tags t )
 
     SkipDot( p );                       // over '.'
     if( *p != '\0' ) {
-        if( (t == t_P) && !ProcFlags.concat ) {
+        if( in_fig_xmp_block ) {        // in FIG or XMP
+            // placeholder
+        } else if( (t == t_P) && !ProcFlags.concat ) {
             if( input_cbs->fmflags & II_tag ) {
                 g_post_skip = 0;
             } else {

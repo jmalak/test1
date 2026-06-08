@@ -737,11 +737,16 @@ dos_handler(
     case 0x06:              /* direct_out */
         tprintf("direct_out('%c')\r\n", _dx & 0xff);
         break;
+    case 0x08:              /* key_in */
+        break;
     case 0x09:              /* disp_string */
         if (stringprint)
             tprintf("display(\"%s\")\r\n", makestring(_ds, _dx));
         else
             tprintf("display(%04X:%04X)\r\n", _ds, _dx);
+        break;
+    case 0x0a:              /* buf_key_in */
+        tprintf("buf_inp(%04X:%04X) = ", _ds, _dx);
         break;
     case 0x0b:
         tputs("chk_key_stat() = ");
@@ -1068,6 +1073,15 @@ dos_handler(
     case 0x06:              /* direct_out */
     case 0x09:              /* disp_string */
     case 0x0d:              /* flush */
+        break;
+    case 0x08:              /* key_in */
+        tprintf("key_in() = %u\r\n", _ax & 0xff);
+        break;
+    case 0x0a:              /* buf_key_in */
+        tprintf("%d", *(unsigned char _far *)makefptr(_ds, _dx + 1));
+        if (stringprint)
+            outbuff(_ds, _dx + 2,*(unsigned char _far *)makefptr(_ds, _dx + 1));
+        tputs("\r\n");
         break;
     case 0x0b:              /* chk_key_stat */
         if (!(_ax & 0xff))

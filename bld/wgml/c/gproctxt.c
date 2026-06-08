@@ -1688,6 +1688,27 @@ void process_line_full( text_line * a_line, bool justify )
         } // pos_left is done automatically when the line is created
 
         if( t_element == NULL ) {
+
+            /****************************************************************/
+            /* This appears to be the right place to identify text inside   */
+            /* a list or FIG/LQ/XMP block when none of P/PC/LP is present   */
+            /* whether it is setting the right flag is not yet clear        */
+            /* if it turns out to be in the long run, then it should be     */
+            /* renamed as it would no longer be limited to P/PC/LP          */
+            /****************************************************************/
+
+            switch( nest_cb->c_tag ) {
+            case t_DL:
+            case t_GL:
+            case t_OL:
+            case t_SL:
+            case t_UL:
+            case t_FIG:
+            case t_LQ:
+            case t_XMP:
+                ProcFlags.lp_p_pc_in_block = true;
+            }
+
             if( !ProcFlags.skips_valid) {
 
                 /********************************************************************************/
@@ -1727,14 +1748,14 @@ void process_line_full( text_line * a_line, bool justify )
                                 g_post_skip = 0;
                             } else {
                                 g_subs_skip += g_space;
-                                g_space = 0 ;
+                                g_space = 0;
                             }
                         } else if( g_post_skip > 0 ) {
                             if( ProcFlags.para_in_block ) {
                                 g_subs_skip = 0;
                                 g_post_skip = 0;
                             } else {
-                                g_subs_skip = g_post_skip + g_space;
+                               g_subs_skip = g_post_skip + g_space;
                             }
                         }
                     } else if( g_space_c > 0 ) {
