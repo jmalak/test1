@@ -58,7 +58,7 @@
   picks( ch, scr_dummy, 0                  )// change
   picks( cl, scr_dummy, cw_break+cw_o_t    )// column length
   picks( cm, scr_cm,    0                  )// comment
-  picks( co, scr_co,    cw_break+cw_o_t    )// concatenate
+  picks( co, scr_co,    cw_o_t             )// concatenate
   picks( cp, scr_cp,    cw_break+cw_o_t    )// conditional page
   picks( cs, scr_cs,    cw_o_t             )// conditional section
   picks( ct, scr_ct,    cw_o_t             )// continued text

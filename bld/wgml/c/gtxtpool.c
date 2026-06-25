@@ -460,6 +460,7 @@ doc_el_group * alloc_doc_el_group( group_type type )
     curr->last = NULL;
     curr->owner = type;
     curr->block_font = 0;
+    curr->overprint = false;
 
     return( curr );
 }

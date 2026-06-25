@@ -2646,7 +2646,7 @@ DLLImport int  dll_data;
 Functions, data and objects are exported from a DLL by
 use of
 .kwm __declspec(dllexport)
-ct , the
+.ct , the
 .kwm __export
 keyword (for which
 .kwm __declspec(dllexport)

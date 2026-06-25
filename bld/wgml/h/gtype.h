@@ -1246,11 +1246,12 @@ typedef enum {
 typedef struct doc_el_group {
     struct  doc_el_group    *   next;
             uint32_t            depth;
-            uint32_t            post_skip;  // figure or heading at top of column
+            uint32_t            post_skip;  // used by FIG, Hx, CO OFF/CO ON
             doc_element     *   first;
             doc_element     *   last;
             group_type          owner;      // tag or control word using this instance
             font_number         block_font; // used by CO OFF/CO ON blocks
+            bool                overprint;  // used by CO OFF/CO ON blocks
 } doc_el_group;
 
 typedef struct {

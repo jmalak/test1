@@ -34,6 +34,8 @@
 
 #include "wgml.h"
 
+static  bool    co_after_para;
+
 /***************************************************************************/
 /*  set up to collect the elements of the block                            */
 /***************************************************************************/
@@ -46,8 +48,14 @@ static void do_co_off( void )
     cur_doc_el_group->block_font = g_curr_font;
     cur_doc_el_group->next = t_doc_el_group;
     t_doc_el_group = cur_doc_el_group;
-    /* this was originally restricted to P or PC inside an LI and may need further work */
-    if( ProcFlags.lp_p_pc_in_block ) {  // special for P or PC inside a list followed by CO OFF
+
+    /************************************************************************************/
+    /* ProcFlags.lp_p_pc_in_block was orignally restricted to P or PC inside an LI      */
+    /* The extension to LP and to FIG/LQ/XMP blocks has not been tested                 */
+    /* co_after_para is set in scr_co(); consult that function for details              */
+    /************************************************************************************/
+
+    if( ProcFlags.lp_p_pc_in_block || co_after_para ) {  // special for P or PC inside a list followed by CO OFF
         t_doc_el_group->post_skip = g_post_skip;
         g_post_skip = 0;
     }
@@ -66,8 +74,8 @@ static void do_co_on( void )
     bool                skip_blank  = false;    // blank line at bottom of page
     bool                text_first  = false;    // no blank lines precede the first text line
     doc_element     *   cur_el;
-    doc_el_group    *   cur_group;                  // current group from n_page, not cur_doc_el_group
-    doc_el_group    *   last_group;                 // group to which doc_elements are to be added
+    doc_el_group    *   cur_group;              // current group from n_page, not cur_doc_el_group
+    doc_el_group    *   last_group;             // group to which doc_elements are to be added
     uint32_t            b_cur_line  = 0;        // current blank line number
     uint32_t            b_line_tot  = 0;        // total blank lines in block
     uint32_t            break_point = 0;        // potential break point
@@ -88,6 +96,9 @@ static void do_co_on( void )
     /* must have text and it must have been started by CO OFF */
 
     if( (t_doc_el_group != NULL) && (t_doc_el_group->owner == gt_co) ) {
+        if( t_doc_el_group->post_skip > 0 ) {
+            ProcFlags.overprint = cur_doc_el_group->overprint;      // restore overprint before first block
+        }
         cur_doc_el_group = t_doc_el_group;      // detach current element group
         t_doc_el_group = t_doc_el_group->next;  // processed doc_elements go to next group, if any
         cur_doc_el_group->next = NULL;
@@ -126,6 +137,9 @@ static void do_co_on( void )
                     cur_el = alloc_doc_el( el_vspace );
                     cur_el->depth = cur_doc_el_group->post_skip;
                     cur_doc_el_group->post_skip = 0;
+//                    if( cur_doc_el_group->overprint ) {
+//                        cur_el->depth -= wgml_fonts[g_curr_font].line_height;   // do overprint
+//                    }
                     insert_col_main( cur_el );
                     cur_el = NULL;
                 }
@@ -593,6 +607,19 @@ void    scr_co( void )
     cwcurr[1] = 'c';
     cwcurr[2] = 'o';
     cwcurr[3] = '\0';
+
+    /************************************************************************************/
+    /* This preserves the value of ProcFlags.para_has_text, which is cleared in         */
+    /* scr_process_break()                                                              */
+    /* **there is more to this than is currently shown; work continues***               */
+    /************************************************************************************/
+
+    if( ProcFlags.para_has_text ) {
+        co_after_para = true;
+    } else {
+        co_after_para = false;
+    }
+    scr_process_break();                // delayed so CO OFF can use ProcFlags.para_has_text
 
     p = scan_start;
     SkipSpaces( p );                    // next word start
