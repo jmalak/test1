@@ -93,10 +93,11 @@ static void do_co_on( void )
     uint32_t            t_line_tot  = 0;        // total text lines in block
     uint32_t            threshold   = 0;        // threshold line number  
 
-    /* must have text and it must have been started by CO OFF */
+    /* must have contents and must have been started by CO OFF */
 
     if( (t_doc_el_group != NULL) && (t_doc_el_group->owner == gt_co) ) {
         if( t_doc_el_group->post_skip > 0 ) {
+            g_post_skip = t_doc_el_group->post_skip;                // restore post_skip before first block
             ProcFlags.overprint = cur_doc_el_group->overprint;      // restore overprint before first block
         }
         cur_doc_el_group = t_doc_el_group;      // detach current element group
@@ -132,16 +133,6 @@ static void do_co_on( void )
                     cur_doc_el_group->first = cur_doc_el_group->first->next;
                     cur_el->next = NULL;
                     insert_col_main( cur_el );
-                }
-                if( cur_doc_el_group->post_skip > 0 ) {
-                    cur_el = alloc_doc_el( el_vspace );
-                    cur_el->depth = cur_doc_el_group->post_skip;
-                    cur_doc_el_group->post_skip = 0;
-//                    if( cur_doc_el_group->overprint ) {
-//                        cur_el->depth -= wgml_fonts[g_curr_font].line_height;   // do overprint
-//                    }
-                    insert_col_main( cur_el );
-                    cur_el = NULL;
                 }
                 add_doc_el_group_to_pool( cur_doc_el_group );
                 cur_doc_el_group = NULL;

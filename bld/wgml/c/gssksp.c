@@ -174,14 +174,17 @@ static void sksp_common( void )
 
 void    scr_sk( void )
 {
-    ProcFlags.sk_has_c = false;     // ensure set only if this SK uses "C"
-    sksp_common();                  // set vspace
+    ProcFlags.sk_has_c = false;         // ensure set only if this SK uses "C"
+    sksp_common();                      // set vspace
 
     if( !ProcFlags.concat ) {
-        if( ProcFlags.overprint || (vspace > 0) ) {
-            ProcFlags.sk_co = true;         // CO OFF and SK -1 or SK n, n < 0
-            if( ProcFlags.overprint ) {     // SK -1 at top of CO OFF/CO ON block
+        if( ProcFlags.overprint ) {     // SK -1 at top of CO OFF/CO ON block
+                ProcFlags.sk_co = true; // CO OFF and SK -1 or SK n, n > 0
                 t_doc_el_group->overprint = true;
+        } else {
+            if( (vspace > 0) ) {
+            ProcFlags.sk_co = true;         // CO OFF and SK -1 or SK n, n > 0
+                t_doc_el_group->post_skip = 0;
             }
         }
     }
