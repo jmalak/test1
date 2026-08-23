@@ -357,7 +357,7 @@ void  scr_process_break( void )
         t_element = NULL;
         t_el_last = NULL;
     } else if( ProcFlags.note_starting || ProcFlags.para_starting ) {
-        /*  */
+        /*  catch/process empty blocks and paragraphs */
         if( ProcFlags.block_starting ) {        // LP. P, PC, NOTE paragraph is empty
             if( ProcFlags.wh_device ) {         // and possibly other devices (but not PS)
                 if( ProcFlags.para_is_lp ) {    // LP is an exception
@@ -372,6 +372,13 @@ void  scr_process_break( void )
                 g_subs_skip += g_post_skip;
                 g_post_skip = 0;
                 ProcFlags.block_starting = false;
+            }
+        } else {                            // this works for PS and perhaps other devices (but not WHELP)
+            if( ProcFlags.wh_device ) {     // and possibly other devices (but not PS)
+                /* placeholder */
+            } else {                        // this works for PS and perhaps other devices (but not WHELP)
+                g_subs_skip += g_post_skip;
+                g_post_skip = 0;
             }
         }
         if( ProcFlags.note_starting ) {      // NOTE with no text before break
